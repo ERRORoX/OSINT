@@ -19,6 +19,8 @@ git push -u origin main
 
 С [GitHub CLI](https://cli.github.com/) (`gh`): `gh repo create ИМЯ_РЕПО --public --source=. --remote=origin --push`.
 
+**Скрипт из проекта:** после создания пустого репозитория на GitHub выполните из корня проекта: `./scripts/push-github.sh ВАШ_ЛОГИН ИМЯ_РЕПО` (потребуется ввести логин/токен при `git push`, если не настроен credential helper).
+
 **Дымовой чек после правок:** `python run.py` → открыть http://127.0.0.1:5000 → переключить вкладку Grabcam (если используете).
 
 **Вложенные `.git` в `tools/*`:** если раньше клонировали инструменты отдельно, в папках мог остаться свой репозиторий. Для одного общего репозитория OSINT Panel удалите `tools/<инструмент>/.git` (кроме случаев, когда нужен именно submodule). Если `tools/shodan-python` принадлежит `root`, выполните: `sudo chown -R "$USER" tools/shodan-python`, затем `rm -rf tools/shodan-python/.git` и снова `git add .`.
