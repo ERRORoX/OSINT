@@ -1,0 +1,39 @@
+# Пустой/сломанный клон в корне (только .git, без файлов)
+/sherlock/
+
+# Окружение и секреты
+data/
+venv/
+.venv/
+__pycache__/
+*.pyc
+.env
+.env.*
+!.env.example
+
+# IDE / ОС
+.cursor/
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Локальные данные Grabcam (не коммитить захваты)
+tools/grabcam/Photo/
+tools/grabcam/form_captures.json
+tools/grabcam/options.json
+
+# SQLite (создаётся при запуске)
+*.db
+*.sqlite
+*.sqlite3
+
+# Сборки / артефакты (сгенерированные презентации в корне)
+OSINT_Panel_презентация*.pptx
+dist/
+build/
+*.egg-info/
+
+# Логи
+*.log
