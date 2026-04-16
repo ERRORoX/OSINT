@@ -1,5 +1,114 @@
 # OSINT Panel
 
+<<<<<<< HEAD
+**Веб-панель для учебной и легитимной разведки в открытых источниках (OSINT).**  
+Единый интерфейс на Flask: домены, имена пользователей, email, вспомогательные инструменты, история запусков.
+
+| | |
+|---|---|
+| **Стек** | Python 3 (Flask), HTML/CSS/JS, SQLite |
+| **Версия интерфейса** | 3.x — хаб, отдельные страницы инструментов, CSS-бандлы |
+| **Репозиторий** | [github.com/ERRORoX/OSINT](https://github.com/ERRORoX/OSINT) |
+
+*При необходимости добавьте сюда вуз, группу, ФИО авторов, год и email — по образцу учебного README.*
+
+---
+
+## 1. Назначение
+
+Панель предназначена для:
+
+- **сбора информации из открытых источников** по домену, поддоменам, DNS, сертификатам, публичным API (в рамках закона и политики сервисов);
+- **поиска следов username** через интегрированные CLI-инструменты (Sherlock, Maigret, Social Analyzer, Blackbird и др.);
+- **работы с email** в связке Holehe / h8mail (раздел Google OSINT);
+- **вспомогательных сценариев**: Google OSINT, AI-агент, Instagram Bruter, AnonSMS, Grabcam (только в **законных и этичных** целях, см. §12);
+- **фото**: поиск по изображению, OCR, QR, опционально AI — при наличии ключей и системных утилит;
+- **ведения истории** запусков инструментов в SQLite.
+
+Логика каждого инструмента изолирована в `backend/tools/`; общие части — маршруты API, БД, раздача статики и сборка CSS-бандлов.
+
+---
+
+## 2. Возможности (кратко по разделам)
+
+| Раздел | URL / вход | Суть |
+|--------|------------|------|
+| **Хаб** | `/` | Карточки инструментов, переход на вкладки |
+| **Домен** | `/domain/` | WHOIS, DNS, поддомены, внешние сервисы — свой UI и `static/domain/` |
+| **Username** | `/username/` | Мульти-инструмент (Sherlock, Maigret, …), прогресс, вкладки |
+| **Фото** | `/photo/` | Поиск, OCR, QR, AI (по конфигурации) |
+| **Инструменты (вкладки)** | `/p/<id>/` | Например: `google-osint`, `ai-agent`, `instagram-bruter`, `anonsms`, `grabcam`, `history`, `settings` |
+| **История** | `/p/history/` | Просмотр сохранённых запусков |
+| **Настройки** | `/p/settings/` | Ключи API (через бэкенд и `.env`, не коммитить) |
+
+Стили вкладок с хаба: один запрос **`/css/tool-bundle/<tool_id>.css`** (сборка из `backend/css_bundle.py` + `static/css/tools/packs/…`). Домен и Username используют **свои** каталоги CSS в `static/domain/` и `static/username/`.
+
+---
+
+## 3. Стек технологий
+
+- **Backend:** Flask, `flask-cors`, вызовы внешних утилит через `subprocess` и собственные модули в `backend/tools/`.
+- **Frontend:** статические страницы, ES-модули (`static/js/app-hub.js`, `app-core.js`, `header-*.js`, `static/p/<id>/page.js`).
+- **Данные:** SQLite (`data/` или файл в корне — см. `backend/db/`), не коммитить рабочие БД с чувствительными данными.
+- **Интеграции:** внешние Python/Go-проекты в каталоге `tools/` (часть поставляется с репозиторием).
+
+---
+
+## 4. Архитектура проекта
+
+```
+OSINT HTML V3.0/
+├── run.py                    # Точка входа: venv/зависимости, запуск Flask на :5000
+├── requirements.txt          # Все Python-зависимости панели и обёрток
+├── backend/
+│   ├── app.py                # Маршруты, API, раздача static/, бандлы CSS
+│   ├── css_bundle.py         # Сборка /css/tool-bundle/<id>.css (hub, grabcam, вкладки)
+│   ├── db/                   # SQLite: история запусков
+│   ├── settings_keys.py      # Ключи из .env / настроек
+│   └── tools/
+│       ├── base.py           # ToolBase
+│       ├── registry.py       # Список инструментов TOOLS
+│       └── tool_<id>.py      # Один модуль на инструмент
+├── static/
+│   ├── index.html            # Хаб
+│   ├── domain/               # Автономная страница «Домен»
+│   ├── username/             # Автономная страница «Username»
+│   ├── photo/                # Автономная страница «Фото»
+│   ├── p/<tool_id>/          # Вкладки: index.html + page.js
+│   ├── css/
+│   │   ├── variables.css, layout.css, tools.css, proba-theme.css, hub-only.css
+│   │   └── tools/packs/      # Хвосты бандлов: _shared/, ai-agent/, …
+│   └── js/
+│       ├── app-hub.js, app-core.js, header-env.js, header-ui.js
+│       └── tools/tool-*.js   # Логика панелей (часть страниц подключает из /js/tools/)
+├── tools/                    # Внешние и встроенные CLI (grabcam, maigret, subfinder, …)
+└── scripts/push-github.sh    # Вспомогательный push на GitHub (см. §13)
+```
+
+**Важно:** панель Grabcam раздаётся также из `tools/grabcam/panel/` (маршрут в `app.py`).
+
+---
+
+## 5. Установка и запуск
+
+**Требования:** Python **3.10+** рекомендован (как минимум совместим с Flask 3 и зависимостями из `requirements.txt`). ОС: Linux (в т.ч. Kali), Windows, macOS.
+
+### Быстрый старт
+
+```bash
+cd "/путь/к/OSINT HTML V3.0"
+python3 run.py
+```
+
+Скрипт переходит в корень проекта и при необходимости ставит зависимости из `requirements.txt`. В браузере: **http://127.0.0.1:5000**
+
+### Ручной запуск (через venv)
+
+```bash
+cd "/путь/к/OSINT HTML V3.0"
+python3 -m venv venv
+source venv/bin/activate          # Windows: venv\Scripts\activate
+=======
 ## Репозиторий и Git
 
 - **Версионирование:** проект в Git — можно откатывать изменения и вести историю.
@@ -51,10 +160,43 @@ python run.py
 cd "путь/к/OSINT HTML"
 python3 -m venv venv
 source venv/bin/activate   # Windows: venv\Scripts\activate
+>>>>>>> 0c2e67f47626b22a56fe2d4519cb1daeba13e4d6
 pip install -r requirements.txt
 python backend/app.py
 ```
 
+<<<<<<< HEAD
+На системах с *externally-managed-environment* (например Kali) **обязательно** используйте виртуальное окружение (`venv`), а не установку пакетов в системный Python.
+
+**Доступ из LAN:** `run.py` слушает `0.0.0.0:5000`; на другом устройстве откройте `http://<IP-ПК>:5000` и при необходимости откройте порт в фаерволе.
+
+---
+
+## 6. Системные зависимости (не pip)
+
+Комментарии в начале `requirements.txt` дублируют смысл; кратко:
+
+| Компонент | Зачем |
+|-----------|--------|
+| **exiftool** | Разбор метаданных изображений (где подключено в пайплайне фото) |
+| **tesseract-ocr** (+ языки **eng**/**rus**) | OCR; при нестандартном пути: `TESSERACT_CMD` |
+| **php** | Часть сценариев Grabcam / вспомогательных файлов |
+| **go** | Сборка **Subfinder** и **dnsx** из исходников в `tools/` |
+
+Пример (Debian/Kali):
+
+```bash
+sudo apt install -y tesseract-ocr tesseract-ocr-eng tesseract-ocr-rus
+```
+
+---
+
+## 7. Go-инструменты (Subfinder, dnsx)
+
+Если в системе нет `go`, установите его ([официальный дистрибутив](https://go.dev/dl/) или `apt install golang-go`). Архив `go*.tar.gz` в корне **не обязан** быть в Git (см. `.gitignore`); локально можно распаковать в `/usr/local` и добавить `export PATH=$PATH:/usr/local/go/bin`.
+
+Сборка Subfinder (из корня репозитория панели):
+=======
 (На Kali/Linux с externally-managed Python лучше сначала создать venv: `python3 -m venv venv`, затем запускать `./run.sh`.)
 
 **Перенос на другой компьютер:** скопируй папку проекта на другой ноутбук — там нужно заново поднять окружение: Python 3, `python3 -m venv venv`, `pip install -r requirements.txt`. Папку `venv/` можно не копировать (она привязана к пути и ОС). Go-инструменты (Subfinder, dnsx): либо установи Go на новом ПК и собери бинарники (`go build ...` в `tools/subfinder` и `tools/dnsx`), либо скопируй уже собранные исполняемые файлы `subfinder` и `dnsx` в соответствующие папки `tools/subfinder/` и `tools/dnsx/` (на той же ОС и архитектуре). После этого `python run.py` будет работать так же.
@@ -169,12 +311,119 @@ export PATH=$PATH:/usr/local/go/bin
 ```
 
 Затем выполните `source ~/.zshrc` (или перезайдите в терминал) и соберите Subfinder (нужен интернет для загрузки зависимостей):
+>>>>>>> 0c2e67f47626b22a56fe2d4519cb1daeba13e4d6
 
 ```bash
 cd tools/subfinder
 go build -buildvcs=false -o subfinder ./cmd/subfinder
 ```
 
+<<<<<<< HEAD
+Аналогично для `tools/dnsx` (см. README внутри репозитория dnsx). Флаг `-buildvcs=false` снимает ошибки при отсутствии корректного git metadata в каталоге.
+
+**Перенос на другой ПК:** папку `venv/` копировать не нужно; скопируйте проект и заново выполните `pip install -r requirements.txt`. Go-бинарники собирайте на целевой ОС/архитектуре или копируйте готовые исполняемые файлы в `tools/subfinder/` и `tools/dnsx/`.
+
+---
+
+## 8. База данных и API истории
+
+- Таблица **`runs`**: история запусков (`tool_id`, параметры, результат, ошибка, время).
+- Пример: **`GET /api/history?tool_id=...&limit=50`**.
+
+Файлы БД не должны попадать в Git, если содержат чувствительные результаты (см. `.gitignore`: `*.db`, `data/`).
+
+---
+
+## 9. Как добавить новый инструмент
+
+### 9.1. Backend
+
+1. Создайте `backend/tools/tool_<id>.py` с классом от **`ToolBase`** (`backend/tools/base.py`): поля `tool_id`, `name`, метод `run(params)`.
+2. Зарегистрируйте в **`backend/tools/registry.py`**: импорт + элемент в списке **`TOOLS`**.
+
+### 9.2. Вкладка с бандлом CSS (как у существующих `/p/<id>/`)
+
+1. Каталог **`static/p/<id>/`**: `index.html` + `page.js` (подключение по аналогии с `static/p/google-osint/`).
+2. В `<head>`: **`/css/tool-bundle/<id>.css`**.
+3. В **`backend/css_bundle.py`** добавьте ключ **`<id>`** в словарь **`TOOL_CSS_TAILS`** и файлы в **`static/css/tools/packs/<id>/`** (при необходимости общие стили из **`packs/_shared/`**).
+4. Маршрут **`/p/<id>/`** уже обслуживается Flask (`app.py`); для редиректа без слэша используется `/p/<id>` → `/p/<id>/`.
+5. Карточку/ссылку на хабе добавьте в **`static/js/app-hub.js`** (и при необходимости дублируйте пункт в шапках страниц по образцу существующих HTML).
+
+### 9.3. Автономная страница (как Домен / Username / Фото)
+
+Отдельный каталог под **`static/<имя>/`** (`index.html`, `css/`, `js/`), **без** записи в `TOOL_CSS_TAILS`, если не используете общий бандл.
+
+### 9.4. Frontend-логика
+
+- Для вкладок: модуль **`static/js/tools/tool-<id>.js`** или логика в **`static/p/<id>/page.js`** — смотрите, как сделано у соседних инструментов.
+- Вызов API: функции вроде **`apiRun`** из общего кода (`app-core.js` / страница-обёртка).
+
+---
+
+## 10. Дополнительные инструменты (клонирование в `tools/`)
+
+Ниже — **опциональные** CLI; панель может быть расширена обёртками `tool_<id>.py`.
+
+| Инструмент | Назначение | Клонирование |
+|------------|------------|--------------|
+| **Subfinder** | Поддомены | `git clone https://github.com/projectdiscovery/subfinder.git tools/subfinder` |
+| **dnsx** | DNS-запросы | репозиторий в `tools/dnsx`, сборка `go build … ./cmd/dnsx` |
+| **Amass** | Поддомены, разведка | `git clone https://github.com/owasp-amass/amass.git tools/amass` |
+| **Assetfinder** | Поддомены | `git clone https://github.com/tomnomnom/assetfinder.git tools/assetfinder` |
+| **Findomain** | Поддомены | `git clone https://github.com/Findomain/Findomain.git tools/findomain` |
+| **httpx** | HTTP-пробы | `git clone https://github.com/projectdiscovery/httpx.git tools/httpx` |
+| **Nuclei** | Шаблонные проверки | `git clone https://github.com/projectdiscovery/nuclei.git tools/nuclei` |
+| **gau** | URL из архивов | `git clone https://github.com/lc/gau.git tools/gau` |
+| **waybackurls** | Wayback | `git clone https://github.com/tomnomnom/waybackurls.git tools/waybackurls` |
+
+theHarvester, Holehe, h8mail, Social Analyzer, Blackbird уже учтены в зависимостях или дереве проекта — см. `registry.py` и `requirements.txt`.
+
+---
+
+## 11. Презентации (опционально)
+
+В корне репозитория **может не быть** скриптов `create_presentation.py` / `create_presentation_plan.py`. Если вы их добавите, типичная схема: `pip install python-pptx`, иллюстрации в **`presentation_assets/`**, выходные `OSINT_Panel_презентация*.pptx` не коммитить (см. `.gitignore`). Краткое описание идеи — в **`README_PANEL.md`**.
+
+---
+
+## 12. Этика и правовая ответственность
+
+- Используйте панель **только в законных целях**: свои системы, явное согласие владельца данных, рамки учебного задания или контракта.
+- **Не** используйте функции для несанкционированного доступа, сбора персональных данных третьих лиц без правового основания, преследования и т.п.
+- Соблюдайте **ToS** внешних сервисов и ограничения по частоте запросов.
+- Репозиторий и авторы **не несут ответственности** за неправомерное использование кода.
+
+---
+
+## 13. Для разработчиков: Git и GitHub
+
+- **Секреты:** не коммить **`.env`**, ключи API, каталог **`tools/grabcam/Photo/`**, захваты форм и прочие чувствительные артефакты — см. **`.gitignore`**.
+- **Вложенные `.git` в `tools/*`:** если клонировали инструмент отдельно, удалите вложенный `.git`, если хотите единый репозиторий панели (кроме осознанных submodule).
+- **shodan-python:** при проблемах с правами см. комментарий в `.gitignore`.
+
+Первичная отправка на GitHub (пустой репозиторий без README на сайте):
+
+```bash
+cd "/путь/к/OSINT HTML V3.0"
+git branch -M main
+git remote add origin https://github.com/ВАШ_ЛОГИН/ИМЯ_РЕПО.git
+git push -u origin main
+```
+
+Для токена нужны права **записи в Contents** (fine-grained) или классическая область **`repo`**.
+
+**Скрипт:** `./scripts/push-github.sh ВАШ_ЛОГИН ИМЯ_РЕПО` — после создания пустого репозитория на GitHub.
+
+**Проверка после правок:** `python run.py` → http://127.0.0.1:5000 → пройти по основным разделам и одному тяжёлому инструменту (например Grabcam, если используете).
+
+---
+
+## 14. Лицензия и контакты
+
+Укажите лицензию проекта (файл `LICENSE` при наличии) и контакт для вопросов по коду.
+
+**© OSINT Panel** — учебный и исследовательский инструмент; развивайте и форкайте с соблюдением законодательства вашей юрисдикции.
+=======
 Флаг `-buildvcs=false` отключает проверку git при сборке и избегает ошибки «error obtaining VCS status».
 
 **Если при сборке или копировании появляется «permission denied»** (каталог `tools/subfinder` принадлежит другому пользователю), соберите бинарник во временный каталог и скопируйте с правами:
@@ -197,3 +446,4 @@ sudo apt install golang-go
 cd tools/subfinder
 go build -o subfinder ./cmd/subfinder
 ```
+>>>>>>> 0c2e67f47626b22a56fe2d4519cb1daeba13e4d6
