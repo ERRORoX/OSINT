@@ -20,7 +20,6 @@ export const GRABCAM_LAYOUT = {
 
   gridWidgets: [
     { id: "control", col: 1, row: 1 },
-    { id: "summary", col: 2, row: 1 },
     { id: "map", col: 1, row: 2 },
     { id: "link", col: 2, row: 2 },
     { id: "photos", col: 1, row: 3 },

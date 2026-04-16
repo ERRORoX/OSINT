@@ -78,8 +78,12 @@ def save_pdf_report(filename: str, context: dict):
     template, css = generate_report_template(is_pdf=True)
     filled_template = template.render(**context)
 
-    # moved here to speed up the launch of Maigret
-    from xhtml2pdf import pisa
+    try:
+        from xhtml2pdf import pisa
+    except ImportError as e:
+        raise ImportError(
+            "Экспорт PDF не установлен. Выполните: pip install xhtml2pdf (может потребоваться libcairo для сборки pycairo)."
+        ) from e
 
     with open(filename, "w+b") as f:
         pisa.pisaDocument(io.StringIO(filled_template), dest=f, default_css=css)

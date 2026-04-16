@@ -704,7 +704,7 @@
 }
 
 #panel-grabcam .gc-map {
-  min-height: 240px;
+  min-height: 280px;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;

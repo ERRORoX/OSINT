@@ -1,4 +1,5 @@
-/* Общие стили инструментов: формы, кнопки, карточки */
+/* Общие стили инструментов: формы, кнопки, карточки (все панели под #main-content). */
+
 .tool-panel > h2:first-child,
 .tool-panel .tool-cli-header h2 {
   margin: 0 0 var(--space-sm);
@@ -16,11 +17,11 @@
   margin-bottom: var(--space-lg);
 }
 
-.form-group {
+#main-content .tool-panel .form-group {
   margin-bottom: var(--space-md);
 }
 
-.form-group label {
+#main-content .tool-panel .form-group label {
   display: block;
   margin-bottom: var(--space-xs);
   font-size: 0.88rem;
@@ -28,9 +29,9 @@
   letter-spacing: 0.02em;
 }
 
-.form-group input,
-.form-group textarea,
-.form-group select {
+#main-content .tool-panel .form-group input,
+#main-content .tool-panel .form-group textarea,
+#main-content .tool-panel .form-group select {
   width: 100%;
   padding: var(--space-sm) var(--space-md);
   background: var(--bg-input);
@@ -42,43 +43,43 @@
   transition: border-color var(--transition), box-shadow var(--transition);
 }
 
-.form-group input:focus,
-.form-group textarea:focus,
-.form-group select:focus {
+#main-content .tool-panel .form-group input:focus,
+#main-content .tool-panel .form-group textarea:focus,
+#main-content .tool-panel .form-group select:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent-soft);
 }
 
-.form-group input.error,
-.form-group textarea.error {
+#main-content .tool-panel .form-group input.error,
+#main-content .tool-panel .form-group textarea.error {
   border-color: var(--error);
   box-shadow: 0 0 0 1px rgba(255, 68, 102, 0.2);
 }
 
-.form-group textarea {
+#main-content .tool-panel .form-group textarea {
   min-height: 100px;
   resize: vertical;
 }
 
-.form-group select {
+#main-content .tool-panel .form-group select {
   cursor: pointer;
 }
 
-.tool-form-actions {
+#main-content .tool-panel .tool-form-actions {
   display: flex;
   gap: var(--space-sm);
   flex-wrap: wrap;
   margin-top: var(--space-md);
 }
 
-.form-error {
+#main-content .tool-panel .form-error {
   font-size: 0.85rem;
   color: var(--error);
   margin-top: var(--space-xs);
 }
 
-.btn {
+#main-content .tool-panel .btn {
   padding: var(--space-sm) var(--space-lg);
   border: none;
   border-radius: var(--radius);
@@ -89,54 +90,54 @@
   font-family: var(--font-sans);
 }
 
-.btn:active {
+#main-content .tool-panel .btn:active {
   transform: scale(0.98);
 }
 
-.btn-primary {
+#main-content .tool-panel .btn-primary {
   background: var(--accent);
   color: #060608;
 }
 
-.btn-primary:hover:not(:disabled) {
+#main-content .tool-panel .btn-primary:hover:not(:disabled) {
   background: var(--accent-hover);
   box-shadow: var(--accent-glow);
 }
 
-.btn-secondary {
+#main-content .tool-panel .btn-secondary {
   background: var(--bg-panel);
   color: var(--text);
   border: 1px solid var(--border);
 }
 
-.btn-secondary:hover:not(:disabled) {
+#main-content .tool-panel .btn-secondary:hover:not(:disabled) {
   border-color: var(--accent);
   color: var(--accent);
   box-shadow: var(--glow);
 }
 
-.btn-danger {
+#main-content .tool-panel .btn-danger {
   background: var(--error);
   color: #fff;
 }
 
-.btn-danger:hover:not(:disabled) {
+#main-content .tool-panel .btn-danger:hover:not(:disabled) {
   filter: brightness(1.15);
   box-shadow: 0 0 16px rgba(255, 68, 102, 0.3);
 }
 
-.btn:disabled,
-.btn.is-loading {
+#main-content .tool-panel .btn:disabled,
+#main-content .tool-panel .btn.is-loading {
   opacity: 0.7;
   cursor: not-allowed;
   transform: none;
 }
 
-.btn.is-loading {
+#main-content .tool-panel .btn.is-loading {
   position: relative;
 }
 
-.result-box {
+#main-content .tool-panel .result-box {
   margin-top: var(--space-lg);
   padding: var(--space-md);
   background: var(--bg-input);
@@ -150,61 +151,60 @@
   box-shadow: var(--shadow-card);
 }
 
-.result-box.success {
+#main-content .tool-panel .result-box.success {
   border-color: var(--success);
   box-shadow: var(--shadow-card), 0 0 20px rgba(0, 255, 136, 0.08);
 }
 
-.result-box.error {
+#main-content .tool-panel .result-box.error {
   border-color: var(--error);
   color: var(--error);
   box-shadow: var(--shadow-card), 0 0 20px rgba(255, 68, 102, 0.08);
 }
 
-.result-box:empty {
+#main-content .tool-panel .result-box:empty {
   display: none;
 }
 
-.result-box--placeholder {
+#main-content .tool-panel .result-box--placeholder {
   color: var(--text-muted);
   font-style: italic;
 }
 
-.loading {
+#main-content .tool-panel form.loading {
   opacity: 0.7;
   pointer-events: none;
 }
 
-.tool-form {
+#main-content .tool-panel .tool-form {
   padding: var(--space-md) 0;
 }
 
-.run-status {
+#main-content .tool-panel .run-status {
   color: var(--text-muted);
   font-size: 0.9rem;
   min-height: 1.5em;
 }
 
-.run-status--busy {
+#main-content .tool-panel .run-status--busy {
   color: var(--accent);
 }
 
-.form-error {
+#main-content .tool-panel .form-error {
   margin-top: var(--space-sm);
 }
 
-.form-error:empty {
+#main-content .tool-panel .form-error:empty {
   display: none !important;
 }
 
-/* Стили .tool-cli-status и .tool-cli-output — в tools/tool-cli.css */
+/* Стили для /username/ см. в static/username/css/username.css (единый файл). */
 
-/* ——— Единые блоки интерфейса инструментов (по референсу) ——— */
-.tool-view-section {
+#main-content .tool-panel .tool-view-section {
   margin-bottom: var(--space-xl);
 }
 
-.tool-view-section__title {
+#main-content .tool-panel .tool-view-section__title {
   margin: 0 0 var(--space-md);
   font-size: 1rem;
   font-weight: 600;
@@ -216,7 +216,7 @@
   gap: var(--space-sm);
 }
 
-.tool-view-section__title::before {
+#main-content .tool-panel .tool-view-section__title::before {
   content: "";
   width: 6px;
   height: 6px;
@@ -226,7 +226,7 @@
 }
 
 /* Блок «живого» терминала */
-.tool-terminal {
+#main-content .tool-panel .tool-terminal {
   background: #050508;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -242,34 +242,34 @@
   color: var(--accent);
 }
 
-.tool-terminal:empty::before {
+#main-content .tool-panel .tool-terminal:empty::before {
   content: "Ожидание вывода…";
   color: var(--text-muted);
 }
 
-.tool-terminal.success {
+#main-content .tool-panel .tool-terminal.success {
   border-color: var(--success);
 }
 
-.tool-terminal.error {
+#main-content .tool-panel .tool-terminal.error {
   border-color: var(--error);
   color: var(--error);
 }
 
 /* Обзор результатов — карточки */
-.tool-results-overview {
+#main-content .tool-panel .tool-results-overview {
   display: grid;
   gap: var(--space-md);
 }
 
-.tool-results-card {
+#main-content .tool-panel .tool-results-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: var(--space-md);
 }
 
-.tool-results-card__title {
+#main-content .tool-panel .tool-results-card__title {
   margin: 0 0 var(--space-sm);
   font-size: 0.9rem;
   font-weight: 600;
@@ -277,13 +277,13 @@
   letter-spacing: 0.04em;
 }
 
-.tool-results-card__content {
+#main-content .tool-panel .tool-results-card__content {
   font-size: 0.88rem;
   color: var(--text);
   line-height: 1.5;
 }
 
-.tool-results-card__content pre {
+#main-content .tool-panel .tool-results-card__content pre {
   margin: 0;
   white-space: pre-wrap;
   word-break: break-word;

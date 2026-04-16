@@ -6,8 +6,8 @@
  *   - этот файл tool-grabcam.css (подключает base, shared, widgets)
  *   - JS: panel/js/tool-grabcam.js и модули в panel/js/modules/
  *
- * Полная панель подключает: /grabcam/panel/css/tool-grabcam.css
- * Автономный режим подключает: /panel/css/tool-grabcam.css
+ * OSINT Panel: стили подгружаются при первом открытии вкладки Grabcam (см. panel/js/tool-grabcam.js).
+ * Автономный режим: <link href="/grabcam/panel/css/tool-grabcam.css"> в standalone/index.html.
  * Физически это одни и те же файлы из tools/grabcam/panel/.
  *
  * Структура (все в panel/css/):
@@ -18,7 +18,6 @@
 @import url("base.css");
 @import url("shared.css");
 @import url("widgets/control.css");
-@import url("widgets/summary.css");
 @import url("widgets/link.css");
 @import url("widgets/map.css");
 @import url("widgets/photos.css");

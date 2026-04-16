@@ -4,7 +4,6 @@
 import { state } from "../state.js";
 import { API, LIMITS, POLL_IDS, POLL_INTERVALS } from "../config.js";
 import { escapeHtml, setListError } from "../utils.js";
-import { loadSessionStats } from "./session.js";
 
 export async function loadFormgrab(container) {
   const formgrabList = container.querySelector("#gc-formgrab-list");
@@ -14,7 +13,6 @@ export async function loadFormgrab(container) {
     const res = await fetch(API.formCaptures + "?limit=" + LIMITS.formCaptures);
     const data = await res.json();
     const captures = data.captures || [];
-    loadSessionStats();
     formgrabList.classList.remove("gc-forms-loading");
     const formKey = captures.length + "|" + captures.map((c) => (c.ts || "") + (c.field || "")).join(";");
     if (formKey !== state.lastFormgrabKey) {

@@ -1,6 +1,7 @@
 /** Карта */
 #panel-grabcam .gc-widget-map .gc-map {
   min-height: 220px;
+  width: 100%;
   background: var(--gc-surface-2);
   border-radius: var(--radius);
   border: 1px solid var(--gc-border);
@@ -12,9 +13,7 @@
   justify-content: center;
 }
 #panel-grabcam .gc-widget-map {
-  border: none;
-  background: transparent;
-  box-shadow: none;
+  /* Используем базовый стиль .gc-widget (как в макете) */
 }
 #panel-grabcam .gc-widget-map .gc-map-title {
   margin: 0 0 0.5rem;
@@ -22,16 +21,51 @@
   font-weight: 600;
   color: var(--gc-text);
 }
-#panel-grabcam .gc-widget-map .gc-map-canvas {
-  min-height: 220px;
-  background: var(--gc-surface-2);
-  border-radius: var(--gc-radius-sm);
-  border: none;
-}
+/* Плейсхолдер: «стекло» как в макете. Активная карта — ровный тёмный фон под тайлами Carto. */
 #panel-grabcam .gc-widget-map .gc-map-canvas.gc-map-empty {
+  min-height: 280px;
+  width: 100%;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.55)),
+    radial-gradient(600px 260px at 65% 10%, rgba(0, 162, 255, 0.12), transparent 55%),
+    rgba(6, 10, 16, 0.85);
+  border-radius: var(--gc-radius-sm);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+/* Пресет session — Liberty + тёмный фильтр на канвасе */
+#panel-grabcam .gc-widget-map #gc-map.gc-map-style--session.gc-map-canvas:not(.gc-map-empty) {
+  background: radial-gradient(100% 70% at 50% 0%, rgba(40, 90, 180, 0.08), transparent 50%), #050608;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 0 0 1px rgba(0, 0, 0, 0.72),
+    0 22px 56px rgba(0, 0, 0, 0.55);
+}
+/* Активная карта: общая рамка; фон темнее для пресетов midnight / void */
+#panel-grabcam .gc-widget-map .gc-map-canvas:not(.gc-map-empty) {
+  min-height: 280px;
+  width: 100%;
+  min-width: 0;
+  border-radius: var(--gc-radius-sm);
+  border: 1px solid rgba(0, 162, 255, 0.2);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.55),
+    0 10px 36px rgba(0, 0, 0, 0.45),
+    0 0 24px rgba(0, 162, 255, 0.08),
+    inset 0 0 40px rgba(0, 0, 0, 0.35);
+}
+#panel-grabcam .gc-widget-map #gc-map.gc-map-style--darkmatter.gc-map-canvas:not(.gc-map-empty) {
+  background: #050608;
+}
+#panel-grabcam .gc-widget-map #gc-map.gc-map-style--midnight.gc-map-canvas:not(.gc-map-empty) {
+  background: #030406;
+}
+#panel-grabcam .gc-widget-map #gc-map.gc-map-style--void.gc-map-canvas:not(.gc-map-empty) {
+  background: #010102;
 }
 #panel-grabcam .gc-widget-map .gc-map-placeholder {
   color: var(--gc-muted);
@@ -41,12 +75,119 @@
 #panel-grabcam .gc-widget-map .gc-map-ip-tooltip {
   margin-top: 0.5rem;
   padding: 0.4rem 0.6rem;
-  background: #fff;
-  border: 1px solid #333;
+  background: rgba(0, 0, 0, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--gc-radius-sm);
   font-size: 0.8rem;
-  color: #111;
+  color: rgba(248, 250, 255, 0.95);
   display: inline-block;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+#panel-grabcam .gc-widget-map:has(#gc-map.gc-map-style--session) .gc-map-ip-tooltip {
+  padding: 0.5rem 0.85rem;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  font-family: ui-monospace, "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
+  letter-spacing: 0.06em;
+  border-radius: 8px;
+  background: rgba(2, 3, 6, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.5),
+    0 10px 28px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(10px);
+}
+/* Красный маркер + пульс (MapLibre) */
+#panel-grabcam .gc-widget-map .maplibregl-marker .gc-map-marker-pin {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+#panel-grabcam .gc-widget-map .gc-map-marker-stack {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+@keyframes gc-map-marker-pulse {
+  0% {
+    transform: scale(0.55);
+    opacity: 0.65;
+  }
+  100% {
+    transform: scale(2.15);
+    opacity: 0;
+  }
+}
+#panel-grabcam .gc-widget-map .gc-map-marker-pulse {
+  position: absolute;
+  left: 50%;
+  bottom: 5px;
+  width: 24px;
+  height: 24px;
+  margin-left: -12px;
+  border-radius: 50%;
+  border: 2px solid rgba(232, 28, 47, 0.55);
+  animation: gc-map-marker-pulse 2.1s ease-out infinite;
+  box-shadow: 0 0 12px rgba(232, 28, 47, 0.25);
+  pointer-events: none;
+}
+#panel-grabcam .gc-widget-map .gc-map-marker-pin-inner {
+  position: relative;
+  z-index: 1;
+  width: 17px;
+  height: 17px;
+  margin-bottom: 3px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: linear-gradient(150deg, #ff5a66 0%, #c41022 55%, #8a0814 100%);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.45),
+    0 3px 14px rgba(232, 28, 47, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  border: 2px solid rgba(255, 255, 255, 0.28);
+}
+/* Попап MapLibre */
+#panel-grabcam .maplibregl-popup.gc-map-ml-popup .maplibregl-popup-content {
+  padding: 0.65rem 0.85rem !important;
+  background: rgba(8, 10, 16, 0.96) !important;
+  color: rgba(245, 248, 255, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 12px !important;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.5),
+    0 16px 44px rgba(0, 0, 0, 0.55) !important;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+#panel-grabcam .maplibregl-popup.gc-map-ml-popup .maplibregl-popup-tip {
+  border-top-color: rgba(8, 10, 16, 0.96) !important;
+}
+#panel-grabcam .maplibregl-popup.gc-map-ml-popup .maplibregl-popup-close-button {
+  color: rgba(255, 255, 255, 0.45) !important;
+  font-size: 1.15rem !important;
+  padding: 4px 6px !important;
+  right: 4px !important;
+  top: 4px !important;
+}
+#panel-grabcam .maplibregl-popup.gc-map-ml-popup .maplibregl-popup-close-button:hover {
+  color: rgba(255, 255, 255, 0.9) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-radius: 6px;
+}
+#panel-grabcam .gc-map-ml-popup-inner {
+  padding-right: 1.25rem;
+}
+/* Session (светлее карта): приглушённые контролы */
+#panel-grabcam .gc-widget-map #gc-map.gc-map-style--session .maplibregl-ctrl-attrib {
+  background: rgba(4, 6, 12, 0.82) !important;
+  color: rgba(170, 182, 206, 0.82) !important;
+}
+#panel-grabcam .gc-widget-map #gc-map.gc-map-style--session .maplibregl-ctrl-attrib a {
+  color: rgba(210, 220, 245, 0.9) !important;
 }
 #panel-grabcam .gc-widget-map .gc-map-actions { margin-top: 0.5rem; }
 #panel-grabcam .gc-widget-map .gc-map-btn-clear {

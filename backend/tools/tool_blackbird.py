@@ -36,6 +36,16 @@ def _run_blackbird(username: str, timeout_sec: int = 300) -> tuple[str, str, int
     ]
 
     try:
+        # Blackbird (вендор) использует смешанные импорты:
+        # - sys.path.append(<tool_dir>/src) в самом blackbird.py (модули.*)
+        # - некоторые файлы импортируют utils.* (лежит в src/modules/utils)
+        # Поэтому добавляем обе директории в PYTHONPATH.
+        py_path_parts = [
+            tool_dir,
+            os.path.join(tool_dir, "src"),
+            os.path.join(tool_dir, "src", "modules"),
+        ]
+        py_path = os.pathsep.join([p for p in py_path_parts if p])
         proc = subprocess.run(
             cmd,
             cwd=tool_dir,
@@ -44,7 +54,7 @@ def _run_blackbird(username: str, timeout_sec: int = 300) -> tuple[str, str, int
             encoding="utf-8",
             errors="replace",
             timeout=timeout_sec,
-            env={**os.environ, "PYTHONPATH": tool_dir},
+            env={**os.environ, "PYTHONPATH": py_path},
         )
         out = _strip_ansi(proc.stdout or "").strip()
         err = _strip_ansi(proc.stderr or "").strip()

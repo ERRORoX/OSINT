@@ -5,7 +5,7 @@
 #panel-grabcam .gc-widget-photos .gc-photos-refresh:hover { color: var(--gc-text); background: var(--gc-border); }
 #panel-grabcam .gc-widget-photos .gc-photos-stats { font-size: 0.7rem; color: var(--gc-muted); margin-bottom: 0.4rem; font-variant-numeric: tabular-nums; }
 #panel-grabcam .gc-widget-photos .gc-photos-stats:empty { display: none; }
-#panel-grabcam .gc-widget-photos .gc-photos-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--gc-space-xs); align-content: start; flex: 1; min-height: 0; max-height: 280px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--gc-border) transparent; }
+#panel-grabcam .gc-widget-photos .gc-photos-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--gc-space-xs); align-content: start; flex: 1; min-height: 0; max-height: 320px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--gc-border) transparent; }
 #panel-grabcam .gc-widget-photos .gc-photos-grid::-webkit-scrollbar { width: 4px; }
 #panel-grabcam .gc-widget-photos .gc-photos-grid::-webkit-scrollbar-track { background: transparent; }
 #panel-grabcam .gc-widget-photos .gc-photos-grid::-webkit-scrollbar-thumb { background: var(--gc-border); border-radius: 2px; }
@@ -14,6 +14,6 @@
 #panel-grabcam .gc-widget-photos .gc-photos-item { display: flex; flex-direction: column; gap: 0.2rem; }
 #panel-grabcam .gc-widget-photos .gc-photos-thumb { display: block; border-radius: 4px; overflow: hidden; border: 1px solid var(--gc-border); background: var(--gc-surface-2); aspect-ratio: 1; transition: border-color 0.15s; }
 #panel-grabcam .gc-widget-photos .gc-photos-thumb:hover { border-color: var(--gc-accent); }
-#panel-grabcam .gc-widget-photos .gc-photos-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; filter: grayscale(100%); }
+#panel-grabcam .gc-widget-photos .gc-photos-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; filter: grayscale(100%) contrast(1.05); }
 #panel-grabcam .gc-widget-photos .gc-photos-ts { font-size: 0.65rem; color: var(--gc-muted); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
 @media (max-width: 640px) { #panel-grabcam .gc-widget-photos .gc-photos-grid:not(.gc-photos-loading):not(.gc-photos-empty):not(.gc-photos-error) { grid-template-columns: repeat(3, 1fr); } }

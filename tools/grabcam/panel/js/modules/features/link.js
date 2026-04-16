@@ -27,7 +27,7 @@ export function initLink(container, showCopyFeedback) {
       a.download = "grabcam_export.zip";
       a.click();
       URL.revokeObjectURL(a.href);
-      if (statusEl) statusEl.textContent = "Отчёт скачан.";
+      if (statusEl) statusEl.textContent = "Экспорт скачан.";
     } catch (e) {
       if (statusEl) statusEl.textContent = "Ошибка: " + (e.message || "не удалось скачать");
     }

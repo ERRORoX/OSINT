@@ -4,9 +4,13 @@
 import io
 import json
 import os
+import platform
 import sys
 import zipfile
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
+import ipaddress
+import socket
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Запуск из корня проекта: python backend/app.py
 _BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -15,15 +19,20 @@ _GRABCAM_PANEL_DIR = os.path.join(_PROJECT_ROOT, "tools", "grabcam", "panel")
 if _BACKEND_DIR not in sys.path:
     sys.path.insert(0, _BACKEND_DIR)
 
-from flask import Flask, request, jsonify, send_from_directory, send_file, Response
+from flask import Flask, request, jsonify, send_from_directory, send_file, Response, redirect
 from flask_cors import CORS
 
 from datetime import datetime, timezone, timedelta
 
-from db import init_db, save_run, get_run_history, get_last_successful_run
+from db import init_db, save_run, get_run_history, get_last_successful_run, delete_run, clear_runs
 from tools import get_all_tools, get_tool, run_tool
 from tools.tool_formgrab import add_capture, get_captures, get_grab_page_html, get_or_create_token
 from settings_keys import get_keys_for_api, save_keys_from_api, load_env_into_os
+
+from css_bundle import BUNDLE_TOOL_IDS, build_tool_css_bundle
+
+import requests
+from bs4 import BeautifulSoup
 
 app = Flask(__name__, static_folder="../static", static_url_path="")
 CORS(app)
@@ -33,9 +42,763 @@ init_db()
 load_env_into_os()
 
 
+def _nominatim_reverse_geocode(lat: float, lon: float):
+    """Текстовый адрес по координатам (Nominatim). При ошибке сети/ответа — None."""
+    try:
+        resp = requests.get(
+            "https://nominatim.openstreetmap.org/reverse",
+            params={"format": "json", "lat": lat, "lon": lon, "zoom": 18, "addressdetails": 1},
+            headers={"User-Agent": "OSINT-Panel-EXIF/1.0"},
+            timeout=8,
+        )
+        if resp.status_code != 200:
+            return None
+        nd = resp.json() or {}
+        display_name = (nd.get("display_name") or "").strip()
+        address = nd.get("address") if isinstance(nd.get("address"), dict) else {}
+        if not display_name and not address:
+            return None
+        return {"display_name": display_name, "address": address}
+    except Exception:
+        return None
+
+
 @app.route("/")
 def index():
     return send_from_directory(app.static_folder, "index.html")
+
+
+@app.route("/p/<tool_id>")
+def tool_page_no_slash(tool_id: str):
+    """Редирект на URL со слэшем (как у каталога страницы)."""
+    return redirect(f"/p/{tool_id}/", code=302)
+
+
+@app.route("/p/<tool_id>/")
+def tool_page(tool_id: str):
+    """Отдельная страница инструмента: static/p/<tool_id>/index.html."""
+    # legacy: domain-tools теперь автономная страница /domain/
+    if tool_id == "domain-tools":
+        return redirect("/domain/", code=302)
+    base = os.path.join(app.static_folder, "p", tool_id)
+    index_path = os.path.join(base, "index.html")
+    if not os.path.isfile(index_path):
+        return jsonify({"error": "Страница не найдена", "tool_id": tool_id}), 404
+    return send_from_directory(base, "index.html")
+
+
+@app.route("/username")
+def username_page_no_slash():
+    """Канонический URL страницы Username со слэшем."""
+    return redirect("/username/", code=302)
+
+
+@app.route("/username/")
+def username_page():
+    """Автономная страница Username: static/username/index.html."""
+    base = os.path.join(app.static_folder, "username")
+    index_path = os.path.join(base, "index.html")
+    if not os.path.isfile(index_path):
+        return jsonify({"error": "Страница не найдена", "page": "username"}), 404
+    return send_from_directory(base, "index.html")
+
+
+@app.route("/photo")
+def photo_page_no_slash():
+    """Канонический URL страницы Фото со слэшем."""
+    return redirect("/photo/", code=302)
+
+
+@app.route("/photo/")
+def photo_page():
+    """Автономная страница Фото: static/photo/index.html."""
+    base = os.path.join(app.static_folder, "photo")
+    index_path = os.path.join(base, "index.html")
+    if not os.path.isfile(index_path):
+        return jsonify({"error": "Страница не найдена", "page": "photo"}), 404
+    return send_from_directory(base, "index.html")
+
+
+@app.route("/domain")
+def domain_page_no_slash():
+    """Канонический URL страницы Domain tools со слэшем."""
+    return redirect("/domain/", code=302)
+
+
+@app.route("/domain/")
+def domain_page():
+    """Автономная страница Domain tools: static/domain/index.html."""
+    base = os.path.join(app.static_folder, "domain")
+    index_path = os.path.join(base, "index.html")
+    if not os.path.isfile(index_path):
+        return jsonify({"error": "Страница не найдена", "page": "domain"}), 404
+    return send_from_directory(base, "index.html")
+
+
+@app.route("/api/exif", methods=["POST"])
+def api_photo_exif():
+    """
+    EXIF/GPS для страницы Фото.
+    Внутри использует инструмент tools/tool_photo_search.py (tool_id = photo-search).
+    Body: { imageBase64, exiftool?: bool, geocode?: bool }
+    geocode: опционально. По умолчанию (поле не передано или не false) — автоматически
+    запрашивать адрес по Nominatim, если в метаданных есть GPS (внешний вызов только при координатах).
+    Явный geocode: false — без обращения к Nominatim.
+    """
+    data = request.get_json(silent=True) or {}
+    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
+    # Максимально используем exif_inspector (ExifTool): включён по умолчанию.
+    exiftool_enabled = data.get("exiftool")
+    exiftool_enabled = True if exiftool_enabled is None else bool(exiftool_enabled)
+    # Автогеокод по умолчанию; отключение только явным false (без кнопки на клиенте).
+    geocode_enabled = data.get("geocode") is not False
+
+    raw_fn = data.get("filename") or data.get("name") or ""
+    safe_filename = None
+    if isinstance(raw_fn, str):
+        base = raw_fn.strip().replace("\\", "/").split("/")[-1]
+        if base and ".." not in base and "\x00" not in base:
+            safe_filename = base[:240]
+
+    # Приводим к формату инструмента
+    res = run_tool(
+        "photo-search",
+        {
+            "image_base64": image_b64,
+            "geocode": geocode_enabled,
+            "exiftool": exiftool_enabled,
+            "filename": safe_filename,
+        },
+    )
+    if not res.get("success"):
+        return jsonify({"success": False, "error": res.get("error") or "EXIF ошибка"}), 400
+
+    gps = res.get("gps") if isinstance(res.get("gps"), dict) else None
+    gps_out = None
+    if gps and "latitude" in gps and "longitude" in gps:
+        lat = float(gps["latitude"])
+        lon = float(gps["longitude"])
+        gps_out = {
+            "latitude": lat,
+            "longitude": lon,
+            "openStreetMapUrl": f"https://www.openstreetmap.org/?mlat={lat}&mlon={lon}#map=14/{lat}/{lon}",
+            "googleMapsUrl": f"https://www.google.com/maps?q={lat},{lon}",
+            "yandexMapsUrl": f"https://yandex.ru/maps/?pt={lon},{lat}&z=14&l=map",
+            "note": gps.get("note") or "",
+        }
+
+    # Fallback: если Pillow-EXIF не дал GPS, пробуем взять координаты из ExifTool (tools/exif_inspector)
+    exiftool_blob = res.get("exiftool") if isinstance(res.get("exiftool"), dict) else None
+    if not gps_out and exiftool_blob and not exiftool_blob.get("skipped") and not exiftool_blob.get("error"):
+        rec = exiftool_blob.get("record") if isinstance(exiftool_blob.get("record"), dict) else {}
+        try:
+            lat2 = rec.get("Composite:GPSLatitude", {}).get("val") if isinstance(rec.get("Composite:GPSLatitude"), dict) else None
+            lon2 = rec.get("Composite:GPSLongitude", {}).get("val") if isinstance(rec.get("Composite:GPSLongitude"), dict) else None
+            if lat2 is not None and lon2 is not None:
+                lat2 = float(lat2)
+                lon2 = float(lon2)
+                gps_out = {
+                    "latitude": lat2,
+                    "longitude": lon2,
+                    "openStreetMapUrl": f"https://www.openstreetmap.org/?mlat={lat2}&mlon={lon2}#map=14/{lat2}/{lon2}",
+                    "googleMapsUrl": f"https://www.google.com/maps?q={lat2},{lon2}",
+                    "yandexMapsUrl": f"https://yandex.ru/maps/?pt={lon2},{lat2}&z=14&l=map",
+                    "note": "GPS извлечён из ExifTool (расширенный анализ).",
+                }
+        except Exception:
+            pass
+
+    # Если есть geocode от ExifTool — добавим адресные поля в gps_out
+    if gps_out and exiftool_blob and isinstance(exiftool_blob.get("geocode"), dict):
+        geo = exiftool_blob.get("geocode") or {}
+        if isinstance(geo, dict):
+            display_name = (geo.get("display_name") or "").strip()
+            addr = geo.get("address") if isinstance(geo.get("address"), dict) else None
+            if display_name:
+                gps_out["display_name"] = display_name
+            if addr:
+                gps_out["address"] = addr
+
+    # Координаты из Pillow, а ExifTool отключён / геокод в модуле не сработал — добираем адрес здесь
+    if (
+        gps_out
+        and geocode_enabled
+        and not (gps_out.get("display_name") or "").strip()
+        and "latitude" in gps_out
+        and "longitude" in gps_out
+    ):
+        fb = _nominatim_reverse_geocode(float(gps_out["latitude"]), float(gps_out["longitude"]))
+        if fb:
+            if fb.get("display_name"):
+                gps_out["display_name"] = fb["display_name"]
+            if fb.get("address") and not gps_out.get("address"):
+                gps_out["address"] = fb["address"]
+
+    exif_summary = res.get("exif_summary") if isinstance(res.get("exif_summary"), dict) else {}
+    camera_keys = ("Make", "Model", "LensModel", "BodySerialNumber")
+    dates_keys = ("DateTime", "DateTimeOriginal", "DateTimeDigitized")
+    soft_keys = ("Software", "Artist", "Copyright")
+    camera = {k: exif_summary.get(k) for k in camera_keys if exif_summary.get(k) not in (None, "")}
+    dates = {k: exif_summary.get(k) for k in dates_keys if exif_summary.get(k) not in (None, "")}
+    software = {k: exif_summary.get(k) for k in soft_keys if exif_summary.get(k) not in (None, "")}
+
+    shoot_keys = (
+        "ISOSpeedRatings",
+        "PhotographicSensitivity",
+        "ExposureTime",
+        "FNumber",
+        "FocalLength",
+        "FocalLengthIn35mmFilm",
+        "Flash",
+        "WhiteBalance",
+        "MeteringMode",
+        "ExposureProgram",
+        "Orientation",
+    )
+    def _shoot_json(v):
+        try:
+            if hasattr(v, "numerator") and hasattr(v, "denominator"):
+                n, d = int(v.numerator), int(v.denominator)
+                return [n, d] if d else n
+        except Exception:
+            pass
+        if isinstance(v, (bytes, bytearray)):
+            return v.decode("utf-8", errors="replace")
+        return v
+
+    shooting = {}
+    for k in shoot_keys:
+        v = exif_summary.get(k)
+        if v in (None, ""):
+            continue
+        if isinstance(v, (list, tuple)) and len(v) == 0:
+            continue
+        shooting[k] = _shoot_json(v)
+
+    # Риски приватности (для UI)
+    privacy = []
+    if gps_out:
+        privacy.append("GPS координаты присутствуют (может раскрыть место съёмки).")
+    if exif_summary.get("BodySerialNumber"):
+        privacy.append("Серийный номер корпуса/камеры присутствует.")
+    if exif_summary.get("ImageUniqueID"):
+        privacy.append("ImageUniqueID присутствует (может быть уникальным идентификатором).")
+    if exif_summary.get("Artist"):
+        privacy.append("Поле Artist присутствует (автор/владелец).")
+    if exif_summary.get("Copyright"):
+        privacy.append("Поле Copyright присутствует (правообладатель).")
+    if exif_summary.get("Software"):
+        privacy.append("Поле Software присутствует (ПО/устройство).")
+
+    # В UI не нужны мегабайты detective_report / formatted / record — только факт ошибки ExifTool
+    et_full = res.get("exiftool")
+    exiftool_lite = None
+    if isinstance(et_full, dict):
+        exiftool_lite = {}
+        if et_full.get("error"):
+            exiftool_lite["error"] = et_full["error"]
+        if et_full.get("skipped"):
+            exiftool_lite["skipped"] = True
+
+    exiftool_tag_count = None
+    if isinstance(et_full, dict) and isinstance(et_full.get("record"), dict):
+        exiftool_tag_count = len(et_full["record"])
+
+    return jsonify(
+        {
+            "success": True,
+            "gps": gps_out,
+            "camera": camera,
+            "dates": dates,
+            "software": software,
+            "shooting": shooting,
+            "privacy": privacy,
+            "hashes": res.get("hashes"),
+            "perceptual": res.get("perceptual"),
+            "meta": res.get("meta"),
+            "file_stats": res.get("file_stats"),
+            "exiftool_tag_count": exiftool_tag_count,
+            "exiftool": exiftool_lite if exiftool_lite else None,
+        }
+    )
+
+
+@app.route("/api/exif/strip", methods=["POST"])
+def api_photo_exif_strip():
+    """Скачать изображение без EXIF/XMP/ICC. Body: { imageBase64 }."""
+    data = request.get_json(silent=True) or {}
+    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
+    if not image_b64:
+        return jsonify({"success": False, "error": "imageBase64 обязателен"}), 400
+    try:
+        import base64
+        import io
+        from PIL import Image
+
+        # data URL -> raw base64
+        s = str(image_b64).strip()
+        if s.startswith("data:"):
+            comma = s.find(",")
+            if comma != -1:
+                s = s[comma + 1 :]
+        raw = base64.b64decode(s, validate=False)
+        with Image.open(io.BytesIO(raw)) as img:
+            img.load()
+            fmt = (img.format or "PNG").upper()
+            # сохраняем “чисто”, без info/exif
+            out = io.BytesIO()
+            save_fmt = "JPEG" if fmt in {"JPG", "JPEG"} else ("PNG" if fmt == "PNG" else "PNG")
+            if save_fmt == "JPEG":
+                rgb = img.convert("RGB")
+                rgb.save(out, format="JPEG", quality=92, optimize=True)
+                mime = "image/jpeg"
+                fname = "clean.jpg"
+            else:
+                img.save(out, format="PNG", optimize=True)
+                mime = "image/png"
+                fname = "clean.png"
+        out.seek(0)
+        return send_file(out, mimetype=mime, as_attachment=True, download_name=fname)
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/exif/exiftool/json", methods=["POST"])
+def api_photo_exif_exiftool_json():
+    """
+    Полный дамп ExifTool (record) для страницы Фото.
+    Body: { imageBase64, exiftool?: bool, geocode?: bool, filename?: str }
+    """
+    data = request.get_json(silent=True) or {}
+    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
+    if not image_b64:
+        return jsonify({"success": False, "error": "imageBase64 обязателен"}), 400
+
+    exiftool_enabled = data.get("exiftool")
+    exiftool_enabled = True if exiftool_enabled is None else bool(exiftool_enabled)
+    geocode_enabled = data.get("geocode") is not False
+
+    raw_fn = data.get("filename") or data.get("name") or ""
+    safe_filename = None
+    if isinstance(raw_fn, str):
+        base = raw_fn.strip().replace("\\", "/").split("/")[-1]
+        if base and ".." not in base and "\x00" not in base:
+            safe_filename = base[:240]
+
+    res = run_tool(
+        "photo-search",
+        {
+            "image_base64": image_b64,
+            "geocode": geocode_enabled,
+            "exiftool": exiftool_enabled,
+            "filename": safe_filename,
+        },
+    )
+    if not res.get("success"):
+        return jsonify({"success": False, "error": res.get("error") or "EXIF ошибка"}), 400
+
+    et_full = res.get("exiftool")
+    if not isinstance(et_full, dict) or et_full.get("skipped") or et_full.get("error"):
+        return jsonify({"success": False, "error": (et_full or {}).get("error") or "ExifTool недоступен"}), 400
+
+    record = et_full.get("record") if isinstance(et_full.get("record"), dict) else None
+    if record is None:
+        return jsonify({"success": False, "error": "ExifTool record отсутствует"}), 400
+
+    return jsonify(
+        {
+            "success": True,
+            "tag_count": et_full.get("tag_count") or len(record),
+            "record_truncated": bool(et_full.get("record_truncated")),
+            "record": record,
+        }
+    )
+
+
+@app.route("/api/exif/exiftool/txt", methods=["POST"])
+def api_photo_exif_exiftool_txt():
+    """
+    Скачать форматированный текст ExifTool для страницы Фото.
+    Body: { imageBase64, exiftool?: bool, geocode?: bool, filename?: str }
+    """
+    data = request.get_json(silent=True) or {}
+    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
+    if not image_b64:
+        return jsonify({"success": False, "error": "imageBase64 обязателен"}), 400
+
+    exiftool_enabled = data.get("exiftool")
+    exiftool_enabled = True if exiftool_enabled is None else bool(exiftool_enabled)
+    geocode_enabled = data.get("geocode") is not False
+
+    raw_fn = data.get("filename") or data.get("name") or ""
+    safe_filename = None
+    if isinstance(raw_fn, str):
+        base = raw_fn.strip().replace("\\", "/").split("/")[-1]
+        if base and ".." not in base and "\x00" not in base:
+            safe_filename = base[:240]
+
+    res = run_tool(
+        "photo-search",
+        {
+            "image_base64": image_b64,
+            "geocode": geocode_enabled,
+            "exiftool": exiftool_enabled,
+            "filename": safe_filename,
+        },
+    )
+    if not res.get("success"):
+        return jsonify({"success": False, "error": res.get("error") or "EXIF ошибка"}), 400
+
+    et_full = res.get("exiftool")
+    if not isinstance(et_full, dict) or et_full.get("skipped") or et_full.get("error"):
+        return jsonify({"success": False, "error": (et_full or {}).get("error") or "ExifTool недоступен"}), 400
+
+    txt = (et_full.get("formatted_text") or "").strip()
+    if not txt:
+        # fallback: минимальный вывод из record
+        rec = et_full.get("record") if isinstance(et_full.get("record"), dict) else {}
+        lines = []
+        for k, v in rec.items():
+            try:
+                if isinstance(v, dict) and "val" in v:
+                    vv = v.get("val")
+                elif isinstance(v, dict) and "value" in v:
+                    vv = v.get("value")
+                else:
+                    vv = v
+            except Exception:
+                vv = v
+            lines.append(f"{k}: {vv}")
+        txt = "\n".join(lines) or "Метаданные не найдены."
+
+    fname = "exiftool.txt"
+    if safe_filename:
+        stem = safe_filename.rsplit(".", 1)[0]
+        if stem:
+            fname = f"{stem}.exiftool.txt"
+
+    from flask import Response  # noqa: PLC0415
+
+    resp = Response(txt, mimetype="text/plain; charset=utf-8")
+    resp.headers["Content-Disposition"] = f'attachment; filename="{fname}"'
+    return resp
+
+
+@app.route("/api/reverse-search", methods=["POST"])
+def api_photo_reverse_search():
+    """Генерирует ссылки на reverse image search. Body: { imageUrl }."""
+    data = request.get_json(silent=True) or {}
+    image_url = (data.get("imageUrl") or "").strip()
+    if not image_url:
+        return jsonify({"success": False, "error": "imageUrl обязателен"}), 400
+    q = quote(image_url, safe="")
+    links = {
+        "googleImages": f"https://lens.google.com/uploadbyurl?url={q}",
+        "yandexImages": f"https://yandex.ru/images/search?rpt=imageview&url={q}",
+        "bingVisual": f"https://www.bing.com/images/search?q=imgurl:{q}&view=detailv2&iss=sbi",
+        "tineye": f"https://tineye.com/search?url={q}",
+        "baidu": f"https://image.baidu.com/n/pc_search?queryImageUrl={q}",
+    }
+    return jsonify({"success": True, "links": links})
+
+
+@app.route("/api/search", methods=["POST"])
+def api_photo_web_search():
+    """Заглушка под websearch на странице Фото. Body: { queries: string[] }."""
+    # В проекте нет серверного веб-поиска под этот формат; возвращаем корректный JSON.
+    data = request.get_json(silent=True) or {}
+    queries = data.get("queries") or []
+    if not isinstance(queries, list):
+        return jsonify({"success": False, "error": "queries must be list"}), 400
+    return jsonify({"success": True, "results": [{"query": str(q), "results": []} for q in queries[:10]]})
+
+
+@app.route("/api/export-report", methods=["POST"])
+def api_photo_export_report():
+    """Экспорт отчёта для страницы Фото (минимальный Markdown)."""
+    data = request.get_json(silent=True) or {}
+    results = data.get("results") or {}
+    search_results = data.get("searchResults") or []
+    image_url = (data.get("imageUrl") or "").strip()
+
+    # Минимальный отчёт, без сложной логики.
+    lines = ["# OSINT Фото — отчёт", ""]
+    if image_url:
+        lines += [f"**Image URL**: {image_url}", ""]
+    if isinstance(results, dict) and results:
+        lines += ["## Результаты", ""]
+        for k in sorted(results.keys()):
+            v = results.get(k)
+            try:
+                preview = json.dumps(v, ensure_ascii=False, indent=2)[:4000]
+            except Exception:
+                preview = str(v)[:4000]
+            lines += [f"### {k}", "", "```json", preview, "```", ""]
+    if isinstance(search_results, list) and search_results:
+        lines += ["## Web search", "", "```json", json.dumps(search_results, ensure_ascii=False, indent=2)[:4000], "```", ""]
+    return jsonify({"success": True, "report": "\n".join(lines)})
+
+
+# AI/VLM endpoints в текущем проекте не реализованы — отдаём JSON, чтобы фронт не падал на HTML.
+@app.route("/api/analyze", methods=["POST"])
+def api_photo_analyze():
+    data = request.get_json(silent=True) or {}
+    image_url = (data.get("imageUrl") or data.get("image_url") or "").strip()
+    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
+    img = image_url or (str(image_b64).strip() or "")
+    if not img:
+        return jsonify({"success": False, "error": "Нужно передать imageUrl или imageBase64."}), 400
+    res = run_tool("photo-ai", {"task": "analysis", "image_url": img})
+    if not res.get("success"):
+        return jsonify({"success": False, "error": res.get("error") or "AI ошибка"}), 400
+    return jsonify({"success": True, "analysis": res.get("analysis") or "", "provider": res.get("provider")})
+
+
+@app.route("/api/deep-analysis", methods=["POST"])
+def api_photo_deep():
+    data = request.get_json(silent=True) or {}
+    image_url = (data.get("imageUrl") or data.get("image_url") or "").strip()
+    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
+    img = image_url or (str(image_b64).strip() or "")
+    if not img:
+        return jsonify({"success": False, "error": "Нужно передать imageUrl или imageBase64."}), 400
+    res = run_tool("photo-ai", {"task": "deep", "image_url": img})
+    if not res.get("success"):
+        return jsonify({"success": False, "error": res.get("error") or "AI ошибка"}), 400
+    return jsonify(res)
+
+
+@app.route("/api/face", methods=["POST"])
+def api_photo_face():
+    data = request.get_json(silent=True) or {}
+    image_url = (data.get("imageUrl") or data.get("image_url") or "").strip()
+    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
+    img = image_url or (str(image_b64).strip() or "")
+    if not img:
+        return jsonify({"success": False, "error": "Нужно передать imageUrl или imageBase64."}), 400
+    res = run_tool("photo-ai", {"task": "face", "image_url": img})
+    if not res.get("success"):
+        return jsonify({"success": False, "error": res.get("error") or "AI ошибка"}), 400
+    return jsonify(res)
+
+
+@app.route("/api/threat", methods=["POST"])
+def api_photo_threat():
+    data = request.get_json(silent=True) or {}
+    image_url = (data.get("imageUrl") or data.get("image_url") or "").strip()
+    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
+    img = image_url or (str(image_b64).strip() or "")
+    if not img:
+        return jsonify({"success": False, "error": "Нужно передать imageUrl или imageBase64."}), 400
+    res = run_tool("photo-ai", {"task": "threat", "image_url": img})
+    if not res.get("success"):
+        return jsonify({"success": False, "error": res.get("error") or "AI ошибка"}), 400
+    return jsonify(res)
+
+
+@app.route("/api/object-inventory", methods=["POST"])
+def api_photo_inventory():
+    data = request.get_json(silent=True) or {}
+    image_url = (data.get("imageUrl") or data.get("image_url") or "").strip()
+    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
+    img = image_url or (str(image_b64).strip() or "")
+    if not img:
+        return jsonify({"success": False, "error": "Нужно передать imageUrl или imageBase64."}), 400
+    res = run_tool("photo-ai", {"task": "inventory", "image_url": img})
+    if not res.get("success"):
+        return jsonify({"success": False, "error": res.get("error") or "AI ошибка"}), 400
+    return jsonify(res)
+
+
+@app.route("/api/geolocate", methods=["POST"])
+def api_photo_geolocate():
+    data = request.get_json(silent=True) or {}
+    image_url = (data.get("imageUrl") or data.get("image_url") or "").strip()
+    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
+    img = image_url or (str(image_b64).strip() or "")
+    if not img:
+        return jsonify({"success": False, "error": "Нужно передать imageUrl или imageBase64."}), 400
+    res = run_tool("photo-ai", {"task": "geolocate", "image_url": img})
+    if not res.get("success"):
+        return jsonify({"success": False, "error": res.get("error") or "AI ошибка"}), 400
+    return jsonify(res)
+
+
+@app.route("/api/ocr", methods=["POST"])
+def api_photo_ocr():
+    # Офлайн OCR (Tesseract). Требует загруженный файл (base64).
+    data = request.get_json(silent=True) or {}
+    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
+    if not image_b64:
+        return jsonify({"success": False, "error": "OCR офлайн: передайте imageBase64 (файл), URL пока не поддерживается."}), 400
+    lang = (data.get("lang") or "eng+rus").strip()
+    res = run_tool("photo-ocr", {"image_base64": image_b64, "lang": lang})
+    if not res.get("success"):
+        return jsonify({"success": False, "error": res.get("error") or "OCR ошибка"}), 400
+    return jsonify(res)
+
+
+@app.route("/api/qr-barcode", methods=["POST"])
+def api_photo_qr():
+    # Офлайн QR/штрихкоды (pyzbar/zbar). Требует загруженный файл (base64).
+    data = request.get_json(silent=True) or {}
+    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
+    if not image_b64:
+        return jsonify({"success": False, "error": "QR офлайн: передайте imageBase64 (файл), URL пока не поддерживается."}), 400
+    res = run_tool("photo-qr", {"image_base64": image_b64})
+    if not res.get("success"):
+        return jsonify({"success": False, "error": res.get("error") or "QR ошибка"}), 400
+    return jsonify(res)
+
+
+@app.route("/api/brand-logo", methods=["POST"])
+def api_photo_brand():
+    data = request.get_json(silent=True) or {}
+    image_url = (data.get("imageUrl") or data.get("image_url") or "").strip()
+    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
+    img = image_url or (str(image_b64).strip() or "")
+    if not img:
+        return jsonify({"success": False, "error": "Нужно передать imageUrl или imageBase64."}), 400
+    res = run_tool("photo-ai", {"task": "brand", "image_url": img})
+    if not res.get("success"):
+        return jsonify({"success": False, "error": res.get("error") or "AI ошибка"}), 400
+    return jsonify(res)
+
+
+@app.route("/api/vehicle", methods=["POST"])
+def api_photo_vehicle():
+    data = request.get_json(silent=True) or {}
+    image_url = (data.get("imageUrl") or data.get("image_url") or "").strip()
+    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
+    img = image_url or (str(image_b64).strip() or "")
+    if not img:
+        return jsonify({"success": False, "error": "Нужно передать imageUrl или imageBase64."}), 400
+    res = run_tool("photo-ai", {"task": "vehicle", "image_url": img})
+    if not res.get("success"):
+        return jsonify({"success": False, "error": res.get("error") or "AI ошибка"}), 400
+    return jsonify(res)
+
+
+@app.route("/api/cultural", methods=["POST"])
+def api_photo_cultural():
+    data = request.get_json(silent=True) or {}
+    image_url = (data.get("imageUrl") or data.get("image_url") or "").strip()
+    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
+    img = image_url or (str(image_b64).strip() or "")
+    if not img:
+        return jsonify({"success": False, "error": "Нужно передать imageUrl или imageBase64."}), 400
+    res = run_tool("photo-ai", {"task": "cultural", "image_url": img})
+    if not res.get("success"):
+        return jsonify({"success": False, "error": res.get("error") or "AI ошибка"}), 400
+    return jsonify(res)
+
+
+@app.route("/api/social-search", methods=["POST"])
+def api_photo_social():
+    data = request.get_json(silent=True) or {}
+    image_url = (data.get("imageUrl") or data.get("image_url") or "").strip()
+    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
+    img = image_url or (str(image_b64).strip() or "")
+    if not img:
+        return jsonify({"success": False, "error": "Нужно передать imageUrl или imageBase64."}), 400
+    res = run_tool("photo-ai", {"task": "social", "image_url": img})
+    if not res.get("success"):
+        return jsonify({"success": False, "error": res.get("error") or "AI ошибка"}), 400
+    return jsonify(res)
+
+
+@app.route("/api/architecture", methods=["POST"])
+def api_photo_architecture():
+    data = request.get_json(silent=True) or {}
+    image_url = (data.get("imageUrl") or data.get("image_url") or "").strip()
+    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
+    img = image_url or (str(image_b64).strip() or "")
+    if not img:
+        return jsonify({"success": False, "error": "Нужно передать imageUrl или imageBase64."}), 400
+    res = run_tool("photo-ai", {"task": "architecture", "image_url": img})
+    if not res.get("success"):
+        return jsonify({"success": False, "error": res.get("error") or "AI ошибка"}), 400
+    return jsonify(res)
+
+
+@app.route("/api/vegetation", methods=["POST"])
+def api_photo_vegetation():
+    data = request.get_json(silent=True) or {}
+    image_url = (data.get("imageUrl") or data.get("image_url") or "").strip()
+    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
+    img = image_url or (str(image_b64).strip() or "")
+    if not img:
+        return jsonify({"success": False, "error": "Нужно передать imageUrl или imageBase64."}), 400
+    res = run_tool("photo-ai", {"task": "vegetation", "image_url": img})
+    if not res.get("success"):
+        return jsonify({"success": False, "error": res.get("error") or "AI ошибка"}), 400
+    return jsonify(res)
+
+
+@app.route("/api/timestamp", methods=["POST"])
+def api_photo_timestamp():
+    data = request.get_json(silent=True) or {}
+    image_url = (data.get("imageUrl") or data.get("image_url") or "").strip()
+    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
+    img = image_url or (str(image_b64).strip() or "")
+    if not img:
+        return jsonify({"success": False, "error": "Нужно передать imageUrl или imageBase64."}), 400
+    res = run_tool("photo-ai", {"task": "timestamp", "image_url": img})
+    if not res.get("success"):
+        return jsonify({"success": False, "error": res.get("error") or "AI ошибка"}), 400
+    return jsonify(res)
+
+
+@app.route("/api/weather", methods=["POST"])
+def api_photo_weather():
+    data = request.get_json(silent=True) or {}
+    image_url = (data.get("imageUrl") or data.get("image_url") or "").strip()
+    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
+    img = image_url or (str(image_b64).strip() or "")
+    if not img:
+        return jsonify({"success": False, "error": "Нужно передать imageUrl или imageBase64."}), 400
+    res = run_tool("photo-ai", {"task": "weather", "image_url": img})
+    if not res.get("success"):
+        return jsonify({"success": False, "error": res.get("error") or "AI ошибка"}), 400
+    return jsonify(res)
+
+
+@app.route("/api/ui/host-os")
+def api_host_os():
+    """ОС и ядро машины, на которой запущен backend (как `uname`)."""
+    try:
+        u = platform.uname()
+        return jsonify(
+            {
+                "system": u.system,
+                "release": u.release,
+                "version": u.version,
+                "machine": u.machine,
+                "node": u.node,
+            }
+        )
+    except OSError as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/css/tool-bundle/<tool_id>.css")
+def tool_css_bundle(tool_id: str):
+    """Один CSS на вкладку: общая база + стили инструмента (без цепочки link в HTML)."""
+    if tool_id not in BUNDLE_TOOL_IDS:
+        return Response("/* unknown tool bundle */\n", status=404, mimetype="text/css; charset=utf-8")
+    try:
+        body = build_tool_css_bundle(
+            static_root=app.static_folder,
+            grabcam_panel_dir=_GRABCAM_PANEL_DIR,
+            tool_id=tool_id,
+        )
+    except OSError as e:
+        return Response(f"/* bundle error: {e} */\n", status=500, mimetype="text/css; charset=utf-8")
+    return Response(
+        body,
+        mimetype="text/css; charset=utf-8",
+        headers={"Cache-Control": "public, max-age=120"},
+    )
 
 
 # Страница-ловушка для захвата ввода в формах (Form Grabber)
@@ -49,11 +812,6 @@ def grab_page(token):
 def grabcam_panel_static(path):
     """Раздача статики панели Grabcam из tools/grabcam/panel/ (модуль в своей директории)."""
     return send_from_directory(_GRABCAM_PANEL_DIR, path)
-
-
-@app.route("/<path:path>")
-def static_files(path):
-    return send_from_directory(app.static_folder, path)
 
 
 # --- API ---
@@ -72,11 +830,94 @@ def api_tool_run(tool_id):
     if not result.get("started"):
         save_run(tool_id, data, result if result.get("success") else None, result.get("error"))
     if tool_id == "grabcam" and result.get("local_url"):
+        # Сохраняем порт из local_url, но подставляем хост запроса (для доступа из локальной сети).
         host = (request.host or "127.0.0.1:5000").split(":")[0]
-        result["local_url"] = "http://{}:3333".format(host)
+        try:
+            u = urlparse(result["local_url"])
+            port = u.port or 3333
+        except Exception:
+            port = 3333
+        result["local_url"] = "http://{}:{}".format(host, port)
     if not result.get("success") and result.get("error") == f"Unknown tool: {tool_id}":
         return jsonify({"error": result["error"]}), 404
     return jsonify(result)
+
+
+def _is_public_host(host: str) -> bool:
+    """SSRF защита: запрещаем локальные/приватные адреса и localhost."""
+    if not host:
+        return False
+    h = host.strip().lower()
+    if h in {"localhost", "localhost.localdomain"}:
+        return False
+    try:
+        ip = ipaddress.ip_address(h)
+        return not (ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved)
+    except ValueError:
+        pass
+    try:
+        infos = socket.getaddrinfo(h, None)
+    except OSError:
+        return False
+    for info in infos:
+        addr = info[4][0]
+        try:
+            ip = ipaddress.ip_address(addr)
+            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved:
+                return False
+        except ValueError:
+            continue
+    return True
+
+
+def _verify_one(url: str, timeout_sec: float = 6.0) -> dict:
+    u = (url or "").strip()
+    try:
+        p = urlparse(u)
+        if p.scheme not in {"http", "https"}:
+            return {"url": u, "ok": False, "error": "bad_scheme"}
+        if not _is_public_host(p.hostname or ""):
+            return {"url": u, "ok": False, "error": "blocked_host"}
+        t0 = datetime.now().timestamp()
+        r = requests.get(
+            u,
+            timeout=timeout_sec,
+            allow_redirects=True,
+            headers={"User-Agent": "OSINT-Panel/1.0"},
+        )
+        ms = int((datetime.now().timestamp() - t0) * 1000)
+        code = int(getattr(r, "status_code", 0) or 0)
+        final = str(getattr(r, "url", u) or u)
+        ok = 200 <= code < 400
+        hint = "ok" if ok else ("blocked" if code in {401, 403, 429} else "not_found" if code == 404 else "http_error")
+        return {"url": u, "ok": ok, "status": code, "final_url": final, "latency_ms": ms, "hint": hint}
+    except requests.Timeout:
+        return {"url": u, "ok": False, "error": "timeout"}
+    except requests.RequestException as e:
+        return {"url": u, "ok": False, "error": "request_error", "detail": str(e)[:200]}
+    except Exception as e:
+        return {"url": u, "ok": False, "error": "error", "detail": str(e)[:200]}
+
+
+@app.route("/api/verify/links", methods=["POST"])
+def api_verify_links():
+    """Проверка URL (серверная, с SSRF-защитой). Body: { urls: string[], timeout_sec?, max_workers? }"""
+    data = request.get_json(silent=True) or {}
+    urls = data.get("urls") or []
+    if not isinstance(urls, list):
+        return jsonify({"error": "urls must be list"}), 400
+    urls = [str(u).strip() for u in urls if str(u).strip()]
+    urls = urls[:150]
+    timeout_sec = float(data.get("timeout_sec") or 6.0)
+    timeout_sec = max(2.0, min(12.0, timeout_sec))
+    max_workers = int(data.get("max_workers") or 18)
+    max_workers = max(4, min(32, max_workers))
+    out = []
+    with ThreadPoolExecutor(max_workers=max_workers) as ex:
+        futs = [ex.submit(_verify_one, u, timeout_sec) for u in urls]
+        for f in as_completed(futs):
+            out.append(f.result())
+    return jsonify({"success": True, "count": len(out), "results": out})
 
 
 @app.route("/api/history", methods=["GET"])
@@ -85,6 +926,22 @@ def api_history():
     tool_id = request.args.get("tool_id")
     limit = min(int(request.args.get("limit", 50) or 50), 200)
     return jsonify(get_run_history(tool_id=tool_id, limit=limit))
+
+
+@app.route("/api/history/<int:run_id>", methods=["DELETE"])
+def api_history_delete(run_id: int):
+    """Удалить один элемент истории."""
+    ok = delete_run(run_id)
+    return jsonify({"success": ok})
+
+
+@app.route("/api/history/clear", methods=["POST"])
+def api_history_clear():
+    """Очистить историю. Body: { tool_id?: "..." }."""
+    data = request.get_json(silent=True) or {}
+    tool_id = (data.get("tool_id") or "").strip() or None
+    deleted = clear_runs(tool_id=tool_id)
+    return jsonify({"success": True, "deleted": deleted})
 
 
 @app.route("/api/tools/anonsms/status", methods=["GET"])
@@ -133,7 +990,12 @@ def api_grabcam_run_status():
     data = tool.get_run_status()
     if data.get("local_url"):
         host = (request.host or "127.0.0.1:5000").split(":")[0]
-        data["local_url"] = "http://{}:3333".format(host)
+        try:
+            u = urlparse(data["local_url"])
+            port = u.port or 3333
+        except Exception:
+            port = 3333
+        data["local_url"] = "http://{}:{}".format(host, port)
     return jsonify(data)
 
 
@@ -626,6 +1488,12 @@ def api_settings_keys_post():
     save_keys_from_api(data)
     load_env_into_os()
     return jsonify({"success": True})
+
+
+@app.route("/<path:path>")
+def static_files(path):
+    """Статика из static/ — только после всех /api и прочих явных маршрутов."""
+    return send_from_directory(app.static_folder, path)
 
 
 if __name__ == "__main__":

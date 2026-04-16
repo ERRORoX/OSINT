@@ -1,8 +1,8 @@
 /**
  * Панель инструмента ANONSMS. Работает независимо от других модулей.
- * Использует только apiRun из app.js и разметку внутри переданного container.
+ * Использует только apiRun из app-core.js и разметку внутри переданного container.
  */
-import { apiRun } from "../app.js";
+import { apiRun } from "../app-core.js";
 
 const TOOL_ID = "anonsms";
 

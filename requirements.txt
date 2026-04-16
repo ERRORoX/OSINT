@@ -1,36 +1,40 @@
 # =============================================================================
-# ГЛАВНЫЙ ФАЙЛ ЗАВИСИМОСТЕЙ ПРОЕКТА
-# Все требования инструментов собраны здесь. Установка: pip install -r requirements.txt
+# OSINT Panel — зависимости Python
+# Установка: pip install -r requirements.txt
+# Системные утилиты (не pip): exiftool, tesseract-ocr (+ языки eng/rus для OCR фото), php, go (subfinder), внешние бинарники dnsx и т.д.
+# Tesseract (OCR /api/ocr): sudo apt install -y tesseract-ocr tesseract-ocr-eng tesseract-ocr-rus
+#   либо export TESSERACT_CMD=/путь/к/tesseract — см. backend/tools/tool_photo_ocr.py
+# Maigret: путь -e относительно каталога, где выполняется pip install -r requirements.txt (корень проекта).
 # =============================================================================
 
-# --- Панель (backend + веб) ---
+# --- Панель: Flask, парсинг веб-страниц, анализ изображений (Pillow / фото) ---
 flask>=3.0.0
 flask-cors>=4.0.0
-
-# --- Anonymous SMS ---
 requests>=2.31.0
-
-# --- Instagram Bruter ---
 beautifulsoup4>=4.12.0
+pillow>=10.0.0
+# pytesseract — обёртка; нужен бинарник tesseract в PATH (см. системные утилиты выше).
+pytesseract>=0.3.10
+pyzbar>=0.1.9
+
+# --- Instagram Bruter (tools/Instagram Bruter) ---
 colorama>=0.4.0
 pysocks>=1.7.0
 requests-html>=0.10.0
 lxml_html_clean>=0.3.0
 
-# --- Общие / модуль domain_search ---
+# --- Поиск по домену (modules/domain_search: DNS) ---
 dnspython>=2.4.0
 
-# --- Holehe (поиск email по сайтам) ---
+# --- Google OSINT: Holehe + h8mail ---
 holehe>=1.61
+h8mail
 termcolor>=2.0.0
 httpx>=0.24.0
 trio>=0.22.0
 tqdm>=4.65.0
 
-# --- h8mail (утечки по email) ---
-h8mail
-
-# --- Sherlock (поиск username в соцсетях) ---
+# --- Sherlock (username) ---
 sherlock-project>=0.14.0
 certifi>=2019.6.16
 requests-futures>=1.0.0
@@ -39,35 +43,29 @@ pandas>=2.0.0
 openpyxl>=3.0.10
 tomli>=2.0.0
 
-# --- Maigret (поиск username по сайтам) ---
-maigret>=0.5.0
-aiohttp>=3.9.0
-aiodns>=3.0.0
-socid-extractor>=0.0.27
+# --- Maigret (локальная копия tools/maigret: без xhtml2pdf → без pycairo/cairo при установке) ---
+-e "./tools/maigret"
 
-# --- Social Analyzer (поиск по username на 900+ сайтах) ---
+# --- Social Analyzer (username) ---
 tld>=0.13
 langdetect>=1.0.9
 lxml>=4.9.0
 galeodes>=0.0.5
 
-# --- Blackbird (поиск по username, 600+ платформ WhatsMyName) ---
+# --- Blackbird (username) ---
 rich>=13.0.0
 python-dotenv>=1.0.0
 reportlab>=4.0.0
-pillow>=10.0.0
 propcache>=0.3.0
 markdown-it-py>=3.0.0
 
-# --- theHarvester (домен: email, поддомены) ---
+# --- theHarvester (домен) ---
 theHarvester
 PyYAML>=6.0
 
-# --- Прочее (телефоны и т.д.) ---
+# --- Прочие инструменты панели ---
 phonenumbers>=8.13.0
+
 
 # Subfinder — Go-бинарник, в requirements не входит.
 # Сборка: cd tools/subfinder && go build -o subfinder ./cmd/subfinder
-
-# Презентация (опционально)
-python-pptx>=0.6.21

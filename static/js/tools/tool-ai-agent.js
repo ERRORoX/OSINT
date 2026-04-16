@@ -22,37 +22,48 @@ export function initPanel(container) {
   container.dataset.inited = "1";
   container.innerHTML = `
     <div class="tool-view ai-agent-page">
-      <section class="ai-agent-header">
-        <h2 class="tool-view-section__title">ПОМОЩНИК (AI AGENT)</h2>
-        <p class="ai-agent-desc">Полноценный автономный агент: задайте цель — ИИ сам запустит нужные инструменты по очереди и выдаст итог. Также доступны чат и подсказки. Укажите OpenAI API Key или OLLAMA_URL в настройках.</p>
-        <div id="ai-agent-status" class="ai-agent-status" role="status"></div>
+      <section class="ai-agent-header glass-card">
+        <div class="card-header"><span>Помощник</span></div>
+        <div class="glass-card-content">
+          <h2 class="tool-view-section__title">ПОМОЩНИК (AI AGENT)</h2>
+          <p class="ai-agent-desc">Полноценный автономный агент: задайте цель — ИИ сам запустит нужные инструменты по очереди и выдаст итог. Также доступны чат и подсказки. Укажите OpenAI API Key или OLLAMA_URL в настройках.</p>
+          <div id="ai-agent-status" class="ai-agent-status" role="status"></div>
+        </div>
       </section>
-      <section class="ai-agent-automate">
-        <h3 class="ai-agent-automate-title">Автоматический сценарий</h3>
-        <p class="ai-agent-automate-desc">Опишите цель одной фразой — агент сам выберет и запустит инструменты (домен, ник, email).</p>
-        <div class="ai-agent-automate-form">
-          <textarea id="ai-agent-goal" rows="2" placeholder="Например: Полная разведка по домену example.com / Найти все аккаунты по нику john_doe"></textarea>
-          <div class="ai-agent-automate-opts">
-            <label>Макс. шагов <input type="number" id="ai-agent-max-steps" value="10" min="1" max="15"></label>
-            <button type="button" class="btn btn-primary" id="ai-agent-run-automate">Выполнить автоматически</button>
+      <section class="ai-agent-automate glass-card">
+        <div class="card-header"><span>Автоматизация</span></div>
+        <div class="glass-card-content">
+          <h3 class="ai-agent-automate-title">Автоматический сценарий</h3>
+          <p class="ai-agent-automate-desc">Опишите цель одной фразой — агент сам выберет и запустит инструменты (домен, ник, email).</p>
+          <div class="ai-agent-automate-form">
+            <textarea id="ai-agent-goal" rows="2" placeholder="Например: Полная разведка по домену example.com / Найти все аккаунты по нику john_doe"></textarea>
+            <div class="ai-agent-automate-opts">
+              <label>Макс. шагов <input type="number" id="ai-agent-max-steps" value="10" min="1" max="15"></label>
+              <button type="button" class="btn btn-primary" id="ai-agent-run-automate">Выполнить автоматически</button>
+            </div>
           </div>
+          <div id="ai-agent-automate-log" class="ai-agent-automate-log" role="log"></div>
+          <div id="ai-agent-automate-error" class="ai-agent-error" role="alert"></div>
         </div>
-        <div id="ai-agent-automate-log" class="ai-agent-automate-log" role="log"></div>
-        <div id="ai-agent-automate-error" class="ai-agent-error" role="alert"></div>
       </section>
-      <section class="ai-agent-context">
-        <label for="ai-agent-context">Контекст (цель, что уже сделали, фрагмент вывода):</label>
-        <textarea id="ai-agent-context" rows="3" placeholder="Например: Домен example.com, запустил theHarvester и Subfinder, найдено 12 поддоменов и 3 email"></textarea>
-        <button type="button" class="btn btn-secondary" id="ai-agent-suggest">Подсказать следующие шаги</button>
-      </section>
-      <section class="ai-agent-chat">
-        <h3 class="ai-agent-chat-title">Чат</h3>
-        <div id="ai-agent-messages" class="ai-agent-messages" role="log"></div>
-        <div class="ai-agent-input-row">
-          <input type="text" id="ai-agent-input" placeholder="Задайте вопрос или опишите задачу..." autocomplete="off">
-          <button type="button" class="btn btn-primary" id="ai-agent-send">Отправить</button>
+      <section class="ai-agent-context glass-card">
+        <div class="card-header"><span>Контекст</span></div>
+        <div class="glass-card-content">
+          <label for="ai-agent-context">Контекст (цель, что уже сделали, фрагмент вывода):</label>
+          <textarea id="ai-agent-context" rows="3" placeholder="Например: Домен example.com, запустил theHarvester и Subfinder, найдено 12 поддоменов и 3 email"></textarea>
+          <button type="button" class="btn btn-secondary" id="ai-agent-suggest">Подсказать следующие шаги</button>
         </div>
-        <div id="ai-agent-chat-error" class="ai-agent-error" role="alert"></div>
+      </section>
+      <section class="ai-agent-chat glass-card">
+        <div class="card-header"><span>Чат</span></div>
+        <div class="glass-card-content ai-agent-chat-inner">
+          <div id="ai-agent-messages" class="ai-agent-messages" role="log"></div>
+          <div class="ai-agent-input-row">
+            <input type="text" id="ai-agent-input" placeholder="Задайте вопрос или опишите задачу..." autocomplete="off">
+            <button type="button" class="btn btn-primary" id="ai-agent-send">Отправить</button>
+          </div>
+          <div id="ai-agent-chat-error" class="ai-agent-error" role="alert"></div>
+        </div>
       </section>
     </div>
   `;

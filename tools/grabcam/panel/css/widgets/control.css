@@ -31,10 +31,10 @@
 }
 
 #panel-grabcam .gc-widget-control .gc-control-inner {
-  display: flex; /* это flex-контейнер */
-  align-items: flex-start;
-  gap: 1.25rem; /* это отступы между элементами */
-  flex-wrap: wrap; /* это перенос элементов на новую строку */
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  align-items: start;
+  gap: 18px;
 }
 
 #panel-grabcam .gc-widget-control .gc-control-toggles {
@@ -140,6 +140,7 @@
   align-items: flex-end;
   gap: 0.5rem;
   flex-shrink: 0;
+  width: 100%;
 }
 
 #panel-grabcam .gc-widget-control .gc-control-form-label {
@@ -150,12 +151,13 @@
 }
 
 #panel-grabcam .gc-widget-control .gc-control-select {
-  min-width: 160px;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
-  background: var(--gc-surface-2);
-  border: 1px solid var(--gc-border);
-  border-radius: var(--gc-radius-sm);
+  width: 100%;
+  min-width: 0;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  background: rgba(10, 16, 26, 0.62);
+  border: 1px solid rgba(0, 162, 255, 0.30);
+  border-radius: 12px;
   color: var(--gc-text);
 }
 
@@ -165,39 +167,48 @@
 }
 
 #panel-grabcam .gc-widget-control .gc-control-btn-start {
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  background: var(--gc-accent);
-  color: #fff;
-  border: none;
-  border-radius: var(--gc-radius-sm);
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  background: rgba(0, 162, 255, 0.14);
+  color: rgba(0, 190, 255, 0.95);
+  border: 1px solid rgba(0, 162, 255, 0.30);
+  border-radius: 12px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, transform 0.2s;
 }
 
 #panel-grabcam .gc-widget-control .gc-control-btn-start:hover:not(:disabled) {
-  background: var(--gc-accent-hover);
+  background: rgba(0, 162, 255, 0.18);
+  transform: translateY(-1px);
 }
 
 #panel-grabcam .gc-widget-control .gc-control-btn-stop {
-  padding: 0.65rem 1.5rem;
+  width: 100%;
+  padding: 16px 14px;
   font-size: 0.95rem;
-  font-weight: 700;
+  font-weight: 800;
   background: var(--gc-danger);
   color: #fff;
   border: none;
-  border-radius: var(--gc-radius-sm);
+  border-radius: 12px;
   cursor: pointer;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  transition: filter 0.2s;
-  width: 100%;
-  margin-top: 0.5rem;
+  letter-spacing: 0.06em;
+  transition: filter 0.2s, transform 0.2s;
+  margin-top: 0.6rem;
 }
 
 #panel-grabcam .gc-widget-control .gc-control-btn-stop:hover {
-  filter: brightness(1.1);
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 980px) {
+  #panel-grabcam .gc-widget-control .gc-control-inner {
+    grid-template-columns: 1fr;
+  }
 }
 
 #panel-grabcam .gc-widget-control .gc-control-toggle-icon.gc-icon-check::before {
@@ -222,6 +233,14 @@
 #panel-grabcam .gc-widget-control .gc-control-toggle-icon.gc-icon-eye::before {
   content: "👁";
   font-size: 0.7rem;
+}
+
+#panel-grabcam .gc-widget-control .gc-control-toggle-icon.gc-icon-form {
+  color: var(--gc-accent);
+}
+
+#panel-grabcam .gc-widget-control .gc-control-toggle-icon.gc-icon-mic {
+  color: var(--gc-accent);
 }
 
 #panel-grabcam .gc-widget-control .gc-control-toggle-icon.gc-icon-gear {

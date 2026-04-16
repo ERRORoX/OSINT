@@ -1,10 +1,72 @@
 /**
  * Панель Google OSINT: email — Holehe и h8mail, все ответы в одной панели.
  */
-import { apiRun } from "../app.js";
+import { apiRun } from "../app-core.js";
 import { renderResultsCards } from "./results-cards.js";
 
 const TOOL_ID = "google-osint";
+
+function analyzeText(raw) {
+  const t = String(raw || "");
+  const low = t.toLowerCase();
+  const flags = [];
+  if (t.includes("Traceback (most recent call last):") || /ModuleNotFoundError|ImportError|SyntaxError/.test(t)) flags.push("traceback");
+  if (/timeout|timed out|превышено время ожидания|read timed out/.test(low)) flags.push("timeout");
+  if (/429|too many requests|rate limit|blocked|captcha/.test(low)) flags.push("ratelimit");
+  if (/api key|apikey|hibp|hunter|ключ/i.test(t) && /not set|missing|отсутств|не задан/i.test(t)) flags.push("keys");
+  return flags;
+}
+
+function countServicesLikeHolehe(raw) {
+  // Holehe prints colored lines; we only have text. Heuristic:
+  // count lines with [+] / [x] / [-] patterns referencing domains.
+  const lines = String(raw || "").split(/\r?\n/);
+  let used = 0;
+  let checked = 0;
+  for (const ln of lines) {
+    const s = ln.trim();
+    if (!s) continue;
+    if (s.startsWith("[+]") || s.startsWith("[")) checked++;
+    if (s.startsWith("[+]")) used++;
+  }
+  return { used, checked };
+}
+
+function countBreachesLikeH8mail(raw) {
+  const t = String(raw || "");
+  // common words in h8mail outputs: "Breach", "breaches", "pwned", "Found"
+  const m = t.match(/\bBreach\b|\bbreach\b|\bpwned\b|\bfound\b/gi);
+  return m ? Math.min(999, m.length) : 0;
+}
+
+function renderEmailSummary({ email, holehe, h8mail, wallSeconds }) {
+  const hOut = (holehe?.output || "").trim();
+  const bOut = (h8mail?.output || "").trim();
+  const hFlags = analyzeText(hOut);
+  const bFlags = analyzeText(bOut);
+  const flags = [...new Set([...hFlags, ...bFlags])];
+  const holeheCnt = countServicesLikeHolehe(hOut);
+  const breachesCnt = countBreachesLikeH8mail(bOut);
+  const keysPresent = h8mail?.keys_present;
+  const keysHint = keysPresent === false ? " · ключи h8mail не заданы" : "";
+  const flagText =
+    flags.length === 0
+      ? ""
+      : ` · предупреждения: ${flags
+          .map((f) => ({ traceback: "traceback", timeout: "timeout", ratelimit: "rate-limit", keys: "keys" }[f] || f))
+          .join(", ")}`;
+  return `
+    <div class="go-summary">
+      <div class="go-summary__row">
+        <span class="go-pill"><strong>Email</strong> ${email}</span>
+        <span class="go-pill"><strong>Holehe</strong> ${holeheCnt.used}${holeheCnt.checked ? `/${holeheCnt.checked}` : ""}</span>
+        <span class="go-pill"><strong>h8mail</strong> ${breachesCnt}</span>
+        <span class="go-pill"><strong>Время</strong> ${wallSeconds >= 10 ? wallSeconds.toFixed(1) : wallSeconds.toFixed(2)} c</span>
+      </div>
+      <div class="go-summary__hint">Сводка считается из реального текста вывода. ${keysHint}${flagText}</div>
+    </div>
+  `;
+}
 
 export function initPanel(container) {
   if (container.dataset.inited) return;
@@ -78,11 +140,14 @@ export function initPanel(container) {
     resultsEl.innerHTML = "";
 
     try {
+      const wallT0 = typeof performance !== "undefined" ? performance.now() : Date.now();
       const data = await apiRun(TOOL_ID, {
         email,
         run_holehe,
         run_h8mail,
       });
+      const wallMs = (typeof performance !== "undefined" ? performance.now() : Date.now()) - wallT0;
+      const wallSeconds = wallMs / 1000;
 
       statusEl.className = "tool-cli-status " + (data.success ? "" : "error");
       statusEl.textContent = data.success ? "Готово." : (data.error || "Часть проверок завершилась с ошибками.");
@@ -102,9 +167,12 @@ export function initPanel(container) {
       const cardsData = sections.map(({ key, title }) => {
         const r = results[key] || {};
         const rawOut = (r.output || "").trim();
+        const durMs = r.stats && typeof r.stats.duration_ms === "number" ? r.stats.duration_ms : 0;
+        const dur = durMs ? ` (${(durMs / 1000).toFixed(durMs >= 10000 ? 1 : 2)}с)` : "";
         return { id: key, title, output: rawOut || "(нет вывода)", success: r.success };
       });
-      renderResultsCards(resultsEl, cardsData);
+      resultsEl.innerHTML = renderEmailSummary({ email, holehe: results.holehe, h8mail: results.h8mail, wallSeconds }) + `<div class="go-cards"></div>`;
+      renderResultsCards(resultsEl.querySelector(".go-cards"), cardsData);
     } catch (err) {
       statusEl.className = "tool-cli-status error";
       statusEl.textContent = err.message || "Ошибка запроса.";

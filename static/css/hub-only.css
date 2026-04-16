@@ -1,0 +1,43 @@
+/* Только главная (подмешивается в /css/tool-bundle/hub.css после общей базы). */
+.hub-intro {
+  margin-bottom: var(--space-xl);
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.hub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-md);
+}
+
+.hub-card {
+  display: block;
+  padding: var(--space-lg);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  color: var(--text);
+  text-decoration: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.hub-card:hover {
+  border-color: var(--accent);
+  box-shadow: var(--glow);
+}
+
+.hub-card-title {
+  margin: 0 0 var(--space-xs);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-bright);
+}
+
+.hub-card-desc {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}

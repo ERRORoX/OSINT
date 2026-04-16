@@ -9,7 +9,13 @@ import time
 from rich.live import Live
 from rich.text import Text
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
+_BASE = os.path.dirname(__file__)
+# Blackbird использует смешанные импорты:
+# - modules.* (лежит в src/)
+# - utils.* (лежит в src/modules/)
+# Добавляем обе директории, чтобы запуск работал стабильно.
+sys.path.append(os.path.join(_BASE, "src"))
+sys.path.append(os.path.join(_BASE, "src", "modules"))
 
 import config
 from modules.whatsmyname.list_operations import checkUpdates
@@ -18,7 +24,10 @@ from modules.core.email import verifyEmail
 from modules.utils.userAgent import getRandomUserAgent
 from modules.export.file_operations import createSaveDirectory
 from modules.export.csv import saveToCsv
-from modules.export.pdf import saveToPdf
+try:
+    from modules.export.pdf import saveToPdf  # type: ignore
+except ModuleNotFoundError:
+    saveToPdf = None
 from modules.export.json import saveToJson
 from modules.utils.file_operations import isFile, getLinesFromFile
 from modules.utils.permute import Permute
@@ -139,7 +148,8 @@ def initiate():
     config.permute = args.permute
     config.permuteall = args.permuteall
     config.csv = args.csv
-    config.pdf = args.pdf
+    # PDF экспорт требует reportlab; если зависимости нет — просто отключаем опцию.
+    config.pdf = bool(args.pdf and saveToPdf is not None)
     config.json = args.json
     config.filter = args.filter
     config.no_nsfw = args.no_nsfw

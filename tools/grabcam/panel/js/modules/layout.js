@@ -66,9 +66,20 @@ export function buildPanelHTML() {
   const fullWidthParts = (layout.fullWidthWidgets || []).map((id) => widgetHTML[id]).filter(Boolean);
   return `
 <div class="tool-view tool-view-grabcam">
-  <div class="gc-grid-widgets" style="grid-template-columns: ${gridTemplateColumns};">
-    ${gridParts.join("\n    ")}
+  <div class="gc-shell">
+    <div class="gc-content">
+      <div class="gc-page-head">
+        <div class="gc-page-title">
+          <span class="gc-page-mark">G</span>
+          <span class="gc-page-name">Grabcam</span>
+        </div>
+      </div>
+
+      <div class="gc-grid-widgets" style="grid-template-columns: ${gridTemplateColumns};">
+        ${gridParts.join("\n        ")}
+      </div>
+      ${fullWidthParts.join("\n      ")}
+    </div>
   </div>
-  ${fullWidthParts.join("\n  ")}
 </div>`;
 }

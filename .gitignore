@@ -1,6 +1,21 @@
 # Пустой/сломанный клон в корне (только .git, без файлов)
 /sherlock/
 
+# Референс-проект (Next.js) — не включаем в основной репозиторий панели
+/проба/
+
+# Референс-проект (ПРОБА 2) — не включаем
+/ПРОБА 2/
+
+# Архив/референс Grabcam v2 — не включаем
+/Grabcam v2/
+
+# Случайная вложенная копия пути (не коммитить)
+/home/
+
+# shodan-python: часто владелец root + вложенный .git — после chown и rm -rf tools/shodan-python/.git уберите эту строку и добавьте папку в git
+tools/shodan-python/
+
 # Окружение и секреты
 data/
 venv/
@@ -23,6 +38,7 @@ Thumbs.db
 tools/grabcam/Photo/
 tools/grabcam/form_captures.json
 tools/grabcam/options.json
+tools/grabcam/ip.txt
 
 # SQLite (создаётся при запуске)
 *.db
@@ -37,3 +53,6 @@ build/
 
 # Логи
 *.log
+
+# Архивы Go в корне (локально; не тащить в репозиторий)
+/go*.tar.gz

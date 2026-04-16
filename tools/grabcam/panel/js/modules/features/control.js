@@ -2,7 +2,7 @@
  * Управление: форма запуска/остановки, опции, опрос статуса, отображение ссылки.
  */
 import { state } from "../state.js";
-import { apiRun } from "/js/app.js";
+import { apiRun } from "/js/app-core.js";
 import { escapeHtml, getFeatureOptions } from "../utils.js";
 import { updateSessionMetrics } from "./session.js";
 import {

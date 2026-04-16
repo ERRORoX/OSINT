@@ -36,6 +36,12 @@ export async function loadSessionStats(container = null) {
 }
 
 export function initSession(container) {
-  POLL_IDS.sessionStats = setInterval(() => loadSessionStats(container), POLL_INTERVALS.sessionStats);
+  // Сводка сессии может быть отключена в UI (виджет удалён) — тогда опрос не нужен.
+  const hasTargets = container?.querySelector?.("#gc-targets");
+  const hasUnique = container?.querySelector?.("#gc-unique-ips");
+  const hasDuration = container?.querySelector?.("#gc-duration");
+  if (hasTargets || hasUnique || hasDuration) {
+    POLL_IDS.sessionStats = setInterval(() => loadSessionStats(container), POLL_INTERVALS.sessionStats);
+  }
   return { updateSessionMetrics, loadSessionStats };
 }

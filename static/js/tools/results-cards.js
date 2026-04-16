@@ -50,7 +50,7 @@ export function renderResultCard(section) {
   const contentHtml = linkify(raw);
   const cardId = "result-" + Math.random().toString(36).slice(2, 9);
   return `
-    <div class="tool-results-card tool-google-osint-block ${success ? "success" : "error"}" data-card-id="${cardId}">
+    <div class="tool-results-card tool-google-osint-block osint-card-hover card-appear ${success ? "success" : "error"}" data-card-id="${cardId}">
       <div class="tool-results-card__header">
         <h3 class="tool-results-card__title">${escapeHtml(title)}</h3>
         <span class="tool-results-card__summary">${escapeHtml(summary)}</span>

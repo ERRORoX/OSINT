@@ -4,7 +4,6 @@
 import { state } from "../state.js";
 import { API, LIMITS, POLL_IDS, POLL_INTERVALS } from "../config.js";
 import { escapeHtml, formatPhotoDate, renderPhotoCard, setListError } from "../utils.js";
-import { loadSessionStats } from "./session.js";
 
 export async function loadPhotos(container) {
   const listEl = container.querySelector("#gc-photos-list");
@@ -16,7 +15,6 @@ export async function loadPhotos(container) {
     const photos = data.photos || [];
     const total = data.total != null ? data.total : photos.length;
     const unique = data.unique_devices != null ? data.unique_devices : new Set(photos.map((p) => p.ip)).size;
-    loadSessionStats();
     listEl.classList.remove("gc-photos-loading");
     const photosKey = photos.length + "|" + (photos[0]?.path || "") + "|" + (photos[photos.length - 1]?.path || "");
     if (photosKey !== state.lastPhotosKey) {

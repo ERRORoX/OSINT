@@ -1,0 +1,32 @@
+/* Токены Google OSINT / email */
+
+.go-summary{
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 12px;
+  background: var(--bg-card);
+  margin-bottom: 12px;
+}
+.go-summary__row{
+  display:flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.go-pill{
+  display:inline-flex;
+  gap: 6px;
+  align-items: baseline;
+  padding: 4px 10px;
+  border: 1px solid rgba(0,240,255,.14);
+  border-radius: 999px;
+  font-size: 12px;
+  color: rgba(224,224,224,.75);
+  background: rgba(0,0,0,.18);
+}
+.go-pill strong{ color: var(--accent); font-weight: 700; }
+.go-summary__hint{
+  margin-top: 10px;
+  font-size: 12px;
+  color: rgba(224,224,224,.45);
+}

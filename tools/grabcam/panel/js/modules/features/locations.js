@@ -4,7 +4,6 @@
 import { state } from "../state.js";
 import { API, POLL_IDS, POLL_INTERVALS } from "../config.js";
 import { escapeHtml, setListError } from "../utils.js";
-import { loadSessionStats } from "./session.js";
 import { showLocationOnMap } from "./map.js";
 
 export async function loadLocations(container) {
@@ -14,7 +13,6 @@ export async function loadLocations(container) {
     const res = await fetch(API.locations);
     const data = await res.json();
     const locations = data.locations || [];
-    loadSessionStats();
     listEl.classList.remove("gc-locations-loading");
     const locsKey = locations.length + "|" + locations.map((l) => (l.lat || "") + "," + (l.lon || "")).join(";");
     if (locsKey !== state.lastLocationsKey) {

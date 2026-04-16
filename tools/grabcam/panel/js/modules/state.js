@@ -13,6 +13,8 @@ export const state = {
   lastAudioKey: "",
   lastSummaryText: "",
   mapInstance: null,
+  /** MapLibre Marker instance */
+  gcMapMarker: null,
   copyFeedbackTimer: null,
   serveoWaitStart: 0,
 };

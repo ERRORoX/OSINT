@@ -8,17 +8,58 @@ import { clearAllPolls } from "./modules/utils.js";
 import { API, POLL_IDS, POLL_INTERVALS } from "./modules/config.js";
 import { state } from "./modules/state.js";
 
-export function initPanel(container) {
-  if (container.dataset.inited) return;
-  container.dataset.inited = "1";
-  clearAllPolls();
-  container.innerHTML = buildPanelHTML();
+const GRABCAM_CSS_HREF = "/grabcam/panel/css/tool-grabcam.css";
 
+let grabcamCssPromise = null;
+
+/** Стили Grabcam не в index.html — только при открытии вкладки, без конкуренции с остальными инструментами до этого. */
+function ensureGrabcamStylesLoaded() {
+  if (document.querySelector('link[href*="/css/tool-bundle/grabcam.css"]')) {
+    return Promise.resolve();
+  }
+  if (document.querySelector(`link[href="${GRABCAM_CSS_HREF}"][data-osint-grabcam-bundle]`)) {
+    return Promise.resolve();
+  }
+  if (!grabcamCssPromise) {
+    grabcamCssPromise = new Promise((resolve, reject) => {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = GRABCAM_CSS_HREF;
+      link.dataset.osintGrabcamBundle = "1";
+      link.onload = () => resolve();
+      link.onerror = () => {
+        grabcamCssPromise = null;
+        reject(new Error("Не удалось загрузить стили Grabcam"));
+      };
+      document.head.appendChild(link);
+    });
+  }
+  return grabcamCssPromise;
+}
+
+export function initPanel(container) {
+  if (container.dataset.inited === "1") return;
+
+  ensureGrabcamStylesLoaded()
+    .then(() => {
+      if (container.dataset.inited === "1") return;
+      container.dataset.inited = "1";
+      clearAllPolls();
+      container.innerHTML = buildPanelHTML();
+      runFeaturesAfterMount(container);
+    })
+    .catch((err) => {
+      console.error(err);
+      container.innerHTML =
+        '<div class="tool-view tool-google-osint-page" style="padding:1.25rem;color:var(--error)">Не удалось подключить стили Grabcam. Проверьте путь <code>/grabcam/panel/css/</code> и перезагрузите страницу.</div>';
+    });
+}
+
+function runFeaturesAfterMount(container) {
   (async function runFeatures() {
     try {
       const features = await import("./modules/features/index.js");
       const { showLink, pollStatus, showCopyFeedback } = features.initControl(container);
-      features.initSession(container);
       features.initLink(container, showCopyFeedback);
       features.initMap(container);
       features.initPhotos(container);
@@ -26,7 +67,6 @@ export function initPanel(container) {
       features.initForms(container);
       features.initScreen(container);
       features.initAudio(container);
-      features.initSummary(container);
 
       try {
         const res = await fetch(API.runStatus);
@@ -34,8 +74,6 @@ export function initPanel(container) {
         if (st.started_at != null && typeof st.started_at === "number") {
           state.sessionStartTime = st.started_at * 1000;
         }
-        await features.loadSessionStats(container);
-        features.updateSessionMetrics(container);
         const resultEl = container.querySelector("#gc-result");
         const submitBtn = container.querySelector("#gc-btn-start");
         const stopBtn = container.querySelector("#gc-btn-stop");

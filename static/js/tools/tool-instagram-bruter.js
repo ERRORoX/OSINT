@@ -1,7 +1,7 @@
 /**
  * Панель Instagram Bruter. Всё выполняется через панель.
  */
-import { apiRun } from "../app.js";
+import { apiRun } from "../app-core.js";
 
 const TOOL_ID = "instagram-bruter";
 

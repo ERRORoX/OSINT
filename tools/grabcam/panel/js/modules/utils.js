@@ -82,3 +82,23 @@ export function loadLeaflet(callback) {
   script.onload = callback;
   document.head.appendChild(script);
 }
+
+/** MapLibre GL JS (векторные карты). Глобаль: maplibregl */
+export function loadMapLibre(callback) {
+  if (typeof maplibregl !== "undefined") {
+    callback();
+    return;
+  }
+  if (!document.querySelector('link[href*="maplibre-gl"][rel="stylesheet"]')) {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css";
+    link.crossOrigin = "anonymous";
+    document.head.appendChild(link);
+  }
+  const script = document.createElement("script");
+  script.src = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js";
+  script.crossOrigin = "anonymous";
+  script.onload = () => callback();
+  document.head.appendChild(script);
+}

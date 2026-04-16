@@ -186,3 +186,24 @@ def get_run_history(tool_id: Optional[str] = None, limit: int = 50) -> list[dict
             }
             for r in rows
         ]
+
+
+def delete_run(run_id: int) -> bool:
+    """Удалить запись истории по id. Возвращает True если запись была удалена."""
+    try:
+        rid = int(run_id)
+    except (TypeError, ValueError):
+        return False
+    with get_db() as conn:
+        cur = conn.execute("DELETE FROM runs WHERE id = ?", (rid,))
+        return (cur.rowcount or 0) > 0
+
+
+def clear_runs(tool_id: Optional[str] = None) -> int:
+    """Очистить историю. Если tool_id задан — только по этому инструменту. Возвращает число удалённых записей."""
+    with get_db() as conn:
+        if tool_id:
+            cur = conn.execute("DELETE FROM runs WHERE tool_id = ?", (tool_id,))
+        else:
+            cur = conn.execute("DELETE FROM runs")
+        return int(cur.rowcount or 0)
