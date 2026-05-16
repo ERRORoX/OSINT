@@ -7,7 +7,7 @@ import os
 import platform
 import sys
 import zipfile
-from urllib.parse import quote, urlparse
+from urllib.parse import quote, urljoin, urlparse
 import ipaddress
 import socket
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -870,24 +870,58 @@ def _is_public_host(host: str) -> bool:
     return True
 
 
+_VERIFY_MAX_REDIRECTS = 5
+
+
+def _public_http_url_error(url: str) -> str | None:
+    p = urlparse(url)
+    if p.scheme not in {"http", "https"}:
+        return "bad_scheme"
+    if not _is_public_host(p.hostname or ""):
+        return "blocked_host"
+    return None
+
+
 def _verify_one(url: str, timeout_sec: float = 6.0) -> dict:
     u = (url or "").strip()
     try:
-        p = urlparse(u)
-        if p.scheme not in {"http", "https"}:
-            return {"url": u, "ok": False, "error": "bad_scheme"}
-        if not _is_public_host(p.hostname or ""):
-            return {"url": u, "ok": False, "error": "blocked_host"}
+        initial_error = _public_http_url_error(u)
+        if initial_error:
+            return {"url": u, "ok": False, "error": initial_error}
         t0 = datetime.now().timestamp()
-        r = requests.get(
-            u,
-            timeout=timeout_sec,
-            allow_redirects=True,
-            headers={"User-Agent": "OSINT-Panel/1.0"},
-        )
+        current_url = u
+        redirects = 0
+        while True:
+            r = requests.get(
+                current_url,
+                timeout=timeout_sec,
+                allow_redirects=False,
+                headers={"User-Agent": "OSINT-Panel/1.0"},
+            )
+            code = int(getattr(r, "status_code", 0) or 0)
+            location = (getattr(r, "headers", {}) or {}).get("Location")
+            if not (300 <= code < 400 and location):
+                break
+            redirects += 1
+            if redirects > _VERIFY_MAX_REDIRECTS:
+                ms = int((datetime.now().timestamp() - t0) * 1000)
+                return {"url": u, "ok": False, "status": code, "final_url": current_url, "latency_ms": ms, "error": "too_many_redirects"}
+            next_url = urljoin(current_url, location)
+            redirect_error = _public_http_url_error(next_url)
+            if redirect_error:
+                ms = int((datetime.now().timestamp() - t0) * 1000)
+                return {
+                    "url": u,
+                    "ok": False,
+                    "status": code,
+                    "final_url": current_url,
+                    "redirect_url": next_url,
+                    "latency_ms": ms,
+                    "error": "blocked_redirect" if redirect_error == "blocked_host" else redirect_error,
+                }
+            current_url = next_url
         ms = int((datetime.now().timestamp() - t0) * 1000)
-        code = int(getattr(r, "status_code", 0) or 0)
-        final = str(getattr(r, "url", u) or u)
+        final = str(getattr(r, "url", current_url) or current_url)
         ok = 200 <= code < 400
         hint = "ok" if ok else ("blocked" if code in {401, 403, 429} else "not_found" if code == 404 else "http_error")
         return {"url": u, "ok": ok, "status": code, "final_url": final, "latency_ms": ms, "hint": hint}
