@@ -8,8 +8,6 @@ import platform
 import sys
 import zipfile
 from urllib.parse import quote, urlparse
-import ipaddress
-import socket
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Запуск из корня проекта: python backend/app.py
@@ -30,6 +28,7 @@ from tools.tool_formgrab import add_capture, get_captures, get_grab_page_html, g
 from settings_keys import get_keys_for_api, save_keys_from_api, load_env_into_os
 
 from css_bundle import BUNDLE_TOOL_IDS, build_tool_css_bundle
+from url_verify import verify_one_url
 
 import requests
 from bs4 import BeautifulSoup
@@ -843,62 +842,6 @@ def api_tool_run(tool_id):
     return jsonify(result)
 
 
-def _is_public_host(host: str) -> bool:
-    """SSRF защита: запрещаем локальные/приватные адреса и localhost."""
-    if not host:
-        return False
-    h = host.strip().lower()
-    if h in {"localhost", "localhost.localdomain"}:
-        return False
-    try:
-        ip = ipaddress.ip_address(h)
-        return not (ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved)
-    except ValueError:
-        pass
-    try:
-        infos = socket.getaddrinfo(h, None)
-    except OSError:
-        return False
-    for info in infos:
-        addr = info[4][0]
-        try:
-            ip = ipaddress.ip_address(addr)
-            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved:
-                return False
-        except ValueError:
-            continue
-    return True
-
-
-def _verify_one(url: str, timeout_sec: float = 6.0) -> dict:
-    u = (url or "").strip()
-    try:
-        p = urlparse(u)
-        if p.scheme not in {"http", "https"}:
-            return {"url": u, "ok": False, "error": "bad_scheme"}
-        if not _is_public_host(p.hostname or ""):
-            return {"url": u, "ok": False, "error": "blocked_host"}
-        t0 = datetime.now().timestamp()
-        r = requests.get(
-            u,
-            timeout=timeout_sec,
-            allow_redirects=True,
-            headers={"User-Agent": "OSINT-Panel/1.0"},
-        )
-        ms = int((datetime.now().timestamp() - t0) * 1000)
-        code = int(getattr(r, "status_code", 0) or 0)
-        final = str(getattr(r, "url", u) or u)
-        ok = 200 <= code < 400
-        hint = "ok" if ok else ("blocked" if code in {401, 403, 429} else "not_found" if code == 404 else "http_error")
-        return {"url": u, "ok": ok, "status": code, "final_url": final, "latency_ms": ms, "hint": hint}
-    except requests.Timeout:
-        return {"url": u, "ok": False, "error": "timeout"}
-    except requests.RequestException as e:
-        return {"url": u, "ok": False, "error": "request_error", "detail": str(e)[:200]}
-    except Exception as e:
-        return {"url": u, "ok": False, "error": "error", "detail": str(e)[:200]}
-
-
 @app.route("/api/verify/links", methods=["POST"])
 def api_verify_links():
     """Проверка URL (серверная, с SSRF-защитой). Body: { urls: string[], timeout_sec?, max_workers? }"""
@@ -914,7 +857,7 @@ def api_verify_links():
     max_workers = max(4, min(32, max_workers))
     out = []
     with ThreadPoolExecutor(max_workers=max_workers) as ex:
-        futs = [ex.submit(_verify_one, u, timeout_sec) for u in urls]
+        futs = [ex.submit(verify_one_url, u, timeout_sec) for u in urls]
         for f in as_completed(futs):
             out.append(f.result())
     return jsonify({"success": True, "count": len(out), "results": out})
