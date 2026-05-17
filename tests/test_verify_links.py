@@ -1,6 +1,7 @@
-import backend.app as app_module
 from unittest import TestCase, main
 from unittest.mock import patch
+
+import backend.url_verify as url_verify
 
 
 class DummyResponse:
@@ -27,10 +28,10 @@ class VerifyLinksTest(TestCase):
             )
 
         with (
-            patch.object(app_module, "_is_public_host", fake_is_public_host),
-            patch.object(app_module.requests, "get", fake_get),
+            patch.object(url_verify, "is_public_host", fake_is_public_host),
+            patch.object(url_verify.requests, "get", fake_get),
         ):
-            result = app_module._verify_one("https://example.com/start")
+            result = url_verify.verify_one_url("https://example.com/start")
 
         self.assertIs(result["ok"], False)
         self.assertEqual(result["error"], "blocked_redirect")
@@ -53,10 +54,10 @@ class VerifyLinksTest(TestCase):
             return responses[url]
 
         with (
-            patch.object(app_module, "_is_public_host", fake_is_public_host),
-            patch.object(app_module.requests, "get", fake_get),
+            patch.object(url_verify, "is_public_host", fake_is_public_host),
+            patch.object(url_verify.requests, "get", fake_get),
         ):
-            result = app_module._verify_one("https://example.com/start")
+            result = url_verify.verify_one_url("https://example.com/start")
 
         self.assertIs(result["ok"], True)
         self.assertEqual(result["status"], 204)
