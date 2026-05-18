@@ -14,8 +14,11 @@ from __future__ import annotations
 import json
 import os
 import re
+import ipaddress
+import socket
 import urllib.error
 import urllib.request
+from urllib.parse import urlparse
 from typing import Any
 
 
@@ -53,6 +56,50 @@ def is_ai_available() -> bool:
     if rk and len(rk) >= 20:
         return True
     return bool(_get("AI_OPENAI_API_KEY") or _get("OPENAI_API_KEY"))
+
+
+def _is_public_host(host: str) -> bool:
+    """Reject hosts that could make the vision provider fetch internal resources."""
+    if not host:
+        return False
+    h = host.strip().lower()
+    if h in {"localhost", "localhost.localdomain"}:
+        return False
+    try:
+        ip = ipaddress.ip_address(h)
+        return not (ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved)
+    except ValueError:
+        pass
+    try:
+        infos = socket.getaddrinfo(h, None)
+    except OSError:
+        return False
+    for info in infos:
+        addr = info[4][0]
+        try:
+            ip = ipaddress.ip_address(addr)
+        except ValueError:
+            continue
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved:
+            return False
+    return True
+
+
+def validate_image_url_for_ai(image_url: str) -> str | None:
+    """Return an error string when a user-supplied image reference is unsafe."""
+    value = (image_url or "").strip()
+    if not value:
+        return "image_url обязателен."
+    if value.startswith("data:image/"):
+        return None
+    parsed = urlparse(value)
+    if not parsed.scheme:
+        return None
+    if parsed.scheme not in {"http", "https"}:
+        return "URL изображения должен быть http(s) или data:image."
+    if not parsed.netloc or not _is_public_host(parsed.hostname or ""):
+        return "URL изображения указывает на локальный или приватный адрес."
+    return None
 
 
 def _call_openai_compatible_vision(
@@ -145,6 +192,9 @@ def analyze_image_json(*, prompt: str, image_url: str, max_tokens: int = 1600) -
     """
     Просит модель вернуть СТРОГО JSON, пытается распарсить.
     """
+    unsafe_reason = validate_image_url_for_ai(image_url)
+    if unsafe_reason:
+        return {"success": False, "error": unsafe_reason}
     if not is_ai_available():
         return {
             "success": False,

@@ -31,7 +31,7 @@ def add_capture(token: str, field: str, value: str, ip: str) -> bool:
     """Добавляет запись о вводе. Возвращает True если токен существует."""
     with _LOCK:
         if token not in _CAPTURES:
-            _CAPTURES[token] = []
+            return False
         _CAPTURES[token].append({
             "ts": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
             "field": field or "",

