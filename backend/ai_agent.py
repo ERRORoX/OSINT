@@ -10,6 +10,8 @@ import urllib.request
 import urllib.error
 from typing import Any
 
+from settings_keys import is_safe_ollama_url
+
 # Ключи из .env (загружаются через load_env_into_os при старте)
 def _get(key: str, default: str = "") -> str:
     return (os.environ.get(key) or "").strip() or default
@@ -152,7 +154,7 @@ def _call_openai_compatible(
 def _get_ai_config() -> dict[str, Any]:
     """Определяет провайдер и параметры: Ollama, OpenRouter или OpenAI."""
     ollama_url = _get("OLLAMA_URL")
-    if ollama_url:
+    if ollama_url and is_safe_ollama_url(ollama_url):
         return {
             "provider": "ollama",
             "base_url": ollama_url.rstrip("/"),
@@ -180,7 +182,8 @@ def _get_ai_config() -> dict[str, Any]:
 
 def is_ai_available() -> bool:
     """Есть ли настроенный провайдер ИИ (Ollama, OpenRouter или OpenAI)."""
-    if _get("OLLAMA_URL"):
+    ollama_url = _get("OLLAMA_URL")
+    if ollama_url and is_safe_ollama_url(ollama_url):
         return True
     rk = _get("OPENROUTER_API_KEY") or _get("OPENROUTER_KEY")
     if rk and len(rk) >= 20:

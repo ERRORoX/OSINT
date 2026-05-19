@@ -9,6 +9,8 @@ from typing import Any
 
 from .base import ToolBase
 
+_MAX_IMAGE_DATA_URL_CHARS = 18 * 1024 * 1024
+
 
 class ToolPhotoAI(ToolBase):
     @property
@@ -33,7 +35,11 @@ class ToolPhotoAI(ToolBase):
         task = str(params.get("task") or "").strip().lower()
         image_url = (params.get("image_url") or params.get("imageUrl") or "").strip()
         if not image_url:
-            return {"success": False, "error": "image_url обязателен (data URL или URL изображения)."}
+            return {"success": False, "error": "image_url обязателен (проверенный data:image URL)."}
+        if not image_url.startswith("data:image/"):
+            return {"success": False, "error": "photo-ai принимает только проверенный data:image URL."}
+        if len(image_url) > _MAX_IMAGE_DATA_URL_CHARS:
+            return {"success": False, "error": "Файл слишком большой (лимит 12MB)."}
 
         prompts: dict[str, str] = {
             "analysis": (

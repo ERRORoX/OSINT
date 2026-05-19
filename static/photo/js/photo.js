@@ -84,6 +84,38 @@ let photoMarkerGeo = null;
 
 const hasImg = () => !!(imgB64 || imgUrl);
 
+function setUploadUrlMode(next, ev) {
+  if (ev) ev.stopPropagation();
+  urlMode = !!next;
+  render();
+}
+
+function submitImageUrlFromInput() {
+  const input = document.getElementById('urlInput');
+  imgUrl = input ? input.value.trim() : '';
+  imgSrc = imgUrl;
+  imgB64 = null;
+  uploadFileName = null;
+  render();
+  setTimeout(runAllParallel, 300);
+}
+
+function setExiftoolFullQuery(value) {
+  exiftoolFullQuery = value || '';
+  render();
+}
+
+function toggleExifAdvanced() {
+  exifAdvanced = !exifAdvanced;
+  rerunTool('exif');
+}
+
+function toggleExifShowAllTags() {
+  exifShowAllTags = !exifShowAllTags;
+  if (exifShowAllTags) ensureExiftoolFullLoaded();
+  render();
+}
+
 function destroyPhotoLeafletMaps() {
   if (photoMarkerExif) {
     try { photoMarkerExif.remove(); } catch (_) {}
@@ -514,7 +546,7 @@ function renderExiftoolFullBlock() {
     </div>
     <div class="exiftool-search">
       <input class="exiftool-search-input" placeholder="Поиск по тегам (например: GPS, Model, DateTime…)" value="${esc(exiftoolFullQuery||'')}"
-        oninput="exiftoolFullQuery=this.value;render()" />
+        oninput="setExiftoolFullQuery(this.value)" />
       ${rec ? `<span class="exiftool-search-meta">${filtered.length}/${keys.length}</span>` : ''}
     </div>
   `;
@@ -708,8 +740,8 @@ function renderUpload() {
           <div onclick="event.stopPropagation()">
             <p style="font-size:14px;color:var(--text2)">URL изображения</p>
             <div class="url-row">
-              <input class="url-input" placeholder="https://example.com/photo.jpg" id="urlInput" value="${esc(imgUrl)}" onkeydown="if(event.key==='Enter'){imgUrl=this.value;imgSrc=imgUrl;imgB64=null;render();setTimeout(runAllParallel,300)}"/>
-              <button class="btn btn-emerald" onclick="imgUrl=document.getElementById('urlInput').value;imgSrc=imgUrl;imgB64=null;render();setTimeout(runAllParallel,300)">OK</button>
+              <input class="url-input" placeholder="https://example.com/photo.jpg" id="urlInput" value="${esc(imgUrl)}" onkeydown="if(event.key==='Enter') submitImageUrlFromInput()"/>
+              <button class="btn btn-emerald" onclick="submitImageUrlFromInput()">OK</button>
             </div>
           </div>
         ` : `
@@ -717,8 +749,8 @@ function renderUpload() {
           <p class="upload-sub">PNG, JPG, WebP · до 10 МБ · автозапуск всех инструментов</p>
         `}
         <div class="upload-toggles">
-          <button class="upload-toggle ${!urlMode?'active':''}" onclick="event.stopPropagation();urlMode=false;render()">Файл</button>
-          <button class="upload-toggle ${urlMode?'active':''}" onclick="event.stopPropagation();urlMode=true;render()">URL</button>
+          <button class="upload-toggle ${!urlMode?'active':''}" onclick="setUploadUrlMode(false, event)">Файл</button>
+          <button class="upload-toggle ${urlMode?'active':''}" onclick="setUploadUrlMode(true, event)">URL</button>
         </div>
       </div>`;
     // Drag events
@@ -866,9 +898,9 @@ function renderContent(id, d) {
       const exif = d;
       html += `
         <div class="tag-list" style="margin-bottom:10px">
-          <button class="upload-toggle ${exifAdvanced?'active':''}" onclick="exifAdvanced=${exifAdvanced?'false':'true'};rerunTool('exif')">ExifTool</button>
+          <button class="upload-toggle ${exifAdvanced?'active':''}" onclick="toggleExifAdvanced()">ExifTool</button>
           <button class="upload-toggle" onclick="downloadCleanImage()">Сохранить без EXIF</button>
-          <button class="upload-toggle ${exifShowAllTags?'active':''}" onclick="exifShowAllTags=${exifShowAllTags?'false':'true'}; if(exifShowAllTags){ ensureExiftoolFullLoaded(); } render()">Все теги</button>
+          <button class="upload-toggle ${exifShowAllTags?'active':''}" onclick="toggleExifShowAllTags()">Все теги</button>
         </div>
       `;
 
@@ -1397,7 +1429,7 @@ function renderExifFileBlock(exif) {
   if (exif.exiftool_tag_count != null) {
     out += `
       <div class="tag-list" style="margin-top:8px">
-        <button class="upload-toggle ${exifShowAllTags?'active':''}" onclick="exifShowAllTags=${exifShowAllTags?'false':'true'}; if(exifShowAllTags){ ensureExiftoolFullLoaded(); } render()">Все теги ExifTool</button>
+        <button class="upload-toggle ${exifShowAllTags?'active':''}" onclick="toggleExifShowAllTags()">Все теги ExifTool</button>
         <button class="upload-toggle" onclick="downloadExiftoolJson()">Скачать JSON</button>
         <button class="upload-toggle" onclick="downloadExiftoolTxt()">Скачать TXT</button>
       </div>
@@ -1471,4 +1503,9 @@ window.onFile = onFile;
 window.collapsedSet = collapsedSet;
 window.render = render;
 window.downloadCleanImage = downloadCleanImage;
+window.setUploadUrlMode = setUploadUrlMode;
+window.submitImageUrlFromInput = submitImageUrlFromInput;
+window.setExiftoolFullQuery = setExiftoolFullQuery;
+window.toggleExifAdvanced = toggleExifAdvanced;
+window.toggleExifShowAllTags = toggleExifShowAllTags;
 

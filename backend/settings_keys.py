@@ -3,10 +3,13 @@
 Один модуль — не зависит от инструментов.
 """
 import os
+import ipaddress
 from typing import Any
+from urllib.parse import urlparse
 
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _ENV_PATH = os.path.join(_PROJECT_ROOT, ".env")
+_OLLAMA_PORT = 11434
 
 # Список ключей: id (имя в .env), подпись для формы, текст помощи, ссылка
 KEYS_CONFIG = [
@@ -157,12 +160,46 @@ def get_keys_for_api() -> dict[str, Any]:
     return {"keys": keys}
 
 
+def is_safe_ollama_url(value: str) -> bool:
+    """Ollama разрешён только на стандартном loopback endpoint, чтобы URL не стал SSRF-прокси."""
+    value = (value or "").strip()
+    if not value:
+        return True
+    try:
+        p = urlparse(value)
+    except Exception:
+        return False
+    if p.scheme not in {"http", "https"}:
+        return False
+    host = (p.hostname or "").strip().lower()
+    if host in {"localhost", "localhost.localdomain"}:
+        is_loopback = True
+    else:
+        try:
+            is_loopback = ipaddress.ip_address(host).is_loopback
+        except ValueError:
+            is_loopback = False
+    if not is_loopback:
+        return False
+    if p.port != _OLLAMA_PORT:
+        return False
+    path = (p.path or "").rstrip("/")
+    return path in {"", "/v1"}
+
+
+def _validate_key_value(key: str, value: str) -> None:
+    if key == "OLLAMA_URL" and value and not is_safe_ollama_url(value):
+        raise ValueError("OLLAMA_URL должен указывать на локальный Ollama: http://localhost:11434/v1")
+
+
 def save_keys_from_api(data: dict[str, str]) -> None:
     """Для POST /api/settings/keys: сохраняет переданные ключи в .env."""
     key_ids = {c["id"] for c in KEYS_CONFIG}
     to_save = {k: (v or "").strip() for k, v in (data or {}).items() if k in key_ids}
     if not to_save:
         return
+    for k, v in to_save.items():
+        _validate_key_value(k, v)
     current = _read_env()
     current.update(to_save)
     _write_env(current)

@@ -21,6 +21,8 @@ from PIL import ExifTags, Image, TiffImagePlugin
 
 from .base import ToolBase
 
+_MAX_IMAGE_PIXELS = 50_000_000
+
 
 def _run_exif_inspector_module(
     raw: bytes,
@@ -349,6 +351,8 @@ class ToolPhotoSearch(ToolBase):
             entropy = _shannon_entropy(raw)
 
             with Image.open(io.BytesIO(raw)) as img:
+                if img.width * img.height > _MAX_IMAGE_PIXELS:
+                    return {"success": False, "error": "Изображение слишком большое по пикселям."}
                 img.load()
                 fmt = (img.format or "").upper()
                 w, hh = img.size

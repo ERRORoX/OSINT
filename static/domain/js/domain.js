@@ -1046,3 +1046,6 @@ function renderContent(tool, d) {
 
 render();
 
+window.collapsedSet = collapsedSet;
+window.render = render;
+

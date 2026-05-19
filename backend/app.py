@@ -7,7 +7,8 @@ import os
 import platform
 import sys
 import zipfile
-from urllib.parse import quote, urlparse
+import base64
+from urllib.parse import quote, urljoin, urlparse
 import ipaddress
 import socket
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -37,6 +38,17 @@ from bs4 import BeautifulSoup
 app = Flask(__name__, static_folder="../static", static_url_path="")
 CORS(app)
 
+_MAX_IMAGE_BYTES = 12 * 1024 * 1024
+_MAX_IMAGE_PIXELS = 50_000_000
+_MAX_REDIRECTS = 5
+_IMAGE_MIME_BY_MAGIC = (
+    (b"\xff\xd8\xff", "image/jpeg"),
+    (b"\x89PNG\r\n\x1a\n", "image/png"),
+    (b"GIF87a", "image/gif"),
+    (b"GIF89a", "image/gif"),
+    (b"RIFF", "image/webp"),
+)
+
 # Инициализация БД и загрузка ключей из .env при старте
 init_db()
 load_env_into_os()
@@ -63,6 +75,46 @@ def _nominatim_reverse_geocode(lat: float, lon: float):
         return None
 
 
+def _mime_from_image_bytes(raw: bytes) -> str | None:
+    for magic, mime in _IMAGE_MIME_BY_MAGIC:
+        if raw.startswith(magic):
+            if mime == "image/webp" and raw[8:12] != b"WEBP":
+                continue
+            return mime
+    return None
+
+
+def _strip_data_url(s: str) -> tuple[str, str | None]:
+    s = (s or "").strip()
+    if not s.startswith("data:"):
+        return s, None
+    header, sep, payload = s.partition(",")
+    if not sep:
+        return "", None
+    mime = header[5:].split(";", 1)[0].strip().lower() or None
+    return payload, mime
+
+
+def _decode_image_base64_limited(value: str) -> tuple[bytes, str]:
+    payload, data_mime = _strip_data_url(str(value or ""))
+    if not payload:
+        raise ValueError("imageBase64 пустой.")
+    raw = base64.b64decode(payload, validate=False)
+    if len(raw) > _MAX_IMAGE_BYTES:
+        raise ValueError("Файл слишком большой (лимит 12MB).")
+    mime = _mime_from_image_bytes(raw) or data_mime
+    if not mime or not mime.startswith("image/"):
+        raise ValueError("Переданные данные не похожи на изображение.")
+    return raw, mime
+
+
+def _data_url_from_image_bytes(raw: bytes, mime: str | None = None) -> str:
+    detected = _mime_from_image_bytes(raw)
+    final_mime = detected or (mime if mime and mime.startswith("image/") else "image/jpeg")
+    b64 = base64.b64encode(raw).decode("ascii")
+    return f"data:{final_mime};base64,{b64}"
+
+
 @app.route("/")
 def index():
     return send_from_directory(app.static_folder, "index.html")
@@ -77,9 +129,13 @@ def tool_page_no_slash(tool_id: str):
 @app.route("/p/<tool_id>/")
 def tool_page(tool_id: str):
     """Отдельная страница инструмента: static/p/<tool_id>/index.html."""
-    # legacy: domain-tools теперь автономная страница /domain/
+    # legacy: крупные разделы теперь автономные страницы.
     if tool_id == "domain-tools":
         return redirect("/domain/", code=302)
+    if tool_id == "username-tools":
+        return redirect("/username/", code=302)
+    if tool_id == "photo-search":
+        return redirect("/photo/", code=302)
     base = os.path.join(app.static_folder, "p", tool_id)
     index_path = os.path.join(base, "index.html")
     if not os.path.isfile(index_path):
@@ -335,14 +391,10 @@ def api_photo_exif_strip():
         import io
         from PIL import Image
 
-        # data URL -> raw base64
-        s = str(image_b64).strip()
-        if s.startswith("data:"):
-            comma = s.find(",")
-            if comma != -1:
-                s = s[comma + 1 :]
-        raw = base64.b64decode(s, validate=False)
+        raw, _mime = _decode_image_base64_limited(str(image_b64))
         with Image.open(io.BytesIO(raw)) as img:
+            if img.width * img.height > _MAX_IMAGE_PIXELS:
+                return jsonify({"success": False, "error": "Изображение слишком большое по пикселям."}), 400
             img.load()
             fmt = (img.format or "PNG").upper()
             # сохраняем “чисто”, без info/exif
@@ -359,6 +411,8 @@ def api_photo_exif_strip():
                 fname = "clean.png"
         out.seek(0)
         return send_file(out, mimetype=mime, as_attachment=True, download_name=fname)
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -543,11 +597,12 @@ def api_photo_export_report():
 @app.route("/api/analyze", methods=["POST"])
 def api_photo_analyze():
     data = request.get_json(silent=True) or {}
-    image_url = (data.get("imageUrl") or data.get("image_url") or "").strip()
-    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
-    img = image_url or (str(image_b64).strip() or "")
-    if not img:
-        return jsonify({"success": False, "error": "Нужно передать imageUrl или imageBase64."}), 400
+    try:
+        img, err = _photo_ai_image_payload(data)
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    if err:
+        return jsonify({"success": False, "error": err}), 400
     res = run_tool("photo-ai", {"task": "analysis", "image_url": img})
     if not res.get("success"):
         return jsonify({"success": False, "error": res.get("error") or "AI ошибка"}), 400
@@ -557,11 +612,12 @@ def api_photo_analyze():
 @app.route("/api/deep-analysis", methods=["POST"])
 def api_photo_deep():
     data = request.get_json(silent=True) or {}
-    image_url = (data.get("imageUrl") or data.get("image_url") or "").strip()
-    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
-    img = image_url or (str(image_b64).strip() or "")
-    if not img:
-        return jsonify({"success": False, "error": "Нужно передать imageUrl или imageBase64."}), 400
+    try:
+        img, err = _photo_ai_image_payload(data)
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    if err:
+        return jsonify({"success": False, "error": err}), 400
     res = run_tool("photo-ai", {"task": "deep", "image_url": img})
     if not res.get("success"):
         return jsonify({"success": False, "error": res.get("error") or "AI ошибка"}), 400
@@ -571,11 +627,12 @@ def api_photo_deep():
 @app.route("/api/face", methods=["POST"])
 def api_photo_face():
     data = request.get_json(silent=True) or {}
-    image_url = (data.get("imageUrl") or data.get("image_url") or "").strip()
-    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
-    img = image_url or (str(image_b64).strip() or "")
-    if not img:
-        return jsonify({"success": False, "error": "Нужно передать imageUrl или imageBase64."}), 400
+    try:
+        img, err = _photo_ai_image_payload(data)
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    if err:
+        return jsonify({"success": False, "error": err}), 400
     res = run_tool("photo-ai", {"task": "face", "image_url": img})
     if not res.get("success"):
         return jsonify({"success": False, "error": res.get("error") or "AI ошибка"}), 400
@@ -585,11 +642,12 @@ def api_photo_face():
 @app.route("/api/threat", methods=["POST"])
 def api_photo_threat():
     data = request.get_json(silent=True) or {}
-    image_url = (data.get("imageUrl") or data.get("image_url") or "").strip()
-    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
-    img = image_url or (str(image_b64).strip() or "")
-    if not img:
-        return jsonify({"success": False, "error": "Нужно передать imageUrl или imageBase64."}), 400
+    try:
+        img, err = _photo_ai_image_payload(data)
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    if err:
+        return jsonify({"success": False, "error": err}), 400
     res = run_tool("photo-ai", {"task": "threat", "image_url": img})
     if not res.get("success"):
         return jsonify({"success": False, "error": res.get("error") or "AI ошибка"}), 400
@@ -599,11 +657,12 @@ def api_photo_threat():
 @app.route("/api/object-inventory", methods=["POST"])
 def api_photo_inventory():
     data = request.get_json(silent=True) or {}
-    image_url = (data.get("imageUrl") or data.get("image_url") or "").strip()
-    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
-    img = image_url or (str(image_b64).strip() or "")
-    if not img:
-        return jsonify({"success": False, "error": "Нужно передать imageUrl или imageBase64."}), 400
+    try:
+        img, err = _photo_ai_image_payload(data)
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    if err:
+        return jsonify({"success": False, "error": err}), 400
     res = run_tool("photo-ai", {"task": "inventory", "image_url": img})
     if not res.get("success"):
         return jsonify({"success": False, "error": res.get("error") or "AI ошибка"}), 400
@@ -613,11 +672,12 @@ def api_photo_inventory():
 @app.route("/api/geolocate", methods=["POST"])
 def api_photo_geolocate():
     data = request.get_json(silent=True) or {}
-    image_url = (data.get("imageUrl") or data.get("image_url") or "").strip()
-    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
-    img = image_url or (str(image_b64).strip() or "")
-    if not img:
-        return jsonify({"success": False, "error": "Нужно передать imageUrl или imageBase64."}), 400
+    try:
+        img, err = _photo_ai_image_payload(data)
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    if err:
+        return jsonify({"success": False, "error": err}), 400
     res = run_tool("photo-ai", {"task": "geolocate", "image_url": img})
     if not res.get("success"):
         return jsonify({"success": False, "error": res.get("error") or "AI ошибка"}), 400
@@ -654,11 +714,12 @@ def api_photo_qr():
 @app.route("/api/brand-logo", methods=["POST"])
 def api_photo_brand():
     data = request.get_json(silent=True) or {}
-    image_url = (data.get("imageUrl") or data.get("image_url") or "").strip()
-    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
-    img = image_url or (str(image_b64).strip() or "")
-    if not img:
-        return jsonify({"success": False, "error": "Нужно передать imageUrl или imageBase64."}), 400
+    try:
+        img, err = _photo_ai_image_payload(data)
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    if err:
+        return jsonify({"success": False, "error": err}), 400
     res = run_tool("photo-ai", {"task": "brand", "image_url": img})
     if not res.get("success"):
         return jsonify({"success": False, "error": res.get("error") or "AI ошибка"}), 400
@@ -668,11 +729,12 @@ def api_photo_brand():
 @app.route("/api/vehicle", methods=["POST"])
 def api_photo_vehicle():
     data = request.get_json(silent=True) or {}
-    image_url = (data.get("imageUrl") or data.get("image_url") or "").strip()
-    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
-    img = image_url or (str(image_b64).strip() or "")
-    if not img:
-        return jsonify({"success": False, "error": "Нужно передать imageUrl или imageBase64."}), 400
+    try:
+        img, err = _photo_ai_image_payload(data)
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    if err:
+        return jsonify({"success": False, "error": err}), 400
     res = run_tool("photo-ai", {"task": "vehicle", "image_url": img})
     if not res.get("success"):
         return jsonify({"success": False, "error": res.get("error") or "AI ошибка"}), 400
@@ -682,11 +744,12 @@ def api_photo_vehicle():
 @app.route("/api/cultural", methods=["POST"])
 def api_photo_cultural():
     data = request.get_json(silent=True) or {}
-    image_url = (data.get("imageUrl") or data.get("image_url") or "").strip()
-    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
-    img = image_url or (str(image_b64).strip() or "")
-    if not img:
-        return jsonify({"success": False, "error": "Нужно передать imageUrl или imageBase64."}), 400
+    try:
+        img, err = _photo_ai_image_payload(data)
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    if err:
+        return jsonify({"success": False, "error": err}), 400
     res = run_tool("photo-ai", {"task": "cultural", "image_url": img})
     if not res.get("success"):
         return jsonify({"success": False, "error": res.get("error") or "AI ошибка"}), 400
@@ -696,11 +759,12 @@ def api_photo_cultural():
 @app.route("/api/social-search", methods=["POST"])
 def api_photo_social():
     data = request.get_json(silent=True) or {}
-    image_url = (data.get("imageUrl") or data.get("image_url") or "").strip()
-    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
-    img = image_url or (str(image_b64).strip() or "")
-    if not img:
-        return jsonify({"success": False, "error": "Нужно передать imageUrl или imageBase64."}), 400
+    try:
+        img, err = _photo_ai_image_payload(data)
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    if err:
+        return jsonify({"success": False, "error": err}), 400
     res = run_tool("photo-ai", {"task": "social", "image_url": img})
     if not res.get("success"):
         return jsonify({"success": False, "error": res.get("error") or "AI ошибка"}), 400
@@ -710,11 +774,12 @@ def api_photo_social():
 @app.route("/api/architecture", methods=["POST"])
 def api_photo_architecture():
     data = request.get_json(silent=True) or {}
-    image_url = (data.get("imageUrl") or data.get("image_url") or "").strip()
-    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
-    img = image_url or (str(image_b64).strip() or "")
-    if not img:
-        return jsonify({"success": False, "error": "Нужно передать imageUrl или imageBase64."}), 400
+    try:
+        img, err = _photo_ai_image_payload(data)
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    if err:
+        return jsonify({"success": False, "error": err}), 400
     res = run_tool("photo-ai", {"task": "architecture", "image_url": img})
     if not res.get("success"):
         return jsonify({"success": False, "error": res.get("error") or "AI ошибка"}), 400
@@ -724,11 +789,12 @@ def api_photo_architecture():
 @app.route("/api/vegetation", methods=["POST"])
 def api_photo_vegetation():
     data = request.get_json(silent=True) or {}
-    image_url = (data.get("imageUrl") or data.get("image_url") or "").strip()
-    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
-    img = image_url or (str(image_b64).strip() or "")
-    if not img:
-        return jsonify({"success": False, "error": "Нужно передать imageUrl или imageBase64."}), 400
+    try:
+        img, err = _photo_ai_image_payload(data)
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    if err:
+        return jsonify({"success": False, "error": err}), 400
     res = run_tool("photo-ai", {"task": "vegetation", "image_url": img})
     if not res.get("success"):
         return jsonify({"success": False, "error": res.get("error") or "AI ошибка"}), 400
@@ -738,11 +804,12 @@ def api_photo_vegetation():
 @app.route("/api/timestamp", methods=["POST"])
 def api_photo_timestamp():
     data = request.get_json(silent=True) or {}
-    image_url = (data.get("imageUrl") or data.get("image_url") or "").strip()
-    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
-    img = image_url or (str(image_b64).strip() or "")
-    if not img:
-        return jsonify({"success": False, "error": "Нужно передать imageUrl или imageBase64."}), 400
+    try:
+        img, err = _photo_ai_image_payload(data)
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    if err:
+        return jsonify({"success": False, "error": err}), 400
     res = run_tool("photo-ai", {"task": "timestamp", "image_url": img})
     if not res.get("success"):
         return jsonify({"success": False, "error": res.get("error") or "AI ошибка"}), 400
@@ -752,11 +819,12 @@ def api_photo_timestamp():
 @app.route("/api/weather", methods=["POST"])
 def api_photo_weather():
     data = request.get_json(silent=True) or {}
-    image_url = (data.get("imageUrl") or data.get("image_url") or "").strip()
-    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
-    img = image_url or (str(image_b64).strip() or "")
-    if not img:
-        return jsonify({"success": False, "error": "Нужно передать imageUrl или imageBase64."}), 400
+    try:
+        img, err = _photo_ai_image_payload(data)
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    if err:
+        return jsonify({"success": False, "error": err}), 400
     res = run_tool("photo-ai", {"task": "weather", "image_url": img})
     if not res.get("success"):
         return jsonify({"success": False, "error": res.get("error") or "AI ошибка"}), 400
@@ -870,24 +938,108 @@ def _is_public_host(host: str) -> bool:
     return True
 
 
+def _validate_public_http_url(u: str) -> tuple[bool, str | None]:
+    try:
+        p = urlparse(u)
+    except Exception:
+        return False, "bad_url"
+    if p.scheme not in {"http", "https"}:
+        return False, "bad_scheme"
+    if not _is_public_host(p.hostname or ""):
+        return False, "blocked_host"
+    return True, None
+
+
+def _fetch_public_image_as_data_url(u: str, timeout_sec: float = 8.0) -> str:
+    current = (u or "").strip()
+    for _ in range(_MAX_REDIRECTS + 1):
+        ok, err = _validate_public_http_url(current)
+        if not ok:
+            raise ValueError(err or "blocked_host")
+        r = requests.get(
+            current,
+            timeout=timeout_sec,
+            allow_redirects=False,
+            stream=True,
+            headers={"User-Agent": "OSINT-Panel/1.0"},
+        )
+        try:
+            if 300 <= r.status_code < 400:
+                loc = r.headers.get("Location") or ""
+                if not loc:
+                    raise ValueError("redirect_without_location")
+                current = urljoin(current, loc)
+                continue
+            if r.status_code >= 400:
+                raise ValueError(f"http_{r.status_code}")
+
+            chunks: list[bytes] = []
+            total = 0
+            for chunk in r.iter_content(chunk_size=64 * 1024):
+                if not chunk:
+                    continue
+                total += len(chunk)
+                if total > _MAX_IMAGE_BYTES:
+                    raise ValueError("Файл слишком большой (лимит 12MB).")
+                chunks.append(chunk)
+            raw = b"".join(chunks)
+            content_type = (r.headers.get("Content-Type") or "").split(";", 1)[0].strip().lower()
+            mime = _mime_from_image_bytes(raw) or (content_type if content_type.startswith("image/") else None)
+            if not mime:
+                raise ValueError("URL не вернул поддерживаемое изображение.")
+            return _data_url_from_image_bytes(raw, mime)
+        finally:
+            r.close()
+    raise ValueError("too_many_redirects")
+
+
+def _photo_ai_image_payload(data: dict) -> tuple[str | None, str | None]:
+    image_b64 = data.get("imageBase64") or data.get("image_base64") or ""
+    if str(image_b64).strip():
+        raw, mime = _decode_image_base64_limited(str(image_b64))
+        return _data_url_from_image_bytes(raw, mime), None
+
+    image_url = (data.get("imageUrl") or data.get("image_url") or "").strip()
+    if image_url:
+        return _fetch_public_image_as_data_url(image_url), None
+    return None, "Нужно передать imageUrl или imageBase64."
+
+
 def _verify_one(url: str, timeout_sec: float = 6.0) -> dict:
     u = (url or "").strip()
     try:
-        p = urlparse(u)
-        if p.scheme not in {"http", "https"}:
-            return {"url": u, "ok": False, "error": "bad_scheme"}
-        if not _is_public_host(p.hostname or ""):
-            return {"url": u, "ok": False, "error": "blocked_host"}
+        ok_url, err = _validate_public_http_url(u)
+        if not ok_url:
+            return {"url": u, "ok": False, "error": err or "bad_url"}
         t0 = datetime.now().timestamp()
-        r = requests.get(
-            u,
-            timeout=timeout_sec,
-            allow_redirects=True,
-            headers={"User-Agent": "OSINT-Panel/1.0"},
-        )
+        current = u
+        r = None
+        for _ in range(_MAX_REDIRECTS + 1):
+            ok_url, err = _validate_public_http_url(current)
+            if not ok_url:
+                return {"url": u, "ok": False, "error": err or "blocked_host", "final_url": current}
+            r = requests.get(
+                current,
+                timeout=timeout_sec,
+                allow_redirects=False,
+                headers={"User-Agent": "OSINT-Panel/1.0"},
+            )
+            code = int(getattr(r, "status_code", 0) or 0)
+            if not (300 <= code < 400):
+                break
+            loc = r.headers.get("Location") or ""
+            r.close()
+            if not loc:
+                break
+            current = urljoin(current, loc)
+        else:
+            return {"url": u, "ok": False, "error": "too_many_redirects"}
+        if r is None:
+            return {"url": u, "ok": False, "error": "request_error"}
         ms = int((datetime.now().timestamp() - t0) * 1000)
         code = int(getattr(r, "status_code", 0) or 0)
-        final = str(getattr(r, "url", u) or u)
+        final = current
+        r.close()
         ok = 200 <= code < 400
         hint = "ok" if ok else ("blocked" if code in {401, 403, 429} else "not_found" if code == 404 else "http_error")
         return {"url": u, "ok": ok, "status": code, "final_url": final, "latency_ms": ms, "hint": hint}
@@ -1485,7 +1637,10 @@ def api_settings_keys_get():
 def api_settings_keys_post():
     """Сохранить ключи в .env. Body: { "TEXTBELT_API_KEY": "xxx", ... }."""
     data = request.get_json(silent=True) or {}
-    save_keys_from_api(data)
+    try:
+        save_keys_from_api(data)
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
     load_env_into_os()
     return jsonify({"success": True})
 

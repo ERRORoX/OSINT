@@ -67,9 +67,17 @@
     (function () {
       var h = (location.hash || "").replace(/^#/, "");
       if (!h) return;
-      var legacy = { reports: "history", dashboard: "domain-tools", page: "domain-tools" };
-      var id = legacy[h] || h;
-      if (id) location.replace("/p/" + encodeURIComponent(id) + "/");
+      var routes = {
+        reports: "/p/history/",
+        history: "/p/history/",
+        dashboard: "/domain/",
+        page: "/domain/",
+        "domain-tools": "/domain/",
+        "username-tools": "/username/",
+        "photo-search": "/photo/"
+      };
+      var dest = routes[h] || (h ? "/p/" + encodeURIComponent(h) + "/" : "");
+      if (dest) location.replace(dest);
     })();
   </script>
   <script src="/js/app-hub.js" type="module"></script>
