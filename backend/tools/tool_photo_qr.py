@@ -16,6 +16,9 @@ from PIL import Image
 
 from .base import ToolBase
 
+_MAX_IMAGE_BYTES = 12 * 1024 * 1024
+_MAX_IMAGE_PIXELS = 50_000_000
+
 
 def _strip_data_url(s: str) -> str:
     s = (s or "").strip()
@@ -52,9 +55,13 @@ class ToolPhotoQR(ToolBase):
             raw = base64.b64decode(b64, validate=False)
         except Exception as e:
             return {"success": False, "error": f"base64 decode: {e}"}
+        if len(raw) > _MAX_IMAGE_BYTES:
+            return {"success": False, "error": "Файл слишком большой (лимит 12MB)."}
 
         try:
             with Image.open(io.BytesIO(raw)) as img:
+                if img.width * img.height > _MAX_IMAGE_PIXELS:
+                    return {"success": False, "error": "Изображение слишком большое по пикселям."}
                 img.load()
                 if img.mode not in ("RGB", "L"):
                     img = img.convert("RGB")

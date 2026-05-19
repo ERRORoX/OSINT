@@ -5,6 +5,12 @@
 const API = "/api";
 const DOMAIN_TOOLS_IDS = ["theharvester", "domain-search", "shodan", "subfinder", "dnsx"];
 const USERNAME_TOOLS_IDS = ["sherlock", "maigret", "social-analyzer", "blackbird"];
+const OPEN_ROUTES = {
+  "domain-tools": "/domain/",
+  "username-tools": "/username/",
+  "photo-search": "/photo/",
+  history: "/p/history/",
+};
 
 function escapeHtml(text) {
   const div = document.createElement("div");
@@ -69,7 +75,7 @@ export function initPanel(container) {
           </details>` : ""}
           <div class="tool-form-actions" style="margin-top:10px">
             <button type="button" class="btn btn-primary" data-action="open" data-tool="${escapeHtml(item.tool_id || "")}">Открыть</button>
-            <button type="button" class="btn btn-secondary" data-action="rerun" data-tool="${escapeHtml(item.tool_id || "")}">Повторить</button>
+            <button type="button" class="btn btn-secondary" data-action="rerun" data-tool="${escapeHtml(item.tool_id || "")}" data-id="${id}">Повторить</button>
             <button type="button" class="btn btn-secondary" data-action="delete" data-id="${id}">Удалить</button>
           </div>
         </div>
@@ -143,7 +149,9 @@ export function initPanel(container) {
     }
 
     if (action === "open") {
-      if (rootToolId) window.location.hash = rootToolId;
+      if (rootToolId) {
+        window.location.href = OPEN_ROUTES[rootToolId] || `/p/${encodeURIComponent(rootToolId)}/`;
+      }
       return;
     }
 
