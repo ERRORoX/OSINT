@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import types
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -11,6 +12,11 @@ if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
 import security  # noqa: E402
+
+tools_pkg = types.ModuleType("tools")
+tools_pkg.__path__ = [str(BACKEND_DIR / "tools")]
+sys.modules.setdefault("tools", tools_pkg)
+
 from tools.tool_photo_ai import ToolPhotoAI  # noqa: E402
 
 
