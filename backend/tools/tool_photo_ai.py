@@ -6,8 +6,14 @@
 from __future__ import annotations
 
 from typing import Any
+from urllib.parse import urlparse
 
 from .base import ToolBase
+
+try:
+    from backend.security import PublicURLBlocked, safe_fetch_public_url_as_data_url
+except Exception:
+    from security import PublicURLBlocked, safe_fetch_public_url_as_data_url  # type: ignore
 
 
 class ToolPhotoAI(ToolBase):
@@ -24,16 +30,19 @@ class ToolPhotoAI(ToolBase):
         return "Vision анализ изображения (AI): описание, лица, угрозы, геолокация, OCR и др. (через Ollama/OpenRouter/OpenAI)."
 
     def run(self, params: dict[str, Any]) -> dict[str, Any]:
+        task = str(params.get("task") or "").strip().lower()
+        image_url = (params.get("image_url") or params.get("imageUrl") or "").strip()
+        if not image_url:
+            return {"success": False, "error": "image_url обязателен (data URL или URL изображения)."}
+        image_url, image_error = _prepare_image_reference(image_url)
+        if image_error:
+            return {"success": False, "error": image_error}
+
         try:
             from backend.photo_ai import analyze_image_json  # type: ignore
         except Exception:
             # fallback относительный импорт (когда запускают как backend/app.py)
             from photo_ai import analyze_image_json  # type: ignore
-
-        task = str(params.get("task") or "").strip().lower()
-        image_url = (params.get("image_url") or params.get("imageUrl") or "").strip()
-        if not image_url:
-            return {"success": False, "error": "image_url обязателен (data URL или URL изображения)."}
 
         prompts: dict[str, str] = {
             "analysis": (
@@ -109,4 +118,30 @@ class ToolPhotoAI(ToolBase):
         # Дефолт ниже, чтобы OpenRouter с малым балансом не падал на 402.
         data = analyze_image_json(prompt=prompts[task], image_url=image_url, max_tokens=int(params.get("max_tokens") or 480))
         return data
+
+
+def _prepare_image_reference(image_url: str) -> tuple[str, str | None]:
+    """Normalize user image input before it reaches a provider that may fetch URLs."""
+    ref = (image_url or "").strip()
+    parsed = urlparse(ref)
+    scheme = parsed.scheme.lower()
+
+    if scheme == "data":
+        if not ref.lower().startswith("data:image/"):
+            return "", "data URL должен содержать изображение."
+        return ref, None
+
+    if scheme in {"http", "https"}:
+        try:
+            return safe_fetch_public_url_as_data_url(ref), None
+        except PublicURLBlocked as e:
+            return "", f"Недопустимый image_url: {e.reason}."
+        except Exception as e:
+            return "", f"Не удалось загрузить image_url: {str(e)[:160]}"
+
+    if parsed.netloc or scheme:
+        return "", "image_url должен быть публичным http(s) URL или data:image URL."
+
+    # Preserve legacy callers that pass raw base64 instead of a data URL; it is not a network fetch target.
+    return ref, None
 

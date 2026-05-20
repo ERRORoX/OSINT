@@ -8,8 +8,6 @@ import platform
 import sys
 import zipfile
 from urllib.parse import quote, urlparse
-import ipaddress
-import socket
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Запуск из корня проекта: python backend/app.py
@@ -25,6 +23,7 @@ from flask_cors import CORS
 from datetime import datetime, timezone, timedelta
 
 from db import init_db, save_run, get_run_history, get_last_successful_run, delete_run, clear_runs
+from security import PublicURLBlocked, is_public_host, safe_public_get
 from tools import get_all_tools, get_tool, run_tool
 from tools.tool_formgrab import add_capture, get_captures, get_grab_page_html, get_or_create_token
 from settings_keys import get_keys_for_api, save_keys_from_api, load_env_into_os
@@ -845,29 +844,7 @@ def api_tool_run(tool_id):
 
 def _is_public_host(host: str) -> bool:
     """SSRF защита: запрещаем локальные/приватные адреса и localhost."""
-    if not host:
-        return False
-    h = host.strip().lower()
-    if h in {"localhost", "localhost.localdomain"}:
-        return False
-    try:
-        ip = ipaddress.ip_address(h)
-        return not (ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved)
-    except ValueError:
-        pass
-    try:
-        infos = socket.getaddrinfo(h, None)
-    except OSError:
-        return False
-    for info in infos:
-        addr = info[4][0]
-        try:
-            ip = ipaddress.ip_address(addr)
-            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved:
-                return False
-        except ValueError:
-            continue
-    return True
+    return is_public_host(host)
 
 
 def _verify_one(url: str, timeout_sec: float = 6.0) -> dict:
@@ -879,10 +856,9 @@ def _verify_one(url: str, timeout_sec: float = 6.0) -> dict:
         if not _is_public_host(p.hostname or ""):
             return {"url": u, "ok": False, "error": "blocked_host"}
         t0 = datetime.now().timestamp()
-        r = requests.get(
+        r = safe_public_get(
             u,
-            timeout=timeout_sec,
-            allow_redirects=True,
+            timeout_sec=timeout_sec,
             headers={"User-Agent": "OSINT-Panel/1.0"},
         )
         ms = int((datetime.now().timestamp() - t0) * 1000)
@@ -891,6 +867,8 @@ def _verify_one(url: str, timeout_sec: float = 6.0) -> dict:
         ok = 200 <= code < 400
         hint = "ok" if ok else ("blocked" if code in {401, 403, 429} else "not_found" if code == 404 else "http_error")
         return {"url": u, "ok": ok, "status": code, "final_url": final, "latency_ms": ms, "hint": hint}
+    except PublicURLBlocked as e:
+        return {"url": u, "ok": False, "error": e.reason}
     except requests.Timeout:
         return {"url": u, "ok": False, "error": "timeout"}
     except requests.RequestException as e:
