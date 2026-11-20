@@ -60,6 +60,15 @@ export function initControl(container) {
         POLL_IDS.status = null;
         if (submitBtn) { submitBtn.style.display = ""; submitBtn.disabled = false; }
         if (stopBtn) stopBtn.style.display = "none";
+        if (!status.link && !status.local_url) {
+          state.lastLinkUrl = "";
+          if (resultEl) {
+            resultEl.textContent = "(ссылка появится после запуска)";
+            resultEl.className = "gc-link-box gc-link-placeholder";
+          }
+          if (copyBtn) copyBtn.style.display = "none";
+          if (statusCheckbox) statusCheckbox.checked = false;
+        }
       } else if (status.started_at && !state.sessionStartTime) {
         state.sessionStartTime = status.started_at * 1000;
       }
