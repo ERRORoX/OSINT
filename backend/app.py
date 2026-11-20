@@ -855,15 +855,7 @@ def api_tool_run(tool_id):
     result = run_tool(tool_id, data)
     if not result.get("started"):
         save_run(tool_id, data, result if result.get("success") else None, result.get("error"))
-    if tool_id == "grabcam" and result.get("local_url"):
-        # Сохраняем порт из local_url, но подставляем хост запроса (для доступа из локальной сети).
-        host = (request.host or "127.0.0.1:5000").split(":")[0]
-        try:
-            u = urlparse(result["local_url"])
-            port = u.port or 3333
-        except Exception:
-            port = 3333
-        result["local_url"] = "http://{}:{}".format(host, port)
+    # The demo server binds to loopback only; never rewrite this to a LAN/public host.
     if not result.get("success") and result.get("error") == f"Unknown tool: {tool_id}":
         return jsonify({"error": result["error"]}), 404
     return jsonify(result)
@@ -1014,14 +1006,7 @@ def api_grabcam_run_status():
     if not tool or not hasattr(tool, "get_run_status"):
         return jsonify({"running": False, "link": None, "local_url": None, "error": "Инструмент не найден"})
     data = tool.get_run_status()
-    if data.get("local_url"):
-        host = (request.host or "127.0.0.1:5000").split(":")[0]
-        try:
-            u = urlparse(data["local_url"])
-            port = u.port or 3333
-        except Exception:
-            port = 3333
-        data["local_url"] = "http://{}:{}".format(host, port)
+    # Keep the loopback URL: the local demo server is intentionally not LAN-exposed.
     return jsonify(data)
 
 
