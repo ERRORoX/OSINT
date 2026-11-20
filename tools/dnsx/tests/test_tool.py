@@ -6,7 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "backend"))
 
-from tools.tool_dnsx import ToolDnsx
+from tools.tool_dnsx import ToolDnsx, _MODULE
 
 
 class DnsxModuleTests(unittest.TestCase):
@@ -22,9 +22,7 @@ class DnsxModuleTests(unittest.TestCase):
         self.assertIn("домен", result.get("error", "").lower())
 
     def test_normalizes_domain(self):
-        normalizer = self.tool.__class__.__module__
-        module = sys.modules[normalizer]
-        self.assertEqual(module._normalize_domain("https://www.example.com/path"), "example.com")
+        self.assertEqual(_MODULE._normalize_domain("https://www.example.com/path"), "example.com")
 
 
 if __name__ == "__main__":
