@@ -2,27 +2,35 @@
   "schema_version": 1,
   "id": "shodan",
   "name": "Shodan",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "category": "network",
   "description": "Пассивный поиск информации об интернет-активах через Shodan API.",
-  "status": "legacy",
+  "status": "integrated",
   "enabled": true,
   "entrypoints": {
-    "backend_adapter": "backend/tools/tool_shodan.py"
+    "backend_adapter": "tools/shodan/backend/tool.py"
   },
   "dependencies": {
-    "python": [],
+    "python": [
+      "shodan"
+    ],
     "system": [],
-    "optional": []
+    "optional": [
+      "Shodan API key",
+      "tools/shodan-python source library"
+    ]
   },
   "capabilities": [
-    "legacy-backend-adapter"
+    "passive-host-intelligence",
+    "shodan-api",
+    "internetdb-lookup"
   ],
   "legacy_paths": [
     "backend/tools/tool_shodan.py"
   ],
   "notes": [
-    "Manifest описывает существующий инструмент; код ещё не перенесён в каноническую структуру модуля.",
-    "Не удалять и не перемещать legacy-файлы до отдельной проверки импортов, маршрутов и тестов."
+    "Каноническая backend-реализация находится в каталоге этого модуля.",
+    "Старый backend/tools adapter сохранён для совместимости с центральным реестром.",
+    "Зависимости перечислены как метаданные; manifest не запускает установку пакетов."
   ]
 }
