@@ -35,6 +35,7 @@ from settings_keys import get_keys_for_api, save_keys_from_api, load_env_into_os
 
 from css_bundle import BUNDLE_TOOL_IDS, build_tool_css_bundle
 from module_registry import discover_modules
+from module_runtime import get_runtime_module_issues
 from update_manager import check_update, install_update, UpdateError
 
 # Background update job state for the local UI.
@@ -867,8 +868,23 @@ def ip_rdap_module_assets(filename):
 
 @app.route("/api/modules", methods=["GET"])
 def api_modules_list():
-    """Read-only module manifest discovery and diagnostics; does not import module code."""
-    return jsonify(discover_modules(_PROJECT_ROOT))
+    """Return manifest diagnostics plus backend runtime loading status."""
+    result = discover_modules(_PROJECT_ROOT)
+    runtime_issues = get_runtime_module_issues()
+    issue_by_module = {item["module_id"]: item for item in runtime_issues}
+    for module in result["modules"]:
+        if module["id"] in issue_by_module:
+            module["runtime_ok"] = False
+            module["issues"].append({
+                "code": issue_by_module[module["id"]]["code"],
+                "message": issue_by_module[module["id"]]["message"],
+                "severity": "error",
+            })
+        elif module.get("status") == "integrated" and module.get("entrypoints", {}).get("backend_adapter"):
+            module["runtime_ok"] = True
+    result["runtime_issues"] = runtime_issues
+    result["summary"]["runtime_errors"] = len(runtime_issues)
+    return jsonify(result)
 
 
 @app.route("/api/tools", methods=["GET"])
