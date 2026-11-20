@@ -333,3 +333,23 @@ body.dashboard-page{margin:0!important;min-height:100vh;background:radial-gradie
 .saved-material-export:disabled{opacity:.4;cursor:not-allowed}
 .saved-material-source-link{display:inline-block;margin-top:4px;color:#79aee9;font-size:9px;text-decoration:none;overflow-wrap:anywhere}
 .saved-material-source-link:hover{text-decoration:underline;color:#c4e0ff}
+
+/* Investigation case management */
+.case-project-form{display:grid;gap:10px;padding:13px;border:1px solid rgba(72,111,158,.22);border-radius:10px;background:rgba(7,17,32,.25);margin-bottom:12px}
+.case-project-field{display:grid;gap:5px;min-width:0}
+.case-project-field>span{color:#8fa8c8;font-size:10px}
+.case-project-field input,.case-project-field textarea,.case-project-field select{width:100%;box-sizing:border-box;padding:9px 10px;border:1px solid rgba(88,132,183,.28);border-radius:7px;background:#091525;color:#d4e3f6;font:11px/1.5 inherit;outline:none}
+.case-project-field input:focus,.case-project-field textarea:focus,.case-project-field select:focus{border-color:#4b91d3;box-shadow:0 0 0 2px rgba(75,145,211,.12)}
+.case-project-field textarea{resize:vertical;min-height:58px}
+.case-project-list{display:grid;gap:10px}
+.case-project-card{padding:13px;border:1px solid rgba(72,111,158,.25);border-radius:10px;background:rgba(7,17,32,.32);min-width:0}
+.case-project-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px}
+.case-project-card-head h3{margin:4px 0 0;color:#d2e2f6;font-size:13px;overflow-wrap:anywhere}
+.case-project-id{color:#6f8cac;font-size:9px;letter-spacing:.08em}
+.case-project-delete{border:1px solid rgba(180,91,103,.25);border-radius:6px;padding:5px 8px;background:rgba(80,25,37,.2);color:#c88e98;font-size:9px;cursor:pointer;white-space:nowrap}
+.case-project-actions,.case-project-attach{display:flex;align-items:end;gap:8px;margin-top:9px;flex-wrap:wrap}
+.case-project-attach .case-project-field{flex:1 1 220px}
+.case-project-muted{color:#7188a9;font-size:9px}
+.case-attached-list{display:flex;gap:6px;flex-wrap:wrap;margin:9px 0 0;padding:0;list-style:none}
+.case-attached-list li{padding:4px 7px;border:1px solid rgba(76,132,190,.2);border-radius:5px;color:#a9c5e6;font-size:9px;overflow-wrap:anywhere}
+@media(max-width:640px){.case-project-card-head{flex-direction:column}.case-project-delete{align-self:flex-start}}
