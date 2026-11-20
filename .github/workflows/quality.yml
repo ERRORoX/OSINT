@@ -37,6 +37,9 @@ jobs:
       - name: Check home navigation JavaScript syntax
         run: node --input-type=module --check < static/js/app-hub.js
 
+      - name: Check domain workspace JavaScript syntax
+        run: node --check tools/domain-workspace/frontend/js/domain.js
+
       - name: Test module registry
         run: python -m unittest discover -s backend/tests -p "test_*.py" -v
 
