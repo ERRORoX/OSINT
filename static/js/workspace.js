@@ -90,9 +90,15 @@
     });
   }
   var NAV_ITEMS = [
-    ["Домены", "/domain/"], ["Username", "/username/"], ["Фото", "/photo/"],
-    ["IP / RDAP", "/p/ip-rdap/"], ["GrabCam", "/p/grabcam/"], ["ИИ", "/p/ai-agent/"],
-    ["Email OSINT", "/modules/google-osint/"], ["История", "/modules/history/"], ["Настройки", "/p/settings/"]
+    ["domain-tools", "Домены", "/modules/domain-workspace/"],
+    ["username-tools", "Username", "/modules/username-workspace/"],
+    ["photo-search", "Фото", "/modules/photo-workspace/"],
+    ["ip-rdap", "IP / RDAP", "/modules/ip-rdap/"],
+    ["grabcam", "GrabCam", "/modules/grabcam/"],
+    ["ai-agent", "ИИ", "/modules/ai-agent/"],
+    ["google-osint", "Email OSINT", "/modules/google-osint/"],
+    ["history", "История", "/modules/history/"],
+    ["settings", "Настройки", "/p/settings/"]
   ];
   function ensureUnifiedNav() {
     var header = document.querySelector(".app-header");
@@ -106,12 +112,87 @@
     }
     if (nav.querySelectorAll("[data-osint-nav]").length === NAV_ITEMS.length) return;
     nav.innerHTML = NAV_ITEMS.map(function (item) {
-      var active = location.pathname === item[1] || (item[1] !== "/" && location.pathname.indexOf(item[1]) === 0);
-      return '<a href="' + item[1] + '" class="tool-link' + (active ? ' active' : '') + '" data-osint-nav="1">' + item[0] + '</a>';
+      var active = location.pathname === item[2] || location.pathname.indexOf(item[2]) === 0;
+      return '<a href="' + item[2] + '" class="tool-link' + (active ? ' active' : '') + '" data-tool-id="' + item[0] + '" data-osint-nav="1">' + item[1] + '</a>';
     }).join("");
+  }
+  function ensureSidebarLayout() {
+    if (document.getElementById("app-sidebar")) return;
+    var header = document.querySelector(".app-header");
+    if (!header) return;
+    var nav = document.getElementById("nav-tools");
+    if (!nav) return;
+    var tabs = nav.closest(".osint-tabs");
+    var appBody = document.querySelector(".app-body");
+    if (!appBody) {
+      var main = document.querySelector("main.main");
+      if (!main || !main.parentNode) return;
+      appBody = document.createElement("div");
+      appBody.className = "app-body osint-body";
+      main.parentNode.insertBefore(appBody, main);
+      appBody.appendChild(main);
+    }
+    appBody.id = "app-shell";
+    var sidebar = document.createElement("aside");
+    sidebar.className = "app-sidebar";
+    sidebar.id = "app-sidebar";
+    sidebar.setAttribute("aria-label", "Основная навигация");
+    sidebar.innerHTML = '<div class="sidebar-heading"><span>РАБОЧЕЕ ПРОСТРАНСТВО</span><button type="button" id="sidebar-collapse" class="sidebar-collapse" aria-label="Свернуть меню" aria-pressed="false">‹</button></div><div class="sidebar-foot"><span class="sidebar-foot-dot"></span><span class="sidebar-foot-copy">Локальная среда · OSINT Panel</span></div>';
+    sidebar.insertBefore(nav, sidebar.querySelector(".sidebar-foot"));
+    if (tabs) tabs.remove();
+    appBody.insertBefore(sidebar, appBody.firstChild);
+    var backdrop = document.createElement("button");
+    backdrop.type = "button";
+    backdrop.className = "sidebar-backdrop";
+    backdrop.id = "sidebar-backdrop";
+    backdrop.setAttribute("aria-label", "Закрыть навигацию");
+    backdrop.tabIndex = -1;
+    appBody.insertBefore(backdrop, sidebar.nextSibling);
+    var headerRight = header.querySelector(".app-header-right") || header.querySelector(".osint-header-inner");
+    if (headerRight && !document.getElementById("sidebar-toggle")) {
+      var toggle = document.createElement("button");
+      toggle.type = "button";
+      toggle.className = "sidebar-toggle";
+      toggle.id = "sidebar-toggle";
+      toggle.setAttribute("aria-controls", "app-sidebar");
+      toggle.setAttribute("aria-expanded", "false");
+      toggle.setAttribute("aria-label", "Открыть навигацию");
+      toggle.innerHTML = '<span aria-hidden="true">☰</span><span class="sidebar-toggle-label">Меню</span>';
+      headerRight.prepend(toggle);
+    }
+    var shell = appBody;
+    var openButton = document.getElementById("sidebar-toggle");
+    var collapseButton = document.getElementById("sidebar-collapse");
+    var closeMobile = function () {
+      shell.classList.remove("sidebar-open");
+      if (openButton) openButton.setAttribute("aria-expanded", "false");
+    };
+    var collapsed = false;
+    try { collapsed = localStorage.getItem("osint-sidebar-collapsed") === "1"; } catch (_) {}
+    shell.classList.toggle("sidebar-collapsed", collapsed);
+    collapseButton.setAttribute("aria-pressed", String(collapsed));
+    collapseButton.textContent = collapsed ? "›" : "‹";
+    openButton.addEventListener("click", function () {
+      var open = shell.classList.toggle("sidebar-open");
+      openButton.setAttribute("aria-expanded", String(open));
+    });
+    collapseButton.addEventListener("click", function () {
+      collapsed = !shell.classList.contains("sidebar-collapsed");
+      shell.classList.toggle("sidebar-collapsed", collapsed);
+      collapseButton.setAttribute("aria-pressed", String(collapsed));
+      collapseButton.textContent = collapsed ? "›" : "‹";
+      try { localStorage.setItem("osint-sidebar-collapsed", collapsed ? "1" : "0"); } catch (_) {}
+    });
+    backdrop.addEventListener("click", closeMobile);
+    document.addEventListener("keydown", function (event) { if (event.key === "Escape") closeMobile(); });
+    window.addEventListener("resize", function () { if (window.innerWidth > 760) closeMobile(); });
+    nav.querySelectorAll(".tool-link").forEach(function (link) {
+      link.addEventListener("click", closeMobile);
+    });
   }
   function mount() {
     ensureUnifiedNav();
+    ensureSidebarLayout();
     var header = document.querySelector(".app-header-right") || document.querySelector(".osint-header-inner");
     if (header && !document.getElementById("osint-workspace-actions")) {
       var actions = document.createElement("div"); actions.id = "osint-workspace-actions";
