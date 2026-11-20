@@ -191,33 +191,6 @@ function wireUpdater(){
  });
 }
 
-function wireSidebar(){
- const shell=document.getElementById("app-shell");
- const openButton=document.getElementById("sidebar-toggle");
- const collapseButton=document.getElementById("sidebar-collapse");
- const backdrop=document.getElementById("sidebar-backdrop");
- if(!shell||!openButton||!collapseButton)return;
- let collapsed=false;
- try{collapsed=localStorage.getItem("osint-sidebar-collapsed")==="1";}catch(_){}
- shell.classList.toggle("sidebar-collapsed",collapsed);
- collapseButton.setAttribute("aria-pressed",String(collapsed));
- collapseButton.textContent=collapsed?"›":"‹";
- const closeMobile=()=>{shell.classList.remove("sidebar-open");openButton.setAttribute("aria-expanded","false");};
- openButton.addEventListener("click",()=>{
-  const open=shell.classList.toggle("sidebar-open");
-  openButton.setAttribute("aria-expanded",String(open));
- });
- collapseButton.addEventListener("click",()=>{
-  collapsed=!shell.classList.contains("sidebar-collapsed");
-  shell.classList.toggle("sidebar-collapsed",collapsed);
-  collapseButton.setAttribute("aria-pressed",String(collapsed));
-  collapseButton.textContent=collapsed?"›":"‹";
-  try{localStorage.setItem("osint-sidebar-collapsed",collapsed?"1":"0");}catch(_){}
- });
- backdrop?.addEventListener("click",closeMobile);
- document.addEventListener("keydown",event=>{if(event.key==="Escape")closeMobile();});
- window.addEventListener("resize",()=>{if(window.innerWidth>760)closeMobile();});
-}
 function wireHeader(){
  const menuSettings=document.querySelector("#user-menu .app-header-user-menu-item[data-tool-id]");if(menuSettings)menuSettings.setAttribute("href","/p/settings/");
  const btn=document.getElementById("btn-user-menu"),menu=document.getElementById("user-menu");
@@ -234,7 +207,6 @@ async function init(){
  document.getElementById("hub-search")?.addEventListener("input",renderHubCards);
  wireFilters();
  wireHeader();
- wireSidebar();
  wireUpdater();
 }
 init().catch(error=>{const message=error?.message||"Нет связи с сервером";const main=document.getElementById("main-content");if(main)main.insertAdjacentHTML("afterbegin",'<div class="init-error" role="alert"><strong>Ошибка загрузки:</strong> '+escapeHtml(message)+'<p>Проверьте сервер и обновите страницу.</p></div>');});
