@@ -1010,6 +1010,16 @@ def api_grabcam_run_status():
     return jsonify(data)
 
 
+@app.route("/api/tools/grabcam/stop", methods=["POST"])
+def api_grabcam_stop():
+    """Остановить локальный сервер и/или туннель учебной демонстрации."""
+    tool = get_tool("grabcam")
+    if not tool or not hasattr(tool, "stop_run"):
+        return jsonify({"success": False, "error": "Инструмент не найден"}), 404
+    ok, msg = tool.stop_run()
+    return jsonify({"success": ok, "message": msg})
+
+
 # Legacy GrabCam collection endpoints are intentionally disabled.
 # The current demo does not collect or retain photos, audio, screen captures,
 # location history, form submissions, or credentials.
