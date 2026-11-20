@@ -82,6 +82,14 @@ def _validate_manifest(data: Any, expected_id: str, module_dir: Path, project_ro
                 issue("unsafe_entrypoint", f"Path escapes project root: entrypoints.{key}.")
             elif not target.is_file():
                 issue("missing_entrypoint", f"Referenced file does not exist: {value}.", "warning")
+        tool_class = entrypoints.get("tool_class")
+        if tool_class is not None and (
+            not isinstance(tool_class, str)
+            or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", tool_class)
+        ):
+            issue("tool_class_type", "entrypoints.tool_class must be a valid Python class name.")
+        if data.get("status") == "integrated" and entrypoints.get("backend_adapter") and not tool_class:
+            issue("tool_class_missing", "Integrated backend modules must declare entrypoints.tool_class.")
 
     legacy_paths = data.get("legacy_paths", [])
     if not isinstance(legacy_paths, list) or any(not isinstance(p, str) for p in legacy_paths):
