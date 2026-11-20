@@ -44,8 +44,16 @@ def _restore_stash(stash_ref: str | None) -> None:
             "обнаружило конфликт. Ваши изменения сохранены в Git stash ({}) и не удалены. "
             "Нужна ручная проверка конфликтующих файлов. Подробности: {}".format(stash_ref, exc)
         ) from exc
-    # Удаляем сохранённую копию только после успешного восстановления.
-    _git("stash", "drop", "stash@{0}")
+    # Удаляем именно восстановленный stash по его SHA, а не безусловно stash@{0}:
+    # между сохранением и восстановлением пользователь мог создать другой stash.
+    entries = _git("stash", "list", "--format=%gd %H").splitlines()
+    matching_ref = next((line.split()[0] for line in entries if len(line.split()) == 2 and line.split()[1] == stash_ref), None)
+    if not matching_ref:
+        raise UpdateError(
+            "Локальные файлы восстановлены, но резервная запись {} не найдена в списке stash. "
+            "Она не удалялась автоматически.".format(stash_ref)
+        )
+    _git("stash", "drop", matching_ref)
 
 
 def check_update() -> dict:
