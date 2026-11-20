@@ -166,11 +166,18 @@ function renderSavedMaterials(){
  if(!list||!count)return;
  const items=readSavedMaterials();
  const exportButton=document.getElementById("saved-materials-export");
+ const search=(document.getElementById("saved-materials-search")?.value||"").trim().toLocaleLowerCase("ru");
  if(items===null){count.textContent="Недоступно";if(exportButton)exportButton.disabled=true;list.innerHTML='<div class="saved-materials-empty">Браузер не разрешил доступ к локальному хранилищу.</div>';return;}
  count.textContent=items.length+" материалов";
  if(exportButton)exportButton.disabled=!items.length;
  if(!items.length){list.innerHTML='<div class="saved-materials-empty">Пока нет сохранённых материалов. Откройте инструмент и нажмите «В рабочую область» возле результата.</div>';return;}
- list.innerHTML=items.slice(0,4).map((item,index)=>{
+ const matches=items.map((item,index)=>({item,index})).filter(({item})=>{
+  if(!search)return true;
+  return [item.title,item.text,item.page,item.url].join(" ").toLocaleLowerCase("ru").includes(search);
+ });
+ if(!matches.length){list.innerHTML='<div class="saved-materials-empty">По запросу «'+escapeHtml(search)+'» ничего не найдено. Попробуйте другое слово.</div>';return;}
+ const visible=matches.slice(0,20);
+ list.innerHTML=visible.map(({item,index})=>{
   const id=escapeHtml(item.id||"");
   const title=escapeHtml(item.title||"Материал без названия");
   const rawPage=String(item.url||"");
@@ -180,7 +187,7 @@ function renderSavedMaterials(){
   const time=escapeHtml(item.time||"");
   const preview=escapeHtml(item.text.slice(0,240));
   return '<article class="saved-material-item" data-saved-id="'+id+'" data-saved-index="'+index+'"><div class="saved-material-head"><strong>'+title+'</strong><time>'+time+'</time></div>'+source+'<p>'+preview+'</p><div class="saved-material-actions"><button type="button" data-saved-copy>Копировать</button><button type="button" data-saved-delete>Удалить</button></div></article>';
- }).join("")+(items.length>4?'<div class="saved-materials-more">Показаны 4 из '+items.length+'. Полный архив можно сохранить через «Экспорт JSON».</div>':"");
+ }).join("")+(matches.length>visible.length?'<div class="saved-materials-more">Показаны '+visible.length+' из '+matches.length+' найденных материалов.</div>':search?'<div class="saved-materials-more">Найдено: '+matches.length+' из '+items.length+'.</div>':items.length>visible.length?'<div class="saved-materials-more">Показаны '+visible.length+' из '+items.length+'. Полный архив можно сохранить через «Экспорт JSON».</div>':"");
 }
 function wireSavedMaterials(){
  const list=document.getElementById("saved-materials-list");
@@ -191,7 +198,7 @@ function wireSavedMaterials(){
   const id=card.dataset.savedId;
    const index=Number(card.dataset.savedIndex);
   if(event.target.closest("[data-saved-copy]")){
-   const item=(readSavedMaterials()||[]).find(x=>String(x.id||"")===id);
+   const currentItems=readSavedMaterials()||[];\n   const item=id?currentItems.find(x=>String(x.id||"")===id):currentItems[index];
    if(!item)return;
    try{await navigator.clipboard.writeText(item.text);event.target.textContent="Скопировано";}
    catch(_){event.target.textContent="Недоступно";}
@@ -396,7 +403,7 @@ async function init(){
  // Keep the header and updater usable if a catalogue endpoint is temporarily unavailable.
  wireHeader();
  wireUpdater();
- document.getElementById("hub-search")?.addEventListener("input",renderHubCards);
+ document.getElementById("hub-search")?.addEventListener("input",renderHubCards);\n document.getElementById("saved-materials-search")?.addEventListener("input",renderSavedMaterials);
  wireFilters();
  wireActivity();
  wireShowAllTools();
