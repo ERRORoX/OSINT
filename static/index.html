@@ -9,7 +9,7 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23050914'/><path d='M16 4 27 10v12l-11 6L5 22V10z' fill='none' stroke='%230b75ff' stroke-width='2'/></svg>">
   <link rel="stylesheet" href="/css/tool-bundle/hub.css">
   <link rel="stylesheet" href="/css/panel-41.css?v=4.2.0">
-  <link rel="stylesheet" href="/css/hub-only.css?v=4.2.9">
+  <link rel="stylesheet" href="/css/hub-only.css?v=4.2.10">
 </head>
 <body class="dashboard-page">
   <div class="dashboard-shell">
@@ -32,27 +32,30 @@
       </header>
 
       <main id="main-content" class="dashboard-content">
-        <section class="welcome-grid" aria-labelledby="welcome-title">
-          <div class="welcome-panel">
-            <div class="welcome-copy">
-              <span class="eyebrow"><i></i> INTELLIGENCE WORKSPACE</span>
-              <h1 id="welcome-title">OSINT PANEL <span>4.2</span></h1>
-              <p>Профессиональная платформа<br>для исследований в открытых источниках.</p>
-              <div class="welcome-actions">
-                <a class="primary-action" href="#tools-section"><span>↗</span> Быстрый старт</a>
-                <a class="secondary-action" href="https://github.com/ERRORoX/OSINT/blob/feature/panel-4.2-osint-expansion/docs/INSTALLATION_RU.md" target="_blank" rel="noopener noreferrer"><span>▤</span> Документация</a>
-              </div>
+        <section class="investigation-hero" aria-labelledby="welcome-title">
+          <div class="investigation-intro">
+            <div class="investigation-kicker"><span class="signal-pulse"></span> INVESTIGATION COMMAND CENTER <span class="kicker-divider">/</span> LOCAL WORKSPACE</div>
+            <h1 id="welcome-title">Центр <span>расследований</span></h1>
+            <p>Единая рабочая среда для сбора открытых данных, проверки цифровых следов и анализа связей.</p>
+            <div class="investigation-actions">
+              <a class="primary-action" href="#tools-section"><span>↗</span> Начать исследование</a>
+              <a class="secondary-action" href="/p/history/"><span>◷</span> История операций</a>
             </div>
-            <div class="globe-art" aria-hidden="true">
-              <div class="globe-grid"></div><div class="globe-sphere"><span></span></div>
-              <i class="orbit orbit-a"></i><i class="orbit orbit-b"></i>
-              <b class="globe-node node-a"></b><b class="globe-node node-b"></b><b class="globe-node node-c"></b>
-            </div>
-            <div class="welcome-lines" aria-hidden="true"></div>
+            <div class="hero-meta"><span><i></i> Локальная среда</span><span>OSINT PANEL <b>4.2</b></span></div>
           </div>
-
-          <aside class="system-card">
-            <div class="panel-heading"><span class="heading-dot"></span><h2>Состояние панели</h2><span class="live-label">LOCAL</span></div>
+          <div class="investigation-visual" aria-label="Схематичное представление графа связей">
+            <div class="visual-topline"><span>RELATIONSHIP MAP</span><span class="visual-live"><i></i> READY</span></div>
+            <svg class="relationship-graph" viewBox="0 0 520 280" role="img" aria-label="Абстрактная схема узлов и связей">
+              <defs><radialGradient id="graphGlow"><stop offset="0" stop-color="#1684ff" stop-opacity=".34"/><stop offset="1" stop-color="#1684ff" stop-opacity="0"/></radialGradient></defs>
+              <circle cx="260" cy="140" r="115" fill="url(#graphGlow)"/>
+              <g class="graph-links"><path d="M260 140 115 76 55 170 172 226 260 140 385 66 465 150 350 230 260 140M115 76 205 35 260 140 350 230M385 66 310 25 260 140M55 170 28 92M465 150 490 220"/></g>
+              <g class="graph-nodes"><circle cx="260" cy="140" r="23" class="node-core"/><circle cx="115" cy="76" r="12"/><circle cx="55" cy="170" r="8"/><circle cx="172" cy="226" r="10"/><circle cx="385" cy="66" r="13"/><circle cx="465" cy="150" r="9"/><circle cx="350" cy="230" r="11"/><circle cx="205" cy="35" r="7"/><circle cx="310" cy="25" r="7"/><circle cx="28" cy="92" r="5"/><circle cx="490" cy="220" r="5"/></g>
+              <g class="graph-labels"><text x="260" y="144" text-anchor="middle">ROOT</text><text x="115" y="55">ENTITY</text><text x="385" y="43">SOURCE</text><text x="350" y="255">TRACE</text></g>
+            </svg>
+            <div class="visual-caption"><span>Связи и сущности</span><span>Схема интерфейса</span></div>
+          </div>
+          <aside class="system-card investigation-status">
+            <div class="panel-heading"><span class="heading-dot"></span><h2>Состояние системы</h2><span class="live-label">LOCAL</span></div>
             <div class="system-content">
               <div class="system-ring"><div><strong id="system-state">—</strong><small id="system-state-label">Проверка</small></div></div>
               <div class="system-facts">
@@ -65,11 +68,22 @@
           </aside>
         </section>
 
-        <section class="metric-row" aria-label="Сводка">
-          <article class="metric-card"><span class="metric-icon">◈</span><div><strong id="metric-tools">—</strong><small>Инструментов</small></div><span class="metric-note">доступно</span></article>
-          <article class="metric-card"><span class="metric-icon">▦</span><div><strong id="metric-sections">—</strong><small>Разделов панели</small></div><span class="metric-note">каталог</span></article>
-          <article class="metric-card"><span class="metric-icon">◉</span><div><strong id="metric-categories">—</strong><small>Категорий</small></div><span class="metric-note">классификация</span></article>
-          <article class="metric-card"><span class="metric-icon">⌁</span><div><strong>LOCAL</strong><small>Режим работы</small></div><span class="metric-note">на этом устройстве</span></article>
+        <section class="metric-row investigation-metrics" aria-label="Сводка системы">
+          <article class="metric-card"><span class="metric-icon">◈</span><div><strong id="metric-tools">—</strong><small>Инструментов</small></div><span class="metric-note">каталог</span></article>
+          <article class="metric-card"><span class="metric-icon">⌁</span><div><strong id="metric-sections">—</strong><small>Разделов</small></div><span class="metric-note">структура</span></article>
+          <article class="metric-card"><span class="metric-icon">◎</span><div><strong id="metric-categories">—</strong><small>Категорий</small></div><span class="metric-note">анализ</span></article>
+          <article class="metric-card"><span class="metric-icon">◷</span><div><strong>LOCAL</strong><small>Среда выполнения</small></div><span class="metric-note">устройство</span></article>
+        </section>
+
+        <section class="investigation-strip" aria-label="Этапы исследования">
+          <div class="strip-heading"><span class="eyebrow">INVESTIGATION FLOW</span><strong>Рабочий процесс</strong></div>
+          <div class="flow-step"><span>01</span><div><b>Сбор данных</b><small>Открытые источники</small></div></div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-step"><span>02</span><div><b>Проверка</b><small>Валидация сигналов</small></div></div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-step"><span>03</span><div><b>Анализ связей</b><small>Сопоставление данных</small></div></div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-step"><span>04</span><div><b>Результат</b><small>История и заметки</small></div></div>
         </section>
 
         <div class="content-columns">
@@ -155,6 +169,6 @@
       });
     })();
   </script>
-  <script src="/js/app-hub.js?v=4.2.9" type="module"></script>
+  <script src="/js/app-hub.js?v=4.2.10" type="module"></script>
 </body>
 </html>
