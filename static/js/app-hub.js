@@ -153,6 +153,53 @@ function wireActivity(){
   }catch(_){}
  });
 }
+const WORKSPACE_KEY="osint-panel-workspace-v1";
+function readSavedMaterials(){
+ try{
+  const value=JSON.parse(localStorage.getItem(WORKSPACE_KEY)||"[]");
+  return Array.isArray(value)?value.filter(item=>item&&typeof item==="object"&&typeof item.text==="string"):[];
+ }catch(_){return null;}
+}
+function renderSavedMaterials(){
+ const list=document.getElementById("saved-materials-list");
+ const count=document.getElementById("saved-materials-count");
+ if(!list||!count)return;
+ const items=readSavedMaterials();
+ if(items===null){count.textContent="Недоступно";list.innerHTML='<div class="saved-materials-empty">Браузер не разрешил доступ к локальному хранилищу.</div>';return;}
+ count.textContent=items.length+" материалов";
+ if(!items.length){list.innerHTML='<div class="saved-materials-empty">Пока нет сохранённых материалов. Откройте инструмент и нажмите «В рабочую область» возле результата.</div>';return;}
+ list.innerHTML=items.slice(0,4).map(item=>{
+  const id=escapeHtml(item.id||"");
+  const title=escapeHtml(item.title||"Материал без названия");
+  const page=escapeHtml(item.page||item.url||"");
+  const time=escapeHtml(item.time||"");
+  const preview=escapeHtml(item.text.slice(0,240));
+  return '<article class="saved-material-item" data-saved-id="'+id+'"><div class="saved-material-head"><strong>'+title+'</strong><time>'+time+'</time></div><div class="saved-material-source">'+page+'</div><p>'+preview+'</p><div class="saved-material-actions"><button type="button" data-saved-copy>Копировать</button><button type="button" data-saved-delete>Удалить</button></div></article>';
+ }).join("")+(items.length>4?'<div class="saved-materials-more">Ещё '+(items.length-4)+' — откройте любой инструмент и нажмите «Рабочая область».</div>':"");
+}
+function wireSavedMaterials(){
+ const list=document.getElementById("saved-materials-list");
+ if(!list)return;
+ list.addEventListener("click",async event=>{
+  const card=event.target.closest("[data-saved-id]");
+  if(!card)return;
+  const id=card.dataset.savedId;
+  if(event.target.closest("[data-saved-copy]")){
+   const item=(readSavedMaterials()||[]).find(x=>String(x.id||"")===id);
+   if(!item)return;
+   try{await navigator.clipboard.writeText(item.text);event.target.textContent="Скопировано";}
+   catch(_){event.target.textContent="Недоступно";}
+  }
+  if(event.target.closest("[data-saved-delete]")){
+   const items=readSavedMaterials();
+   if(items===null)return;
+   try{localStorage.setItem(WORKSPACE_KEY,JSON.stringify(items.filter(x=>String(x.id||"")!==id)));renderSavedMaterials();}
+   catch(_){event.target.textContent="Ошибка";}
+  }
+ });
+ window.addEventListener("storage",event=>{if(event.key===WORKSPACE_KEY)renderSavedMaterials();});
+ renderSavedMaterials();
+}
 function wireShowAllTools(){
  const link=document.getElementById("show-all-tools");if(!link)return;
  link.addEventListener("click",()=>{
@@ -278,6 +325,7 @@ async function init(){
  wireFilters();
  wireActivity();
  wireShowAllTools();
+ wireSavedMaterials();
  const [toolsResult,navigationResult]=await Promise.allSettled([loadTools(),loadNavigation()]);
  const toolsAvailable=toolsResult.status==="fulfilled"&&Array.isArray(toolsResult.value);
  loadedTools=toolsAvailable?toolsResult.value:[];
