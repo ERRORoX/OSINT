@@ -90,6 +90,18 @@ class ModuleFrontendTests(unittest.TestCase):
         for forbidden in ("fetch(", "XMLHttpRequest", "sendBeacon"):
             self.assertNotIn(forbidden, demo)
 
+    def test_homepage_uses_professional_dashboard_layer(self):
+        page = (ROOT / "static" / "index.html").read_text(encoding="utf-8")
+        dashboard_css = ROOT / "static" / "css" / "panel-42-dashboard.css"
+        hub_script = (ROOT / "static" / "js" / "app-hub.js").read_text(encoding="utf-8")
+        self.assertTrue(dashboard_css.is_file())
+        self.assertIn("/css/panel-42-dashboard.css", page)
+        self.assertIn('class="dashboard-intro"', page)
+        self.assertIn('id="metric-tools"', page)
+        self.assertIn('id="metric-sections"', page)
+        self.assertIn('id="metric-categories"', page)
+        self.assertIn('document.getElementById("metric-tools")', hub_script)
+
 
 if __name__ == "__main__":
     unittest.main()
