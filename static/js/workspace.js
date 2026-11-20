@@ -89,7 +89,29 @@
       if (host) host.appendChild(btn); else node.insertAdjacentElement("afterend", btn);
     });
   }
+  var NAV_ITEMS = [
+    ["Домены", "/domain/"], ["Username", "/username/"], ["Фото", "/photo/"],
+    ["IP / RDAP", "/p/ip-rdap/"], ["GrabCam", "/p/grabcam/"], ["ИИ", "/p/ai-agent/"],
+    ["Email OSINT", "/p/google-osint/"], ["ANONSMS", "/p/anonsms/"],
+    ["Instagram", "/p/instagram-bruter/"], ["История", "/p/history/"], ["Настройки", "/p/settings/"]
+  ];
+  function ensureUnifiedNav() {
+    var header = document.querySelector(".app-header");
+    if (!header) return;
+    var nav = document.getElementById("nav-tools");
+    if (!nav) {
+      var tabs = document.createElement("div"); tabs.className = "osint-tabs";
+      nav = document.createElement("nav"); nav.id = "nav-tools"; nav.className = "tab-nav";
+      nav.setAttribute("aria-label", "Разделы"); tabs.appendChild(nav); header.appendChild(tabs);
+    }
+    if (nav.querySelectorAll("[data-osint-nav]").length === NAV_ITEMS.length) return;
+    nav.innerHTML = NAV_ITEMS.map(function (item) {
+      var active = location.pathname === item[1] || (item[1] !== "/" && location.pathname.indexOf(item[1]) === 0);
+      return '<a href="' + item[1] + '" class="tool-link' + (active ? ' active' : '') + '" data-osint-nav="1">' + item[0] + '</a>';
+    }).join("");
+  }
   function mount() {
+    ensureUnifiedNav();
     var header = document.querySelector(".app-header-right") || document.querySelector(".osint-header-inner");
     if (header && !document.getElementById("osint-workspace-actions")) {
       var actions = document.createElement("div"); actions.id = "osint-workspace-actions";
@@ -127,6 +149,8 @@
       records.forEach(function (record) { record.addedNodes.forEach(function (node) { if (node.nodeType === 1) addSaveButtons(node); }); });
     });
     observer.observe(document.body, {childList:true,subtree:true});
+    var nav = document.getElementById("nav-tools");
+    if (nav) new MutationObserver(ensureUnifiedNav).observe(nav, {childList:true});
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", mount, {once:true}); else mount();
 })();
