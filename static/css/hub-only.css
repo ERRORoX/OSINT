@@ -447,3 +447,13 @@ body.dashboard-page{margin:0!important;min-height:100vh;background:radial-gradie
  .workspace-bottom-grid{gap:12px;margin-top:12px}
  .secondary-column{gap:12px}
 }
+
+/* Graph interaction refinement — 4.2.20 */
+.graph-edge-line{transition:stroke .16s,stroke-width .16s,opacity .16s}
+.graph-edge-line.is-related{stroke:rgba(96,190,255,.96);stroke-width:2.8;stroke-dasharray:none;filter:drop-shadow(0 0 3px rgba(65,164,255,.55))}
+.graph-node{touch-action:none;user-select:none;-webkit-user-select:none}
+.graph-node:active{cursor:grabbing}
+.graph-zoom-controls button:focus-visible,.graph-mode-select select:focus-visible{outline:2px solid #63baff;outline-offset:2px}
+#graph-auto-layout{border-color:rgba(62,163,235,.42);background:linear-gradient(135deg,rgba(25,94,158,.5),rgba(14,54,91,.5));color:#d4eaff}
+#graph-auto-layout:hover{background:linear-gradient(135deg,rgba(37,119,194,.62),rgba(18,71,116,.62));border-color:#63baff}
+@media(max-width:560px){.graph-zoom-controls{flex-wrap:wrap}.graph-zoom-controls button{min-height:32px}}
