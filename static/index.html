@@ -9,7 +9,7 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23050914'/><path d='M16 4 27 10v12l-11 6L5 22V10z' fill='none' stroke='%230b75ff' stroke-width='2'/></svg>">
   <link rel="stylesheet" href="/css/tool-bundle/hub.css">
   <link rel="stylesheet" href="/css/panel-41.css?v=4.2.0">
-  <link rel="stylesheet" href="/css/hub-only.css?v=4.2.14">
+  <link rel="stylesheet" href="/css/hub-only.css?v=4.2.15">
 </head>
 <body class="dashboard-page">
   <div class="dashboard-shell">
@@ -120,6 +120,7 @@
               <div class="section-heading compact-heading">
                 <div><span class="eyebrow">CASE MATERIALS</span><h2>Сохранённые материалы</h2></div>
                 <div class="saved-materials-toolbar"><span class="subtle-label" id="saved-materials-count">0 материалов</span><button type="button" id="saved-materials-export" class="saved-material-export" disabled>Экспорт JSON</button></div>
+              <label class="saved-materials-search"><span class="sr-only">Поиск по сохранённым материалам</span><input id="saved-materials-search" type="search" placeholder="Найти в архиве материалов…" autocomplete="off"></label>
               </div>
               <p class="saved-materials-note">Результаты, которые вы закрепили в рабочей области инструментов. Хранятся локально в этом браузере.</p>
               <div id="saved-materials-list" class="saved-materials-list">
@@ -191,6 +192,6 @@
       });
     })();
   </script>
-  <script src="/js/app-hub.js?v=4.2.14" type="module"></script>
+  <script src="/js/app-hub.js?v=4.2.15" type="module"></script>
 </body>
 </html>
