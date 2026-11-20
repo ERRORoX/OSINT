@@ -168,6 +168,7 @@ def discover_modules(project_root: str | os.PathLike[str] | None = None) -> dict
         modules.append({
             "id": module_id,
             "name": data.get("name", module_id) if isinstance(data, dict) else module_id,
+            "description": data.get("description", "") if isinstance(data, dict) else "",
             "version": data.get("version") if isinstance(data, dict) else None,
             "category": data.get("category") if isinstance(data, dict) else None,
             "status": data.get("status", "invalid") if isinstance(data, dict) else "invalid",
