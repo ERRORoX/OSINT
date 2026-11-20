@@ -37,7 +37,7 @@ function renderNav(tools){
  nav.innerHTML=mk("domain-tools","Домены","/domain/")+mk("username-tools","Username","/username/")+mk("photo-search","Фото","/photo/")+mk("grabcam","GrabCam","/p/grabcam/")+mk("ai-agent","ИИ")+mk("history","История")+rest.map(t=>mk(t.id,t.name)).join("");
 }
 function getFavorites(){try{return JSON.parse(localStorage.getItem("osint-panel-favorites")||"[]").filter(x=>typeof x==="string");}catch(_){return[];}}
-function setFavorites(items){try{localStorage.setItem("osint-panel-favorites",JSON.stringify(items));}catch(_){}}
+function setFavorites(items){try{localStorage.setItem("osint-panel-favorites",JSON.stringify(items));}catch(_){}const metric=document.getElementById("metric-favorites");if(metric)metric.textContent=String(items.length);}
 function renderHubCards(){
  const host=document.getElementById("hub-cards");if(!host)return;
  const query=(document.getElementById("hub-search")?.value||"").trim().toLocaleLowerCase("ru");
