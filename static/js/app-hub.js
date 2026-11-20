@@ -453,7 +453,7 @@ function graphRender(){
  nodesLayer.replaceChildren();edgesLayer.replaceChildren();
  const visible=graphVisibleNodes(),visibleIds=new Set(visible.map(node=>node.id));
  graphData.edges.forEach(edge=>{if(!visibleIds.has(edge.source)||!visibleIds.has(edge.target))return;const a=graphData.nodes.find(node=>node.id===edge.source),b=graphData.nodes.find(node=>node.id===edge.target);if(!a||!b)return;
-  graphSvg("line",{x1:a.x,y1:a.y,x2:b.x,y2:b.y,class:"graph-edge-line"},edgesLayer);
+  const related=graphSelected&&(edge.source===graphSelected||edge.target===graphSelected);graphSvg("line",{x1:a.x,y1:a.y,x2:b.x,y2:b.y,class:"graph-edge-line"+(related?" is-related":"")},edgesLayer);
   const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;const label=graphSvg("text",{x:mx,y:my-7,class:"graph-edge-label","text-anchor":"middle"},edgesLayer);label.textContent=edge.label;
  });
  visible.forEach(node=>{
@@ -476,12 +476,13 @@ function graphSelect(id){
 }
 function graphResetView(){graphScale=1;graphPan={x:0,y:0};graphApplyTransform();}
 function graphFitView(){
- const nodes=graphData.nodes||[];
+ const nodes=graphVisibleNodes();
  if(!nodes.length){graphResetView();return;}
  const xs=nodes.map(node=>Number(node.x)||0),ys=nodes.map(node=>Number(node.y)||0);
  const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
  const spanX=Math.max(120,maxX-minX+100),spanY=Math.max(120,maxY-minY+100);
- graphScale=Math.max(.035,Math.min(1,700/spanX,360/spanY));
+ const scale=Math.min(1,700/spanX,360/spanY);
+ graphScale=Math.max(.035,Math.min(2.5,scale));
  graphPan={x:380-((minX+maxX)/2)*graphScale,y:210-((minY+maxY)/2)*graphScale};
  graphApplyTransform();
 }
@@ -540,6 +541,14 @@ async function graphWire(){
    if(status)status.textContent="Не удалось обновить граф: "+(error.message||"ошибка");
   }
  };
+ const autoLayout=()=>{
+  const typeOrder=["person","organization","domain","ip","email"];
+  const sorted=[...graphData.nodes].sort((a,b)=>typeOrder.indexOf(a.type)-typeOrder.indexOf(b.type)||a.label.localeCompare(b.label,"ru"));
+  const columns=Math.max(1,Math.ceil(Math.sqrt(sorted.length*1.45)));
+  const gapX=142,gapY=108,startX=95,startY=78;
+  sorted.forEach((node,index)=>{const col=index%columns,row=Math.floor(index/columns);node.x=startX+col*gapX;node.y=startY+row*gapY;});
+  graphRender();graphFitView();
+ };
  const persistCurrent=async()=>{
   const saved=await requestGraph("POST",graphData,"/graph/merge");
   serverGraph=graphValidate(saved);
@@ -554,6 +563,12 @@ async function graphWire(){
  window.addEventListener("pageshow",refreshServerGraph);
  document.addEventListener("visibilitychange",()=>{if(!document.hidden)refreshServerGraph();});
  document.querySelectorAll("[data-graph-filter]").forEach(control=>control.addEventListener("change",graphRender));
+ document.getElementById("graph-auto-layout")?.addEventListener("click",async()=>{
+  if(!graphData.nodes.length){if(status)status.textContent="В графе пока нет узлов для расположения.";return;}
+  autoLayout();
+  if(mode?.value==="local"){try{await persistCurrent();if(status)status.textContent="Расположение узлов обновлено и сохранено."; }catch(error){if(status)status.textContent="Не удалось сохранить расположение: "+(error.message||"ошибка");}}
+  else if(status)status.textContent="Демо-граф автоматически упорядочен.";
+ });
  document.getElementById("graph-zoom-in")?.addEventListener("click",()=>{graphScale=Math.min(2.5,graphScale*1.2);graphApplyTransform();});
  document.getElementById("graph-zoom-out")?.addEventListener("click",()=>{graphScale=Math.max(.035,graphScale/1.2);graphApplyTransform();});
  document.getElementById("graph-zoom-reset")?.addEventListener("click",graphResetView);
