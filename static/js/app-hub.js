@@ -58,10 +58,32 @@ function wireFilters(){
  }));
 }
 function updateHubStatus(tools){const count=document.getElementById("hub-tool-count");if(count)count.textContent=HUB_CARDS.length+" разделов · "+tools.length+" инструментов";}
+function wireUpdater(){
+ const button=document.getElementById("btn-check-updates");
+ const status=document.getElementById("update-status");
+ if(!button||!status)return;
+ button.addEventListener("click",async()=>{
+  button.disabled=true;status.textContent="Проверка обновлений…";
+  try{
+   const checkResponse=await fetch("/api/system/update",{method:"GET",cache:"no-store",headers:{Accept:"application/json"}});
+   const check=await checkResponse.json();
+   if(!checkResponse.ok)throw new Error(check.error||"Не удалось проверить обновления");
+   if(!check.available){status.textContent="Установлена последняя версия.";return;}
+   const promptText="Доступно обновление ("+check.commits_behind+" коммитов). Установить его сейчас? Перед обновлением будет создана резервная ветка.";
+   if(!window.confirm(promptText)){status.textContent="Обновление отложено.";return;}
+   status.textContent="Установка обновления…";
+   const installResponse=await fetch("/api/system/update",{method:"POST",cache:"no-store",headers:{"Accept":"application/json","X-Requested-With":"OSINT-Panel"}});
+   const result=await installResponse.json();
+   if(!installResponse.ok)throw new Error(result.error||"Не удалось установить обновление");
+   status.textContent=result.updated?"Обновлено. Перезапусти сервер.":"Обновления не требуются.";
+  }catch(error){status.textContent=error.message||"Ошибка обновления";}
+  finally{button.disabled=false;}
+ });
+}
 function wireHeader(){
  const menuSettings=document.querySelector("#user-menu .app-header-user-menu-item[data-tool-id]");if(menuSettings)menuSettings.setAttribute("href","/p/settings/");
  const btn=document.getElementById("btn-user-menu"),menu=document.getElementById("user-menu");
  if(btn&&menu){btn.addEventListener("click",()=>{const open=btn.getAttribute("aria-expanded")==="true";btn.setAttribute("aria-expanded",String(!open));menu.hidden=open;});document.addEventListener("click",event=>{if(!btn.contains(event.target)&&!menu.contains(event.target)){btn.setAttribute("aria-expanded","false");menu.hidden=true;}});}
 }
-async function init(){loadedTools=await loadTools();renderNav(loadedTools);renderHubCards();updateHubStatus(loadedTools);document.getElementById("hub-search")?.addEventListener("input",renderHubCards);wireFilters();wireHeader();}
+async function init(){loadedTools=await loadTools();renderNav(loadedTools);renderHubCards();updateHubStatus(loadedTools);document.getElementById("hub-search")?.addEventListener("input",renderHubCards);wireFilters();wireHeader();wireUpdater();}
 init().catch(error=>{const message=error?.message||"Нет связи с сервером";const main=document.getElementById("main-content");if(main)main.insertAdjacentHTML("afterbegin",'<div class="init-error" role="alert"><strong>Ошибка загрузки:</strong> '+escapeHtml(message)+'<p>Проверьте сервер и обновите страницу.</p></div>');});
