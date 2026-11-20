@@ -8,7 +8,8 @@
   "status": "integrated",
   "enabled": true,
   "entrypoints": {
-    "backend_adapter": "tools/shodan/backend/tool.py"
+    "backend_adapter": "tools/shodan/backend/tool.py",
+    "tool_class": "ToolShodan"
   },
   "dependencies": {
     "python": [
