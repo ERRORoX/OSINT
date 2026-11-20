@@ -64,13 +64,13 @@ class ToolIPRDAP(ToolBase):
             f"IP: {address.compressed}",
             f"Версия: IPv{address.version}",
             f"Сеть: {payload.get('startAddress', '—')} – {payload.get('endAddress', '—')}",
-            f"CIDR: {', '.join(payload.get('cidr0_cidrs') or []) or '—'}",
+            f"CIDR: {', '.join((str(item.get('v4prefix') or item.get('v6prefix') or '') + '/' + str(item.get('length') or '') for item in (payload.get('cidr0_cidrs') or []) if isinstance(item, dict)) or '—'}",
             f"Название сети: {payload.get('name') or '—'}",
             f"Тип: {payload.get('type') or '—'}",
             f"Страна: {payload.get('country') or '—'}",
             f"Организация: {', '.join(dict.fromkeys(organizations)) or 'не указана'}",
             f"Регистрация: {dates.get('registration', '—')}",
             f"Изменено: {dates.get('last changed', '—')}",
-            f"Источник: {payload.get('port43') or 'RDAP'}",
+            "Источник: RDAP",
         ]
         return {"success": True, "output": "\n".join(lines), "source": "RDAP"}
