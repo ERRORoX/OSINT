@@ -28,6 +28,19 @@ export function initPanel(container) {
         <button type="button" class="btn btn-help" id="btn-check-update">Проверить обновления</button>
         <button type="button" class="btn btn-primary" id="btn-install-update" disabled>Установить обновление</button>
       </div>
+      <div id="update-progress" hidden style="margin-top:16px;padding:14px;border:1px solid var(--border,rgba(145,170,198,.18));border-radius:10px;background:rgba(8,18,30,.55)">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:8px">
+          <strong id="update-progress-stage">Подготовка…</strong>
+          <span id="update-progress-percent" style="font-variant-numeric:tabular-nums">0%</span>
+        </div>
+        <div id="update-progress-track" role="progressbar" aria-label="Ход обновления" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" style="height:8px;border-radius:99px;background:rgba(145,170,198,.16);overflow:hidden">
+          <div id="update-progress-bar" style="height:100%;width:0%;border-radius:99px;background:var(--accent,#59b8f5);transition:width .35s ease"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:9px;color:var(--text-muted,#91a2b6);font-size:12px;font-variant-numeric:tabular-nums">
+          <span>Прошло: <strong id="update-elapsed">00:00</strong></span>
+          <span>Осталось: <strong id="update-eta">рассчитывается</strong></span>
+        </div>
+      </div>
     </section>
   `;
 
@@ -37,12 +50,56 @@ export function initPanel(container) {
   const updateStatus = container.querySelector("#update-status");
   const checkUpdateBtn = container.querySelector("#btn-check-update");
   const installUpdateBtn = container.querySelector("#btn-install-update");
+  const progressPanel = container.querySelector("#update-progress");
+  const progressTrack = container.querySelector("#update-progress-track");
+  const progressBar = container.querySelector("#update-progress-bar");
+  const progressStage = container.querySelector("#update-progress-stage");
+  const progressPercent = container.querySelector("#update-progress-percent");
+  const elapsedLabel = container.querySelector("#update-elapsed");
+  const etaLabel = container.querySelector("#update-eta");
   let updateAvailable = false;
+  let updateStartedAt = 0;
+  let lastProgress = 0;
+  let pollFailures = 0;
 
   function updateMessage(text, isError = false) {
     updateStatus.textContent = text;
     updateStatus.className = "settings-message " + (isError ? "error" : "success");
     updateStatus.style.display = "block";
+  }
+
+  function formatDuration(totalSeconds) {
+    const seconds = Math.max(0, Math.floor(totalSeconds || 0));
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const rest = seconds % 60;
+    return hours
+      ? String(hours).padStart(2, "0") + ":" + String(minutes).padStart(2, "0") + ":" + String(rest).padStart(2, "0")
+      : String(minutes).padStart(2, "0") + ":" + String(rest).padStart(2, "0");
+  }
+
+  function renderUpdateProgress(data) {
+    const percent = Math.max(0, Math.min(100, Number(data.progress) || 0));
+    lastProgress = percent;
+    progressPanel.hidden = false;
+    progressStage.textContent = data.stage || "Выполняется обновление";
+    progressPercent.textContent = Math.round(percent) + "%";
+    progressBar.style.width = percent + "%";
+    progressTrack.setAttribute("aria-valuenow", String(Math.round(percent)));
+
+    const started = data.started_at ? Date.parse(data.started_at) : updateStartedAt;
+    if (Number.isFinite(started) && started > 0) updateStartedAt = started;
+    const elapsed = updateStartedAt ? (Date.now() - updateStartedAt) / 1000 : 0;
+    elapsedLabel.textContent = formatDuration(elapsed);
+
+    if (percent >= 100) {
+      etaLabel.textContent = "завершено";
+    } else if (percent >= 3 && elapsed > 2) {
+      const remaining = elapsed * (100 - percent) / percent;
+      etaLabel.textContent = "~" + formatDuration(remaining);
+    } else {
+      etaLabel.textContent = "рассчитывается";
+    }
   }
 
   async function checkForUpdates() {
@@ -66,12 +123,65 @@ export function initPanel(container) {
     }
   }
 
+  async function pollUpdateJob(jobId) {
+    try {
+      const res = await fetch(`${API}/system/update/status?job_id=${encodeURIComponent(jobId)}`, { cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Не удалось получить состояние обновления");
+      pollFailures = 0;
+      renderUpdateProgress(data);
+
+      if (data.state === "completed") {
+        const result = data.result || {};
+        progressBar.style.width = "100%";
+        progressPercent.textContent = "100%";
+        progressTrack.setAttribute("aria-valuenow", "100");
+        etaLabel.textContent = "завершено";
+        if (result.updated) {
+          updateMessage("Обновление установлено. Резервная ветка: " + (result.backup_branch || "создана") + ". Панель перезапускается автоматически; дождитесь её повторного открытия.");
+        } else {
+          updateMessage(result.message || "Обновление завершено.");
+          checkUpdateBtn.disabled = false;
+          installUpdateBtn.disabled = true;
+        }
+        return;
+      }
+
+      if (data.state === "error") {
+        updateMessage("Обновление не завершено: " + (data.error || "неизвестная ошибка"), true);
+        checkUpdateBtn.disabled = false;
+        installUpdateBtn.disabled = false;
+        return;
+      }
+
+      window.setTimeout(() => pollUpdateJob(jobId), 900);
+    } catch (err) {
+      pollFailures += 1;
+      if (pollFailures <= 12) {
+        updateMessage("Связь с сервером временно потеряна. Повторная проверка состояния…");
+        window.setTimeout(() => pollUpdateJob(jobId), 1200);
+        return;
+      }
+      if (lastProgress >= 90) {
+        updateMessage("Сервер завершает обновление и перезапускается. Подождите несколько секунд, затем обновите страницу.");
+      } else {
+        updateMessage("Не удалось получить состояние обновления: " + err.message, true);
+        checkUpdateBtn.disabled = false;
+      }
+    }
+  }
+
   checkUpdateBtn.addEventListener("click", checkForUpdates);
   installUpdateBtn.addEventListener("click", async () => {
     if (!updateAvailable || !confirm("Установить обновление из GitHub? Перед обновлением будет создана резервная ветка.")) return;
     installUpdateBtn.disabled = true;
     checkUpdateBtn.disabled = true;
-    updateMessage("Устанавливаем обновление. Не закрывайте панель…");
+    progressPanel.hidden = false;
+    updateStartedAt = Date.now();
+    lastProgress = 0;
+    pollFailures = 0;
+    renderUpdateProgress({ progress: 0, stage: "Запуск обновления" });
+    updateMessage("Запускаем обновление. Не закрывайте панель…");
     try {
       const res = await fetch(`${API}/system/update`, {
         method: "POST",
@@ -79,15 +189,14 @@ export function initPanel(container) {
         body: "{}",
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Ошибка установки");
-      updateAvailable = false;
-      updateMessage(data.updated
-        ? `${data.message} Резервная ветка: ${data.backup_branch}. Остановите сервер (Ctrl+C) и запустите снова: python3 run.py.`
-        : data.message);
+      if (!res.ok && !(res.status === 409 && data.job_id)) {
+        throw new Error(data.error || "Ошибка запуска обновления");
+      }
+      if (!data.job_id) throw new Error("Сервер не вернул идентификатор задачи обновления.");
+      pollUpdateJob(data.job_id);
     } catch (err) {
-      updateMessage("Обновление не установлено: " + err.message, true);
+      updateMessage("Обновление не запущено: " + err.message, true);
       installUpdateBtn.disabled = false;
-    } finally {
       checkUpdateBtn.disabled = false;
     }
   });
