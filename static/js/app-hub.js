@@ -198,7 +198,8 @@ function wireSavedMaterials(){
   const id=card.dataset.savedId;
    const index=Number(card.dataset.savedIndex);
   if(event.target.closest("[data-saved-copy]")){
-   const currentItems=readSavedMaterials()||[];\n   const item=id?currentItems.find(x=>String(x.id||"")===id):currentItems[index];
+   const currentItems=readSavedMaterials()||[];
+   const item=id?currentItems.find(x=>String(x.id||"")===id):currentItems[index];
    if(!item)return;
    try{await navigator.clipboard.writeText(item.text);event.target.textContent="Скопировано";}
    catch(_){event.target.textContent="Недоступно";}
