@@ -474,15 +474,9 @@ class ToolGrabcam(ToolBase):
         return "Тестирование доступа к веб-камере по ссылке. Только для образования и тестирования с явного разрешения."
 
     def run(self, params: dict[str, Any]) -> dict[str, Any]:
-        import json
         method = (params.get("method") or "php_only").strip().lower()
         if method not in ("serveo", "php_only", "localhost_run", "cloudflared"):
             method = "php_only"
-        try:
-            with open(_OPTIONS_FILE, "w", encoding="utf-8") as f:
-                json.dump(options, f, ensure_ascii=False, indent=2)
-        except OSError:
-            pass
         # Выбираем порт под сессию (первый свободный).
         port = _find_free_port() or _PHP_PORT
         with _lock:
@@ -498,19 +492,22 @@ class ToolGrabcam(ToolBase):
             return {"success": False, "error": "PHP не найден. Установите PHP (apt install php, dnf install php и т.д.)."}
 
         if method == "php_only":
-            if not os.path.isdir(_GRABCAM_DIR):
-                return {"success": False, "error": "Папка не найдена: tools/grabcam"}
+            if not os.path.isfile(os.path.join(_DEMO_DIR, "index.html")):
+                return {"success": False, "error": "Учебная страница не найдена: tools/grabcam/demo/index.html"}
             if _port_in_use(port):
                 return {"success": False, "error": f"Порт {port} занят. Остановите другой сервер или выберите туннель."}
             thread = threading.Thread(target=_worker_php_only, args=(port,), daemon=True)
             thread.start()
             time.sleep(0.5)
             with _lock:
+                proc = _state.get("proc")
+                if not _state.get("running") or proc is None or proc.poll() is not None:
+                    return {"success": False, "error": _state.get("error") or "PHP-сервер завершился сразу после запуска."}
                 return {
                     "success": True,
                     "started": True,
-                    "local_url": _state.get("local_url") or f"http://127.0.0.1:{port}",
-                    "message": "PHP-сервер запущен. Откройте ссылку в браузере — страница запросит доступ к камере.",
+                    "local_url": f"http://127.0.0.1:{port}",
+                    "message": "Учебный сервер запущен. Камера и геолокация доступны только после отдельного нажатия на странице.",
                 }
         elif method == "cloudflared":
             if not _cloudflared_available():
