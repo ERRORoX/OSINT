@@ -524,6 +524,21 @@ async function graphWire(){
   graphFitView();
   graphRender();
  };
+ const refreshServerGraph=async()=>{
+  if(mode?.value!=="local")return;
+  try{
+   const loaded=await requestGraph("GET");
+   const fresh=graphValidate(loaded);
+   serverGraph=fresh;
+   serverUpdatedAt=loaded.updated_at||null;
+   graphData=serverGraph;
+   if(badge)badge.textContent=serverGraph.nodes.length?"ПОСТОЯННОЕ ХРАНИЛИЩЕ":"НЕТ ДАННЫХ";
+   graphFitView();
+   graphRender();
+  }catch(error){
+   if(status)status.textContent="Не удалось обновить граф: "+(error.message||"ошибка");
+  }
+ };
  const persistCurrent=async()=>{
   const saved=await requestGraph("PUT",graphData);
   serverGraph=graphValidate(saved);
@@ -534,6 +549,9 @@ async function graphWire(){
   mode.value="local";
   mode.addEventListener("change",()=>setMode(mode.value));
  }
+ window.addEventListener("focus",refreshServerGraph);
+ window.addEventListener("pageshow",refreshServerGraph);
+ document.addEventListener("visibilitychange",()=>{if(!document.hidden)refreshServerGraph();});
  document.querySelectorAll("[data-graph-filter]").forEach(control=>control.addEventListener("change",graphRender));
  document.getElementById("graph-zoom-in")?.addEventListener("click",()=>{graphScale=Math.min(2.5,graphScale*1.2);graphApplyTransform();});
  document.getElementById("graph-zoom-out")?.addEventListener("click",()=>{graphScale=Math.max(.035,graphScale/1.2);graphApplyTransform();});
