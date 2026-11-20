@@ -138,7 +138,7 @@ def install_update(progress: Callable[[int, str], None] | None = None) -> dict:
         _restore_stash(stash_ref)
         report(97, "Завершение обновления")
         after = check_update()
-        report(100, "Обновление завершено")
+        report(98, "Проверка результата обновления")
         return {
             "updated": True,
             "backup_branch": backup_branch,
