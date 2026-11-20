@@ -6,6 +6,8 @@ import json
 import os
 import platform
 import sys
+import threading
+import uuid
 import zipfile
 from urllib.parse import quote, urlparse
 import ipaddress
@@ -31,6 +33,29 @@ from settings_keys import get_keys_for_api, save_keys_from_api, load_env_into_os
 
 from css_bundle import BUNDLE_TOOL_IDS, build_tool_css_bundle
 from update_manager import check_update, install_update, UpdateError
+
+# Background update job state for the local UI.
+_UPDATE_JOB_LOCK = threading.Lock()
+_UPDATE_JOB = None
+
+
+def _run_update_job(job_id):
+    global _UPDATE_JOB
+    def report(percent, stage):
+        with _UPDATE_JOB_LOCK:
+            if _UPDATE_JOB and _UPDATE_JOB.get('id') == job_id:
+                _UPDATE_JOB.update({'progress': percent, 'stage': stage})
+    try:
+        result = install_update(progress=report)
+        with _UPDATE_JOB_LOCK:
+            if _UPDATE_JOB and _UPDATE_JOB.get('id') == job_id:
+                _UPDATE_JOB.update({'state': 'completed', 'progress': 100, 'stage': 'Обновление завершено', 'result': result})
+        if result.get('updated'):
+            threading.Timer(3.0, lambda: os._exit(75)).start()
+    except Exception as exc:
+        with _UPDATE_JOB_LOCK:
+            if _UPDATE_JOB and _UPDATE_JOB.get('id') == job_id:
+                _UPDATE_JOB.update({'state': 'error', 'stage': 'Ошибка обновления', 'error': str(exc)})
 
 import requests
 from bs4 import BeautifulSoup
@@ -1504,20 +1529,29 @@ def api_system_update_check():
 
 @app.route("/api/system/update", methods=["POST"])
 def api_system_update_install():
+    global _UPDATE_JOB
     if not _local_update_request():
         return jsonify({"error": "Доступ разрешён только с этого компьютера."}), 403
     if request.headers.get("X-Requested-With") != "OSINT-Panel":
         return jsonify({"error": "Недопустимый запрос обновления."}), 400
-    try:
-        result = install_update()
-        if result.get("updated"):
-            # run.py supervisor перезапустит worker после завершения HTTP-ответа.
-            import threading
-            import os
-            threading.Timer(1.5, lambda: os._exit(75)).start()
-        return jsonify(result)
-    except UpdateError as exc:
-        return jsonify({"error": str(exc)}), 400
+    with _UPDATE_JOB_LOCK:
+        if _UPDATE_JOB and _UPDATE_JOB.get("state") == "running":
+            return jsonify({"error": "Обновление уже выполняется.", "job_id": _UPDATE_JOB["id"]}), 409
+        job_id = uuid.uuid4().hex
+        _UPDATE_JOB = {"id": job_id, "state": "running", "progress": 0, "stage": "Запуск обновления", "started_at": datetime.now(timezone.utc).isoformat()}
+    threading.Thread(target=_run_update_job, args=(job_id,), daemon=True).start()
+    return jsonify({"job_id": job_id, "state": "running"}), 202
+
+
+@app.route("/api/system/update/status", methods=["GET"])
+def api_system_update_status():
+    if not _local_update_request():
+        return jsonify({"error": "Доступ разрешён только с этого компьютера."}), 403
+    job_id = request.args.get("job_id", "")
+    with _UPDATE_JOB_LOCK:
+        if not _UPDATE_JOB or _UPDATE_JOB.get("id") != job_id:
+            return jsonify({"error": "Задача обновления не найдена."}), 404
+        return jsonify(dict(_UPDATE_JOB))
 
 
 @app.route("/api/settings/keys", methods=["GET"])
