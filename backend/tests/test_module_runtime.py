@@ -57,6 +57,17 @@ class ModuleRuntimeTests(unittest.TestCase):
         self.assertTrue(expected.issubset(loaded_ids), f"Missing runtime modules: {expected - loaded_ids}")
         self.assertEqual(issues, [])
 
+    def test_central_registry_no_longer_imports_migrated_adapters(self):
+        registry_source = (BACKEND_DIR / "tools" / "registry.py").read_text(encoding="utf-8")
+        migrated = (
+            "grabcam", "photo_search", "google_osint", "theharvester",
+            "domain_search", "sherlock", "maigret", "subfinder", "dnsx",
+            "social_analyzer", "blackbird", "shodan", "ip_rdap",
+        )
+        for tool_name in migrated:
+            with self.subTest(tool=tool_name):
+                self.assertNotIn(f"from .tool_{tool_name} import", registry_source)
+
     def test_loads_only_valid_integrated_tool(self):
         temp, root = self._project(source=self._tool_source())
         self.addCleanup(temp.cleanup)
