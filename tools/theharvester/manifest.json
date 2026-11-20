@@ -8,7 +8,8 @@
   "status": "integrated",
   "enabled": true,
   "entrypoints": {
-    "backend_adapter": "tools/theharvester/backend/tool.py"
+    "backend_adapter": "tools/theharvester/backend/tool.py",
+    "tool_class": "ToolTheharvester"
   },
   "dependencies": {
     "python": [
