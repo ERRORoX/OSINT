@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "id": "shodan",
+  "name": "Shodan",
+  "version": "1.0.0",
+  "category": "network",
+  "description": "Пассивный поиск информации об интернет-активах через Shodan API.",
+  "status": "legacy",
+  "enabled": true,
+  "entrypoints": {
+    "backend_adapter": "backend/tools/tool_shodan.py"
+  },
+  "dependencies": {
+    "python": [],
+    "system": [],
+    "optional": []
+  },
+  "capabilities": [
+    "legacy-backend-adapter"
+  ],
+  "legacy_paths": [
+    "backend/tools/tool_shodan.py"
+  ],
+  "notes": [
+    "Manifest описывает существующий инструмент; код ещё не перенесён в каноническую структуру модуля.",
+    "Не удалять и не перемещать legacy-файлы до отдельной проверки импортов, маршрутов и тестов."
+  ]
+}
