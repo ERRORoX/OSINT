@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#080d14">
+  <title>Module Manager — OSINT Panel</title>
+  <link rel="stylesheet" href="/css/tool-bundle/settings.css">
+  <link rel="stylesheet" href="/css/unified-workstation.css?v=4.4.0">
+  <link rel="stylesheet" href="/p/modules/page.css">
+</head>
+<body>
+  <header class="osint-header app-header">
+    <div class="osint-header-inner scan-line">
+      <div class="osint-logo"><a href="/" aria-label="На главную">◎</a></div>
+      <div class="osint-title">
+        <h1><a href="/"><span class="accent">OSINT</span><span class="dim">Panel</span></a></h1>
+        <p>Управление модульной архитектурой</p>
+      </div>
+      <div class="app-header-right">
+        <a class="osint-ws-action" href="/p/settings/">Настройки API</a>
+        <a class="osint-ws-action" href="/">На главную</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="main osint-main module-manager" id="module-manager">
+    <section class="mm-heading">
+      <div>
+        <div class="mm-kicker">DEVELOPER / MODULE REGISTRY</div>
+        <h1>Module Manager</h1>
+        <p>Состояние модулей, версии, точки входа и диагностика manifest-файлов.</p>
+      </div>
+      <button type="button" class="mm-refresh" id="mm-refresh">↻ Обновить список</button>
+    </section>
+
+    <section class="mm-stats" aria-live="polite">
+      <article class="mm-stat"><span>Найдено модулей</span><strong id="mm-total">—</strong></article>
+      <article class="mm-stat"><span>Корректные manifest</span><strong id="mm-valid">—</strong></article>
+      <article class="mm-stat"><span>Ошибки</span><strong id="mm-invalid">—</strong></article>
+      <article class="mm-stat"><span>Включено в manifest</span><strong id="mm-enabled">—</strong></article>
+    </section>
+
+    <section class="mm-toolbar">
+      <label class="mm-search-label" for="mm-search">Поиск модулей</label>
+      <input id="mm-search" type="search" placeholder="Название, ID, категория или статус…">
+      <span id="mm-updated" class="mm-muted">Ожидание данных…</span>
+    </section>
+
+    <div id="mm-error" class="mm-error" role="alert" hidden></div>
+    <section id="mm-list" class="mm-list" aria-live="polite">
+      <div class="mm-empty">Загрузка реестра модулей…</div>
+    </section>
+
+    <p class="mm-footnote">
+      Важно: эта страница пока показывает состояние и диагностику manifest-файлов.
+      Переключатель enabled не управляет запуском инструментов до завершения интеграции
+      Module Registry с runtime-реестром.
+    </p>
+  </main>
+
+  <footer class="app-footer">
+    <span><a href="/" style="color:inherit;text-decoration:none">OSINT Panel</a></span>
+    <span class="footer-hint">Module Manager · read-only diagnostics</span>
+  </footer>
+  <script defer src="/p/modules/page.js"></script>
+</body>
+</html>
