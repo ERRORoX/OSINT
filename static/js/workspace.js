@@ -74,7 +74,7 @@
     render(); if (btn) { btn.textContent = "Закреплено ✓"; btn.disabled = true; }
   }
   function addSaveButtons(root) {
-    var selector = ".tool-results-card,.result-box,.iprdap-result,.tool-cli-output,.result-output,[data-result-output]";
+    var selector = ".tool-results-card,.result-box,.iprdap-result,.tool-cli-output,.tool-output,.result-output,[data-result-output]";
     var nodes = [];
     if (root.matches && root.matches(selector)) nodes.push(root);
     if (root.querySelectorAll) Array.prototype.forEach.call(root.querySelectorAll(selector), function (n) { nodes.push(n); });
