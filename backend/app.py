@@ -40,7 +40,7 @@ from tools.tool_formgrab import add_capture, get_captures, get_grab_page_html, g
 from settings_keys import get_keys_for_api, save_keys_from_api, load_env_into_os
 
 from css_bundle import BUNDLE_TOOL_IDS, build_tool_css_bundle
-from module_registry import discover_modules
+from module_registry import discover_modules, get_navigation_modules
 from module_runtime import get_runtime_module_issues
 from update_manager import check_update, install_update, UpdateError
 
@@ -952,6 +952,12 @@ def api_modules_list():
     result["runtime_issues"] = runtime_issues
     result["summary"]["runtime_errors"] = len(runtime_issues)
     return jsonify(result)
+
+
+@app.route("/api/navigation", methods=["GET"])
+def api_navigation_list():
+    """Return safe navigation entries from enabled integrated module manifests."""
+    return jsonify({"modules": get_navigation_modules(_PROJECT_ROOT)})
 
 
 @app.route("/api/tools", methods=["GET"])
