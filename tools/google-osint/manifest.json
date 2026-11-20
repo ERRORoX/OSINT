@@ -9,7 +9,9 @@
   "enabled": true,
   "entrypoints": {
     "backend_adapter": "tools/google-osint/backend/tool.py",
-    "tool_class": "ToolGoogleOsint"
+    "tool_class": "ToolGoogleOsint",
+    "page_url": "/modules/google-osint/",
+    "frontend": "tools/google-osint/frontend/index.html"
   },
   "dependencies": {
     "python": [],
@@ -28,7 +30,9 @@
   "legacy_paths": [
     "backend/tools/tool_google_osint.py",
     "backend/tools/tool_holehe.py",
-    "backend/tools/tool_h8mail.py"
+    "backend/tools/tool_h8mail.py",
+    "static/p/google-osint/index.html",
+    "static/p/google-osint/page.js"
   ],
   "notes": [
     "Каноническая реализация и вспомогательные адаптеры находятся в backend/ внутри каталога модуля.",
