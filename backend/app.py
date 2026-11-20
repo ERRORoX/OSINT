@@ -921,14 +921,22 @@ def grabcam_module_assets(filename):
 
 @app.route("/modules/ip-rdap/", methods=["GET"])
 def ip_rdap_module_page():
-    """Serve the canonical IP/RDAP module frontend."""
-    return send_from_directory(_IP_RDAP_FRONTEND_DIR, "index.html")
+    """Serve the canonical IP/RDAP module frontend without stale browser caching."""
+    response = send_from_directory(_IP_RDAP_FRONTEND_DIR, "index.html")
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 
 @app.route("/modules/ip-rdap/<path:filename>", methods=["GET"])
 def ip_rdap_module_assets(filename):
-    """Serve static assets owned by the IP/RDAP module."""
-    return send_from_directory(_IP_RDAP_FRONTEND_DIR, filename)
+    """Serve IP/RDAP assets without stale browser caching."""
+    response = send_from_directory(_IP_RDAP_FRONTEND_DIR, filename)
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 
 @app.route("/api/modules", methods=["GET"])
