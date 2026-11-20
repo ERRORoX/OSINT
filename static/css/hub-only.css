@@ -191,3 +191,19 @@ body.dashboard-page{margin:0!important;min-height:100vh;background:radial-gradie
  .sidebar-promo{display:none}
  .topbar{top:0}
 }
+
+
+/* Final compact sidebar cleanup */
+.brand{min-height:48px;gap:10px;padding:2px 5px 14px}
+.brand-copy{min-width:0}
+.brand-copy strong{font-size:13px;letter-spacing:.045em}
+.brand-copy small{display:none!important}
+.version-tag{margin-left:auto;flex:none}
+.sidebar-scroll{padding-top:14px}
+.sidebar-home{margin-bottom:5px}
+.sidebar-divider{margin:12px 5px}
+.sidebar-nav .tool-link,.sidebar-link{min-height:36px}
+@media(max-width:680px){
+ .brand{padding:0 2px 8px;min-height:0}
+ .sidebar-scroll{display:none}
+}
