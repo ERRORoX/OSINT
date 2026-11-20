@@ -1,53 +1,52 @@
 #!/usr/bin/env python3
 """
 Главный файл запуска OSINT Panel.
-Запуск: python run.py  (или python3 run.py)
-Работает одинаково на Windows, Linux и macOS.
+Обычный запуск: python3 run.py
+Режим supervisor автоматически поднимает сервер повторно после установки обновления.
 """
 import os
-import sys
 import subprocess
+import sys
+import time
 
-# Переход в папку проекта (где лежит run.py)
 ROOT = os.path.dirname(os.path.abspath(__file__))
 os.chdir(ROOT)
 
-# Подключение backend
-sys.path.insert(0, os.path.join(ROOT, "backend"))
-
 
 def ensure_deps():
-    """Устанавливает зависимости, если Flask или flask_cors не найдены (все инструменты — из requirements.txt)."""
+    """Проверяет базовые зависимости; устанавливает requirements только при их отсутствии."""
     try:
-        import flask
-        import flask_cors
+        import flask  # noqa: F401
+        import flask_cors  # noqa: F401
     except ImportError:
-        print("Устанавливаю зависимости...")
+        print("Устанавливаю зависимости проекта...")
         subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
 
 
-def get_lan_ip():
-    """Примерный IP в локальной сети (для подсказки)."""
-    try:
-        import socket
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.settimeout(0.5)
-        s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
-        s.close()
-        return ip
-    except Exception:
-        return None
+def run_worker():
+    sys.path.insert(0, os.path.join(ROOT, "backend"))
+    from app import app
+    port = int(os.environ.get("OSINT_PANEL_PORT", "5000"))
+    print("Панель запущена: http://127.0.0.1:{}".format(port))
+    app.run(host="127.0.0.1", port=port, debug=False, use_reloader=False)
 
 
 def main():
     ensure_deps()
-    port = 5000
-    print("Панель запущена.")
-    print("  На этом ПК:      http://127.0.0.1:{}".format(port))
-    print("  Режим доступа: только этот компьютер (127.0.0.1).")
-    from app import app
-    app.run(host="127.0.0.1", port=port, debug=False)
+    if "--worker" in sys.argv:
+        run_worker()
+        return
+
+    # Supervisor остаётся запущенным, пока рабочий Flask-процесс перезапускается.
+    while True:
+        worker = subprocess.Popen([sys.executable, os.path.abspath(__file__), "--worker"])
+        code = worker.wait()
+        if code != 75:
+            if code:
+                print("Сервер завершился с кодом {}.".format(code))
+            break
+        print("Обновление установлено. Перезапускаю OSINT Panel...")
+        time.sleep(0.8)
 
 
 if __name__ == "__main__":
