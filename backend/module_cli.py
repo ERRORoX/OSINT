@@ -34,7 +34,11 @@ def create_module(module_id: str, name: str, category: str) -> Path:
     if not name.strip():
         raise ValueError("Module name cannot be empty.")
 
-    tools_root = (PROJECT_ROOT / "tools").resolve()
+    project_root = PROJECT_ROOT.resolve()
+    tools_path = project_root / "tools"
+    tools_root = tools_path.resolve()
+    if tools_root.parent != project_root:
+        raise ValueError("The tools directory must remain a direct child of the project root.")
     target = (tools_root / module_id).resolve()
     if target.parent != tools_root or target.exists():
         raise FileExistsError(f"Module directory already exists or is not a safe child: {target}")
