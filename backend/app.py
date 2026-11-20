@@ -21,6 +21,7 @@ _GRABCAM_PANEL_DIR = os.path.join(_PROJECT_ROOT, "tools", "grabcam", "panel")
 _GRABCAM_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "grabcam", "frontend")
 _IP_RDAP_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "ip-rdap", "frontend")
 _DOMAIN_WORKSPACE_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "domain-workspace", "frontend")
+_PHOTO_WORKSPACE_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "photo-workspace", "frontend")
 if _BACKEND_DIR not in sys.path:
     sys.path.insert(0, _BACKEND_DIR)
 
@@ -142,12 +143,20 @@ def photo_page_no_slash():
 
 @app.route("/photo/")
 def photo_page():
-    """Автономная страница Фото: static/photo/index.html."""
-    base = os.path.join(app.static_folder, "photo")
-    index_path = os.path.join(base, "index.html")
-    if not os.path.isfile(index_path):
-        return jsonify({"error": "Страница не найдена", "page": "photo"}), 404
-    return send_from_directory(base, "index.html")
+    """Compatibility URL for the canonical Photo Workspace module."""
+    return redirect("/modules/photo-workspace/", code=302)
+
+
+@app.route("/modules/photo-workspace/", methods=["GET"])
+def photo_workspace_module_page():
+    """Serve the canonical Photo Workspace frontend."""
+    return send_from_directory(_PHOTO_WORKSPACE_FRONTEND_DIR, "index.html")
+
+
+@app.route("/modules/photo-workspace/<path:filename>", methods=["GET"])
+def photo_workspace_module_assets(filename):
+    """Serve static assets owned by the Photo Workspace module."""
+    return send_from_directory(_PHOTO_WORKSPACE_FRONTEND_DIR, filename)
 
 
 @app.route("/domain")
