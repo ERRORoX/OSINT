@@ -340,6 +340,7 @@ function buildDomainGraphPayload(rep) {
   const rootDomain = String(rep?.domain || "").trim().toLowerCase();
   if (!rootDomain) return { nodes, edges };
   const successfulTools = (rep.tools || []).filter((tool) => tool && tool.success);
+  if (!successfulTools.length) return { nodes, edges };
   const sourceNames = successfulTools.map((tool) => tool.name || tool.id).filter(Boolean);
   const provenance = sourceNames.length ? "Источники: " + sourceNames.join(", ") : "Результат анализа домена";
   const rootId = addNode("domain", rootDomain, provenance);
