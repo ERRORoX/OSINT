@@ -36,6 +36,9 @@ jobs:
         run: python tools/photo-search/tests/test_tool.py -v
 
       - name: Test Google OSINT module
+      - name: Test GrabCam module
+        run: python tools/grabcam/tests/test_tool.py -v
+
         run: python tools/google-osint/tests/test_tool.py -v
 
       - name: Test IP/RDAP module
