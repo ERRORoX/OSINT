@@ -516,8 +516,8 @@ async function graphWire(){
    graphData=GRAPH_DEMO;
    if(badge)badge.textContent="ДЕМО-ДАННЫЕ";
   }else{
-   graphData=serverGraph;
-   if(badge)badge.textContent=serverGraph.nodes.length?"ПОСТОЯННОЕ ХРАНИЛИЩЕ":"НЕТ ДАННЫХ";
+   graphData=serverGraph.nodes.length?serverGraph:(legacy||{nodes:[],edges:[]});
+   if(badge)badge.textContent=serverGraph.nodes.length?"ПОСТОЯННОЕ ХРАНИЛИЩЕ":(legacy&&legacy.nodes.length?"ЛОКАЛЬНЫЕ ДАННЫЕ":"НЕТ ДАННЫХ");
    if(status&&!serverGraph.nodes.length)status.textContent="Постоянный граф пока пуст. Запусти анализ домена — найденные связи появятся здесь автоматически.";
   }
   graphSelected=null;
@@ -531,7 +531,7 @@ async function graphWire(){
   if(badge&&mode?.value==="local")badge.textContent="ПОСТОЯННОЕ ХРАНИЛИЩЕ";
  };
  if(mode){
-  mode.value=serverGraph.nodes.length||!legacy?"local":"local";
+  mode.value="local";
   mode.addEventListener("change",()=>setMode(mode.value));
  }
  document.querySelectorAll("[data-graph-filter]").forEach(control=>control.addEventListener("change",graphRender));
