@@ -104,12 +104,21 @@ function renderHubCards(){
  const host=document.getElementById("hub-cards");if(!host)return;
  const query=(document.getElementById("hub-search")?.value||"").trim().toLocaleLowerCase("ru");
  const favorites=getFavorites();
+ const categoryLabels={recon:"РАЗВЕДКА",identity:"ИДЕНТИФИКАТОРЫ",media:"МЕДИА",analysis:"АНАЛИЗ",workspace:"РАБОЧЕЕ МЕСТО"};
  const cards=HUB_CARDS.filter(card=>{
-  const matches=[card.title,card.desc,card.id,card.category].join(" ").toLocaleLowerCase("ru").includes(query);
+  const matches=[card.title,card.desc,card.id,card.category,categoryLabels[card.category]||""].join(" ").toLocaleLowerCase("ru").includes(query);
   return matches&&(activeFilter==="all"|| (activeFilter==="favorites"?favorites.includes(card.id):card.category===activeFilter));
  });
- host.innerHTML=cards.map((card,index)=>'<article class="hub-card"><div class="hub-card-top"><span class="hub-card-icon" aria-hidden="true">'+card.icon+'</span><span class="hub-card-index">'+String(HUB_CARDS.indexOf(card)+1).padStart(2,"0")+'</span></div><h3 class="hub-card-title">'+escapeHtml(card.title)+'</h3><p class="hub-card-desc">'+escapeHtml(card.desc)+'</p><div class="hub-card-bottom"><a class="hub-card-open" href="'+escapeHtml(card.href)+'">ОТКРЫТЬ РАЗДЕЛ ↗</a><button class="hub-fav" type="button" data-favorite="'+escapeHtml(card.id)+'" aria-label="Добавить в избранное" aria-pressed="'+favorites.includes(card.id)+'">'+(favorites.includes(card.id)?"★":"☆")+"</button></div></article>").join("");
- const empty=document.getElementById("hub-empty");if(empty)empty.hidden=cards.length!==0;
+ const count=document.getElementById("catalog-result-count");
+ if(count)count.textContent="Показано "+cards.length+" из "+HUB_CARDS.length+" инструментов";
+ const favoriteCount=document.getElementById("catalog-favorite-count");
+ if(favoriteCount)favoriteCount.textContent="Избранное: "+favorites.length;
+ host.innerHTML=cards.map(card=>{
+  const favorite=favorites.includes(card.id);
+  const category=categoryLabels[card.category]||"МОДУЛЬ";
+  return '<article class="hub-card"><div class="hub-card-top"><span class="hub-card-icon" aria-hidden="true">'+escapeHtml(card.icon)+'</span><span class="hub-card-category">'+category+'</span><span class="hub-card-index">'+String(HUB_CARDS.indexOf(card)+1).padStart(2,"0")+'</span></div><h3 class="hub-card-title">'+escapeHtml(card.title)+'</h3><p class="hub-card-desc">'+escapeHtml(card.desc)+'</p><div class="hub-card-bottom"><a class="hub-card-open" href="'+escapeHtml(card.href)+'">ОТКРЫТЬ РАЗДЕЛ</a><button class="hub-fav" type="button" data-favorite="'+escapeHtml(card.id)+'" aria-label="'+(favorite?"Убрать из избранного":"Добавить в избранное")+'" title="'+(favorite?"Убрать из избранного":"Добавить в избранное")+'" aria-pressed="'+favorite+'">'+(favorite?"★":"☆")+"</button></div></article>";
+ }).join("");
+ const empty=document.getElementById("hub-empty");if(empty){empty.hidden=cards.length!==0;empty.textContent=activeFilter==="favorites"?"В избранном пока нет инструментов. Нажмите ☆ на карточке, чтобы добавить её сюда.":"Инструменты не найдены. Измените запрос или фильтр.";}
  host.querySelectorAll("[data-favorite]").forEach(button=>button.addEventListener("click",()=>{
   const id=button.dataset.favorite;const next=getFavorites();const updated=next.includes(id)?next.filter(x=>x!==id):[...next,id];setFavorites(updated);renderHubCards();
  }));
