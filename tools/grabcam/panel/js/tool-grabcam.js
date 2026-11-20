@@ -73,11 +73,13 @@ function runFeaturesAfterMount(container) {
         const statusEl = container.querySelector("#gc-status");
         if (st.running || st.link || st.local_url) {
           if (st.link || st.local_url) showLink(st.link || null, st.local_url || null);
+          const statusToggle = container.querySelector("#gc-feat-status");
+          if (statusToggle) statusToggle.checked = !!st.running;
           if (st.running && submitBtn && stopBtn && statusEl) {
             submitBtn.disabled = true;
             submitBtn.style.display = "none";
             stopBtn.style.display = "inline-block";
-            statusEl.textContent = "Сервер запущен. Ожидание ссылки…";
+            statusEl.textContent = st.error || (st.link ? "Публичный туннель активен." : st.local_url ? "Локальный сервер активен." : "Ожидание ссылки туннеля…");
             POLL_IDS.status = setInterval(pollStatus, POLL_INTERVALS.status);
           }
           if (resultEl) {
