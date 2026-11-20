@@ -59,6 +59,8 @@ class ModuleFrontendTests(unittest.TestCase):
         hub_source = (ROOT / "static" / "js" / "app-hub.js").read_text(encoding="utf-8")
         self.assertIn('@app.route("/api/navigation", methods=["GET"])', app_source)
         self.assertIn("get_navigation_modules(_PROJECT_ROOT)", app_source)
+        self.assertIn('registered_routes = {rule.rule for rule in app.url_map.iter_rules()}', app_source)
+        self.assertIn('if module["href"] in registered_routes', app_source)
         self.assertIn('fetch(API+"/navigation"', hub_source)
         self.assertIn("applyNavigationModules(loadedNavigation)", hub_source)
         self.assertIn('pageById.get("domain-workspace")', hub_source)
