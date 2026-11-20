@@ -152,6 +152,20 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn(".case-project-card", styles)
 
 
+    def test_homepage_interactive_relationship_graph(self):
+        page = (ROOT / "static" / "index.html").read_text(encoding="utf-8")
+        script = (ROOT / "static" / "js" / "app-hub.js").read_text(encoding="utf-8")
+        styles = (ROOT / "static" / "css" / "hub-only.css").read_text(encoding="utf-8")
+        self.assertIn('id="investigation-graph"', page)
+        self.assertIn('id="graph-dataset-mode"', page)
+        self.assertIn('id="graph-import-button"', page)
+        self.assertIn('function graphValidate(value)', script)
+        self.assertIn('function graphWire()', script)
+        self.assertIn('GRAPH_STORAGE_KEY="osint-panel-graph-data-v1"', script)
+        self.assertIn('ДЕМО-ДАННЫЕ', script)
+        self.assertIn('.graph-node.is-selected', styles)
+        self.assertIn('touch-action:none', styles)
+
 if __name__ == "__main__":
     unittest.main()
 
