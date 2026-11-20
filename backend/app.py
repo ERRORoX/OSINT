@@ -1509,7 +1509,13 @@ def api_system_update_install():
     if request.headers.get("X-Requested-With") != "OSINT-Panel":
         return jsonify({"error": "Недопустимый запрос обновления."}), 400
     try:
-        return jsonify(install_update())
+        result = install_update()
+        if result.get("updated"):
+            # run.py supervisor перезапустит worker после завершения HTTP-ответа.
+            import threading
+            import os
+            threading.Timer(1.5, lambda: os._exit(75)).start()
+        return jsonify(result)
     except UpdateError as exc:
         return jsonify({"error": str(exc)}), 400
 
