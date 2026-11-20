@@ -129,15 +129,6 @@
   <script>
     (function () {
       var h = (location.hash || "").replace(/^#/, "");
-      if (!h) return;
-      var legacy = { reports: "history", dashboard: "domain-tools", page: "domain-tools" };
-      var id = legacy[h] || h;
-      if (id) location.replace("/p/" + encodeURIComponent(id) + "/");
-    })();
-  </script>
-  <script>
-    (function () {
-      var h = (location.hash || "").replace(/^#/, "");
       if (h) {
         var legacy = { reports: "history", dashboard: "domain-tools", page: "domain-tools" };
         location.replace("/p/" + encodeURIComponent(legacy[h] || h) + "/");
@@ -150,7 +141,12 @@
       updateClock();
       window.setInterval(updateClock, 30000);
       document.addEventListener("keydown", function (event) {
-        if (event.key === "/" && !/INPUT|TEXTAREA/.test(document.activeElement.tagName)) {
+        var target = event.target;
+        var typing = target && (target.isContentEditable || /INPUT|TEXTAREA|SELECT/.test(target.tagName));
+        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+          event.preventDefault(); if (input) input.focus(); return;
+        }
+        if (event.key === "/" && !typing) {
           event.preventDefault(); if (input) input.focus();
         }
         if (event.key === "Escape" && input) {
