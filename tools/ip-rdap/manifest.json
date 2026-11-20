@@ -10,7 +10,7 @@
   "entrypoints": {
     "page_url": "/modules/ip-rdap/",
     "frontend": "tools/ip-rdap/frontend/index.html",
-    "backend_adapter": "backend/tools/tool_ip_rdap.py",
+    "backend_adapter": "tools/ip-rdap/backend/tool.py",
     "manifest_readme": "tools/ip-rdap/README.md",
     "tool_class": "ToolIPRDAP"
   },
