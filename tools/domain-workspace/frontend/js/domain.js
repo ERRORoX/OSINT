@@ -729,9 +729,12 @@ function wireCopyButtons(root) {
   });
 }
 
-async function runTool(id) {
+let runSession = 0;
+
+async function runTool(id, session = runSession) {
   running.add(id);
   render();
+  let result;
   try {
     if (!domain.trim()) throw new Error("Пустой домен");
     let data;
@@ -743,17 +746,16 @@ async function runTool(id) {
     } else {
       data = await apiRun(id, { domain });
     }
-    const out = (data.output || data.error || "").trim();
-    results[id] = { success: !!data.success, output: out || "(нет вывода)", stats: data.stats || null };
-    running.delete(id);
-    doneSet.add(id);
-    if (!data.success) errSet.add(id);
+    result = { success: !!data.success, output: String(data.output || data.error || "").trim() || "(нет вывода)", stats: data.stats || null };
   } catch (e) {
-    results[id] = { success: false, output: e.message || "Ошибка", stats: null };
-    running.delete(id);
-    errSet.add(id);
-    doneSet.add(id);
+    result = { success: false, output: e.message || "Ошибка", stats: null };
   }
+  if (session !== runSession) return;
+  results[id] = result;
+  running.delete(id);
+  doneSet.add(id);
+  if (result.success) errSet.delete(id);
+  else errSet.add(id);
   render();
 }
 
@@ -778,16 +780,21 @@ async function runAll() {
     alert("Отметьте хотя бы один инструмент.");
     return;
   }
+  const session = ++runSession;
   results = {};
   running = new Set();
   doneSet = new Set();
   errSet = new Set();
   collapsedSet = new Set();
+  lastWallSeconds = 0;
+  lastReport = null;
+  graphSyncStatus = "";
   submitted = true;
   render();
   const t0 = typeof performance !== "undefined" ? performance.now() : Date.now();
-  const promises = TOOLS.filter((t) => selectedTools.has(t.id)).map((t) => runTool(t.id));
+  const promises = TOOLS.filter((t) => selectedTools.has(t.id)).map((t) => runTool(t.id, session));
   await Promise.allSettled(promises);
+  if (session !== runSession) return;
   const t1 = typeof performance !== "undefined" ? performance.now() : Date.now();
   const secs = (t1 - t0) / 1000;
   // финальный ререндер со временем
@@ -805,12 +812,14 @@ async function runAll() {
 }
 
 async function rerunTool(id) {
+  const session = runSession;
   doneSet.delete(id);
   errSet.delete(id);
   collapsedSet.delete(id);
   delete results[id];
   render();
-  await runTool(id);
+  await runTool(id, session);
+  if (session !== runSession) return;
   lastReport = buildReportData();
   saveHistoryItem(lastReport);
   try {
@@ -823,6 +832,7 @@ async function rerunTool(id) {
 }
 
 function clearAll() {
+  runSession += 1;
   domain = "";
   submitted = false;
   results = {};
@@ -861,6 +871,7 @@ function renderSearch() {
   const el = document.getElementById("searchArea");
   const anyR = running.size > 0;
   const progress = doneSet.size;
+  const totalSelected = Math.max(1, selectedTools.size);
 
   if (!submitted) {
     el.innerHTML = `<div class="search-box">
@@ -896,7 +907,7 @@ function renderSearch() {
   } else {
     el.innerHTML = `<div class="preview">
       <span class="preview-domain">${esc(domain)}</span>
-      <span class="preview-status">${anyR ? running.size + " выполняется..." : doneSet.size > 0 ? doneSet.size + "/" + TOOLS.length + " завершено" : "Запуск..."}</span>
+      <span class="preview-status">${anyR ? running.size + " выполняется..." : doneSet.size > 0 ? doneSet.size + "/" + totalSelected + " завершено" : "Запуск..."}</span>
       <div class="preview-actions">
         <button class="btn btn-sky" onclick="runAll()" ${anyR ? "disabled" : ""}>${anyR ? '<span class="spinner">' + IC.loader + "</span>" : IC.play} ${anyR ? "Анализ..." : "Запустить"}</button>
         <button class="btn" onclick="clearAll()">Сброс</button>
@@ -904,7 +915,7 @@ function renderSearch() {
     </div>
     ${
       anyR
-        ? `<div class="progress-wrap"><div class="progress-bar"><div class="progress-fill" style="width:${(progress / TOOLS.length) * 100}%"></div></div><div class="progress-text"><span>${doneSet.size} готово · ${running.size} выполняется</span><span>${Math.round((progress / TOOLS.length) * 100)}%</span></div></div>`
+        ? `<div class="progress-wrap"><div class="progress-bar"><div class="progress-fill" style="width:${(progress / totalSelected) * 100}%"></div></div><div class="progress-text"><span>${doneSet.size}/${totalSelected} готово · ${running.size} выполняется</span><span>${Math.round((progress / TOOLS.length) * 100)}%</span></div></div>`
         : ""
     }`;
   }
