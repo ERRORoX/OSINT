@@ -45,6 +45,7 @@ class ModuleScaffoldingTests(unittest.TestCase):
     def test_rejects_tools_directory_symlink_outside_project(self):
         outside = self.root.parent / (self.root.name + "-outside")
         outside.mkdir()
+        self.addCleanup(outside.rmdir)
         tools_link = self.root / "tools"
         try:
             tools_link.symlink_to(outside, target_is_directory=True)
