@@ -201,6 +201,7 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn("const totalSelected = Math.max(1, selectedTools.size);", script)
         self.assertIn('doneSet.size + "/" + totalSelected + " завершено"', script)
         self.assertIn('(progress / totalSelected) * 100', script)
+        self.assertIn('Math.round((progress / totalSelected) * 100)', script)
 
 
 if __name__ == "__main__":
