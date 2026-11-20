@@ -387,3 +387,43 @@
   #panel-grabcam .gc-widget,
   #panel-grabcam .gc-widget-control { transition: none; }
 }
+
+/* Unified compact heading and icon scale for GrabCam widgets. */
+#panel-grabcam .gc-page-head {
+  min-height: 30px;
+  padding: 0 2px;
+}
+#panel-grabcam .gc-page-mark {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  font-size: 13px;
+}
+#panel-grabcam .gc-page-name {
+  font-size: 15px;
+  line-height: 1.25;
+}
+#panel-grabcam .gc-widget h3,
+#panel-grabcam .gc-widget .gc-section-title {
+  font-size: .95rem;
+  line-height: 1.35;
+  margin-top: 0;
+}
+#panel-grabcam .gc-widget h3 > svg,
+#panel-grabcam .gc-widget h3 > img,
+#panel-grabcam .gc-widget .gc-widget-icon {
+  width: 18px !important;
+  height: 18px !important;
+  max-width: 18px !important;
+  max-height: 18px !important;
+  vertical-align: middle;
+  object-fit: contain;
+}
+#panel-grabcam .gc-widget > img:not(.gc-map-marker-pin),
+#panel-grabcam .gc-widget > .gc-hero-icon {
+  width: 28px;
+  height: 28px;
+  max-width: 28px;
+  max-height: 28px;
+  object-fit: contain;
+}
