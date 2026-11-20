@@ -61,6 +61,18 @@ class RelationshipGraphStoreTests(unittest.TestCase):
                 self.assertEqual(len(loaded["edges"]), 2)
                 self.assertIsNotNone(loaded["updated_at"])
 
+                # Position updates merge into the existing graph instead of replacing it.
+                moved = graph_store.merge_graph_data({
+                    "nodes": [
+                        {"id": "domain:root", "type": "domain", "label": "example.org", "x": 333, "y": 222},
+                    ],
+                    "edges": [],
+                })
+                moved_root = next(node for node in moved["nodes"] if node["id"] == "domain:root")
+                self.assertEqual(moved_root["x"], 333)
+                self.assertEqual(moved_root["y"], 222)
+                self.assertEqual(len(moved["nodes"]), 3)
+
     def test_rejects_unknown_edge_endpoints(self):
         with tempfile.TemporaryDirectory() as directory:
             db_path = str(Path(directory) / "graph.sqlite3")
