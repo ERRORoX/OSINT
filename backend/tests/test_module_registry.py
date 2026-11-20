@@ -1,9 +1,12 @@
 """Unit tests for the read-only module registry."""
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
+# Support both repository-root and backend-directory test invocation.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from module_registry import discover_modules
 
 
