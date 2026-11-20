@@ -1,137 +1,67 @@
 /**
- * Главная страница: навигация и карточки — отдельные разделы на /p/<id>/ (один HTML/CSS/JS на инструмент).
+ * OSINT Panel 4.1 home workspace.
+ * Keeps navigation/API integration while adding searchable categories and local favorites.
  */
-
-const API = "/api";
-
-const TAB_ICONS = {
-  "domain-tools":
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
-  "username-tools":
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
-  "ai-agent":
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><line x1="12" y1="5" x2="12" y2="18"/></svg>',
-  settings:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v2"/><path d="M12 21v2"/><path d="M4.22 4.22l1.42 1.42"/><path d="M18.36 18.36l1.42 1.42"/><path d="M1 12h2"/><path d="M21 12h2"/><path d="M4.22 19.78l1.42-1.42"/><path d="M18.36 5.64l1.42-1.42"/><circle cx="12" cy="12" r="4"/></svg>',
-  history:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>',
-  "photo-search":
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>',
-  grabcam:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>',
+const API="/api";
+const TAB_ICONS={
+ "domain-tools":'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>',
+ "username-tools":'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+ "ai-agent":'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5a3 3 0 1 0-6 0 4 4 0 0 0-2 6 4 4 0 0 0 1 6 4 4 0 1 0 7 1z"/><path d="M12 5a3 3 0 1 1 6 0 4 4 0 0 1 2 6 4 4 0 0 1-1 6 4 4 0 1 1-7 1z"/></svg>',
+ "photo-search":'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="15" rx="2"/><circle cx="12" cy="12" r="3"/><path d="m7 5 2-2h6l2 2"/></svg>',
+ history:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+ settings:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 13.5a7 7 0 0 0 0-3l2-1.5-2-3.5-2.4 1a7 7 0 0 0-2.6-1.5L13.5 2h-4L9 5a7 7 0 0 0-2.6 1.5L4 5.5 2 9l2 1.5a7 7 0 0 0 0 3L2 15l2 3.5 2.4-1A7 7 0 0 0 9 19l.5 3h4l.5-3a7 7 0 0 0 2.6-1.5l2.4 1 2-3.5z"/></svg>'
 };
-
-const DOMAIN_TOOLS_IDS = ["theharvester", "domain-search", "shodan", "subfinder", "dnsx"];
-const USERNAME_TOOLS_IDS = ["sherlock", "maigret", "social-analyzer", "blackbird"];
-const TAB_ONLY_TOOL_IDS = ["photo-search"];
-
-const HUB_CARDS = [
-  { id: "domain-tools", href: "/domain/", title: "Домен", desc: "WHOIS, поддомены, Shodan, theHarvester" },
-  { id: "username-tools", href: "/username/", title: "Username", desc: "Sherlock, Maigret, соцсети" },
-  { id: "photo-search", href: "/photo/", title: "Поиск по фото", desc: "Обратный поиск изображений" },
-  { id: "google-osint", href: "/p/google-osint/", title: "Google OSINT", desc: "Holehe и h8mail по email" },
-  { id: "ai-agent", href: "/p/ai-agent/", title: "ИИ-помощник", desc: "Автоматизация и подсказки" },
-  { id: "history", href: "/p/history/", title: "История", desc: "Запуски и результаты" },
-  { id: "anonsms", href: "/p/anonsms/", title: "ANONSMS", desc: "Отправка SMS (Textbelt)" },
-  { id: "instagram-bruter", href: "/p/instagram-bruter/", title: "Instagram", desc: "Bruter / перебор" },
-  { id: "grabcam", href: "/p/grabcam/", title: "Grabcam", desc: "Сессии, фото, геолокация" },
-  { id: "settings", href: "/p/settings/", title: "API ключи", desc: "Сохранение в .env" },
+const DOMAIN_TOOLS_IDS=["theharvester","domain-search","shodan","subfinder","dnsx"];
+const USERNAME_TOOLS_IDS=["sherlock","maigret","social-analyzer","blackbird"];
+const TAB_ONLY_TOOL_IDS=["photo-search"];
+const HUB_CARDS=[
+ {id:"domain-tools",href:"/domain/",title:"Анализ доменов",desc:"WHOIS, DNS, поддомены и открытая инфраструктура.",category:"recon",icon:"◎"},
+ {id:"username-tools",href:"/username/",title:"Поиск username",desc:"Проверка публичных профилей по имени пользователя.",category:"recon",icon:"＠"},
+ {id:"google-osint",href:"/p/google-osint/",title:"Email OSINT",desc:"Публичные сигналы и проверка доступных источников по email.",category:"identity",icon:"✉"},
+ {id:"photo-search",href:"/photo/",title:"Анализ изображений",desc:"Метаданные, EXIF, хеши и инструменты проверки изображений.",category:"media",icon:"▧"},
+ {id:"ai-agent",href:"/p/ai-agent/",title:"ИИ-помощник",desc:"Помощь в планировании и анализе результатов OSINT.",category:"analysis",icon:"✳"},
+ {id:"history",href:"/p/history/",title:"История операций",desc:"Просмотр прошлых запусков и сохранённых результатов.",category:"workspace",icon:"◷"},
+ {id:"settings",href:"/p/settings/",title:"Настройки и API",desc:"Локальная конфигурация подключённых сервисов.",category:"workspace",icon:"⚙"}
 ];
-
-function escapeHtml(s) {
-  const div = document.createElement("div");
-  div.textContent = s;
-  return div.innerHTML;
+let activeFilter="all";
+let loadedTools=[];
+function escapeHtml(value){return String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+async function loadTools(){const response=await fetch(API+"/tools",{headers:{Accept:"application/json"}});if(!response.ok)throw new Error("Не удалось загрузить список инструментов");return response.json();}
+function iconSpan(id){return TAB_ICONS[id]?'<span class="tab-icon" aria-hidden="true">'+TAB_ICONS[id]+"</span>":"";}
+function renderNav(tools){
+ const nav=document.getElementById("nav-tools");if(!nav)return;
+ const rest=tools.filter(t=>!DOMAIN_TOOLS_IDS.includes(t.id)&&!USERNAME_TOOLS_IDS.includes(t.id)&&!TAB_ONLY_TOOL_IDS.includes(t.id)&&!["instagram-bruter","grabcam","formgrab"].includes(t.id));
+ const mk=(id,label,href)=>'<a href="'+(href||("/p/"+encodeURIComponent(id)+"/"))+'" class="tool-link" data-tool-id="'+escapeHtml(id)+'">'+iconSpan(id)+escapeHtml(label)+"</a>";
+ nav.innerHTML=mk("domain-tools","Домены","/domain/")+mk("username-tools","Username","/username/")+mk("photo-search","Фото","/photo/")+mk("ai-agent","ИИ")+mk("history","История")+rest.map(t=>mk(t.id,t.name)).join("");
 }
-
-async function loadTools() {
-  const res = await fetch(`${API}/tools`);
-  if (!res.ok) throw new Error("Не удалось загрузить список инструментов");
-  return res.json();
+function getFavorites(){try{return JSON.parse(localStorage.getItem("osint-panel-favorites")||"[]").filter(x=>typeof x==="string");}catch(_){return[];}}
+function setFavorites(items){try{localStorage.setItem("osint-panel-favorites",JSON.stringify(items));}catch(_){}}
+function renderHubCards(){
+ const host=document.getElementById("hub-cards");if(!host)return;
+ const query=(document.getElementById("hub-search")?.value||"").trim().toLocaleLowerCase("ru");
+ const favorites=getFavorites();
+ const cards=HUB_CARDS.filter(card=>{
+  const matches=[card.title,card.desc,card.id,card.category].join(" ").toLocaleLowerCase("ru").includes(query);
+  return matches&&(activeFilter==="all"|| (activeFilter==="favorites"?favorites.includes(card.id):card.category===activeFilter));
+ });
+ host.innerHTML=cards.map((card,index)=>'<article class="hub-card"><div class="hub-card-top"><span class="hub-card-icon" aria-hidden="true">'+card.icon+'</span><span class="hub-card-index">'+String(HUB_CARDS.indexOf(card)+1).padStart(2,"0")+'</span></div><h3 class="hub-card-title">'+escapeHtml(card.title)+'</h3><p class="hub-card-desc">'+escapeHtml(card.desc)+'</p><div class="hub-card-bottom"><a class="hub-card-open" href="'+escapeHtml(card.href)+'">ОТКРЫТЬ РАЗДЕЛ ↗</a><button class="hub-fav" type="button" data-favorite="'+escapeHtml(card.id)+'" aria-label="Добавить в избранное" aria-pressed="'+favorites.includes(card.id)+'">'+(favorites.includes(card.id)?"★":"☆")+"</button></div></article>").join("");
+ const empty=document.getElementById("hub-empty");if(empty)empty.hidden=cards.length!==0;
+ host.querySelectorAll("[data-favorite]").forEach(button=>button.addEventListener("click",()=>{
+  const id=button.dataset.favorite;const next=getFavorites();const updated=next.includes(id)?next.filter(x=>x!==id):[...next,id];setFavorites(updated);renderHubCards();
+ }));
 }
-
-function iconSpan(id) {
-  const svg = TAB_ICONS[id];
-  return svg ? `<span class="tab-icon" aria-hidden="true">${svg}</span>` : "";
-}
-
-function renderNav(tools) {
-  const nav = document.getElementById("nav-tools");
-  const rest = tools.filter(
-    (t) =>
-      !DOMAIN_TOOLS_IDS.includes(t.id) &&
-      !USERNAME_TOOLS_IDS.includes(t.id) &&
-      !TAB_ONLY_TOOL_IDS.includes(t.id)
-  );
-  const mk = (id, label, href) => {
-    const h = href || `/p/${id}/`;
-    return `<a href="${h}" class="tool-link" data-tool-id="${id}">${iconSpan(id)}${escapeHtml(label)}</a>`;
-  };
-  const toolLinks = rest.map((t) => mk(t.id, t.name)).join("");
-  nav.innerHTML =
-    mk("domain-tools", "Домен", "/domain/") +
-    mk("username-tools", "Username", "/username/") +
-    mk("photo-search", "Фото", "/photo/") +
-    mk("ai-agent", "ИИ") +
-    mk("history", "История") +
-    toolLinks;
-}
-
-function renderHubCards() {
-  const host = document.getElementById("hub-cards");
-  if (!host) return;
-  const search = document.getElementById("hub-search");
-  const empty = document.getElementById("hub-empty");
-  const query = (search?.value || "").trim().toLocaleLowerCase("ru");
-  const cards = HUB_CARDS.filter((card) =>
-    [card.title, card.desc, card.id].join(" ").toLocaleLowerCase("ru").includes(query)
-  );
-  host.innerHTML = cards.map((card) => `
-    <a class="hub-card" href="${escapeHtml(card.href)}">
-      <span class="hub-card-index">${String(HUB_CARDS.indexOf(card) + 1).padStart(2, "0")}</span>
-      <div class="hub-card-title">${escapeHtml(card.title)}</div>
-      <p class="hub-card-desc">${escapeHtml(card.desc)}</p>
-      <span class="hub-card-open">ОТКРЫТЬ РАЗДЕЛ <b aria-hidden="true">↗</b></span>
-    </a>`).join("");
-  if (empty) empty.hidden = cards.length !== 0;
-}
-
-function updateHubStatus(tools) {
-  const count = document.getElementById("hub-tool-count");
-  if (count) count.textContent = `${tools.length} инструментов доступно`;
-}
-
-function wireHeader() {
-  const menuSettings = document.querySelector("#user-menu .app-header-user-menu-item[data-tool-id]");
-  if (menuSettings) menuSettings.setAttribute("href", "/p/settings/");
-
-  const btnUser = document.getElementById("btn-user-menu");
-  const userMenu = document.getElementById("user-menu");
-  if (btnUser && userMenu) {
-    btnUser.addEventListener("click", () => {
-      const open = btnUser.getAttribute("aria-expanded") === "true";
-      btnUser.setAttribute("aria-expanded", !open);
-      userMenu.hidden = open;
-    });
-    document.addEventListener("click", (e) => {
-      if (!btnUser.contains(e.target) && !userMenu.contains(e.target)) {
-        btnUser.setAttribute("aria-expanded", "false");
-        userMenu.hidden = true;
-      }
-    });
-  }
-}
-
-async function init() {
-  const tools = await loadTools();
-  renderNav(tools);
+function wireFilters(){
+ document.querySelectorAll("[data-hub-filter]").forEach(button=>button.addEventListener("click",()=>{
+  activeFilter=button.dataset.hubFilter;
+  document.querySelectorAll("[data-hub-filter]").forEach(item=>item.setAttribute("aria-pressed",String(item===button)));
   renderHubCards();
-  updateHubStatus(tools);
-  document.getElementById("hub-search")?.addEventListener("input", renderHubCards);
-  wireHeader();
+ }));
 }
-
-init().catch((e) => {
-  const msg = e.message || "Нет связи с сервером";
-  document.body.innerHTML = `<div class="init-error"><p><strong>Ошибка загрузки:</strong> ${escapeHtml(msg)}</p><p>Запустите сервер из корня проекта: <code>python run.py</code></p></div>`;
-});
+function updateHubStatus(tools){const count=document.getElementById("hub-tool-count");if(count)count.textContent=HUB_CARDS.length+" разделов · "+tools.length+" инструментов";}
+function wireHeader(){
+ const menuSettings=document.querySelector("#user-menu .app-header-user-menu-item[data-tool-id]");if(menuSettings)menuSettings.setAttribute("href","/p/settings/");
+ const btn=document.getElementById("btn-user-menu"),menu=document.getElementById("user-menu");
+ if(btn&&menu){btn.addEventListener("click",()=>{const open=btn.getAttribute("aria-expanded")==="true";btn.setAttribute("aria-expanded",String(!open));menu.hidden=open;});document.addEventListener("click",event=>{if(!btn.contains(event.target)&&!menu.contains(event.target)){btn.setAttribute("aria-expanded","false");menu.hidden=true;}});}
+}
+async function init(){loadedTools=await loadTools();renderNav(loadedTools);renderHubCards();updateHubStatus(loadedTools);document.getElementById("hub-search")?.addEventListener("input",renderHubCards);wireFilters();wireHeader();}
+init().catch(error=>{const message=error?.message||"Нет связи с сервером";const main=document.getElementById("main-content");if(main)main.insertAdjacentHTML("afterbegin",'<div class="init-error" role="alert"><strong>Ошибка загрузки:</strong> '+escapeHtml(message)+'<p>Проверьте сервер и обновите страницу.</p></div>');});
