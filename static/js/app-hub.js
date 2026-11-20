@@ -41,8 +41,9 @@ function renderNav(tools){
   ["username-tools","Username Search","/username/"],
   ["ai-agent","AI Agent","/p/ai-agent/"]
  ];
- const excluded=new Set(["theharvester","domain-search","shodan","subfinder","dnsx","sherlock","maigret","social-analyzer","blackbird","photo-search","instagram-bruter","grabcam","formgrab","ip-rdap","google-osint","ai-agent","history","settings"]);
- const mk=(id,label,href)=>'<a href="'+href+'" class="tool-link" data-tool-id="'+escapeHtml(id)+'"><span class="nav-item-icon" aria-hidden="true">'+(TAB_ICONS[id]||"")+'</span><span>'+escapeHtml(label)+'</span></a>';
+ const excluded=new Set(["domain-tools","theharvester","domain-search","shodan","subfinder","dnsx","sherlock","maigret","social-analyzer","blackbird","photo-search","instagram-bruter","grabcam","formgrab","ip-rdap","google-osint","ai-agent","history","settings"]);
+ const glyphs={"domain-tools":"◎","ip-rdap":"⌕","photo-search":"▧","grabcam":"◉","username-tools":"＠","ai-agent":"✳"};
+ const mk=(id,label,href)=>'<a href="'+href+'" class="tool-link" data-tool-id="'+escapeHtml(id)+'"><span class="nav-item-icon" aria-hidden="true">'+(TAB_ICONS[id]||glyphs[id]||"◇")+'</span><span>'+escapeHtml(label)+'</span></a>';
  nav.innerHTML=fixed.map(([id,label,href])=>mk(id,label,href)).join("");
  const more=document.getElementById("nav-more-tools");
  const details=document.getElementById("nav-more");
