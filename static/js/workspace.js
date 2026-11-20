@@ -146,7 +146,10 @@
     });
     render(); addSaveButtons(document);
     var observer = new MutationObserver(function (records) {
-      records.forEach(function (record) { record.addedNodes.forEach(function (node) { if (node.nodeType === 1) addSaveButtons(node); }); });
+      records.forEach(function (record) {
+        if (record.target && record.target.nodeType === 1) addSaveButtons(record.target);
+        record.addedNodes.forEach(function (node) { if (node.nodeType === 1) addSaveButtons(node); });
+      });
     });
     observer.observe(document.body, {childList:true,subtree:true});
     var nav = document.getElementById("nav-tools");
