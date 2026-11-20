@@ -79,7 +79,7 @@ API для диагностики: `GET /api/modules`. Ответ содержи
 python -m unittest discover -s backend/tests -p 'test_module_registry.py'
 ```
 
-Сейчас в `tools/` находятся 20 manifests: 18 модулей имеют статус `integrated`, а два (`anonsms` и `instagram-bruter`) остаются `legacy`. Статус `integrated` означает, что модуль подключён через manifest-driven runtime либо является самостоятельной frontend workspace-страницей. Это не означает, что все vendor-файлы и общие ресурсы уже физически перенесены.
+Сейчас в `tools/` находятся 20 manifests: 18 модулей имеют статус `integrated`, а два (`anonsms` и `instagram-bruter`) остаются `legacy`. В эти 18 входят как backend-инструменты, так и самостоятельные frontend workspace-страницы; это не число backend-инструментов. Это не означает, что все vendor-файлы и общие ресурсы уже физически перенесены.
 
 ## Module Manager в интерфейсе
 
@@ -117,7 +117,7 @@ python backend/module_cli.py runtime-check
 ## Примеры текущей миграции
 
 - `tools/ip-rdap/` — самостоятельный frontend/backend-модуль с README и тестами; старый адрес и API сохранены через compatibility layer.
-- `/api/navigation` строится из валидных включённых integrated manifests; домашняя навигация и карточки используют только канонические `/modules/<id>/` URL, у которых существует frontend.
+- `/api/navigation` строится из валидных включённых integrated manifests. Перед выдачей ссылки backend дополнительно проверяет, что точный URL `/modules/<id>/` зарегистрирован в Flask и что frontend-файл существует.
 - `tools/domain-workspace/` — frontend workspace доменного анализа; собственные CSS/JS и HTML обслуживаются из каталога модуля, backend-инструменты вызываются через прежние API.
 - В репозитории 20 manifests: 18 `integrated` и 2 `legacy`. Среди интегрированных backend-инструментов — Domain Search, DNS-инструменты, username-инструменты, Shodan, theHarvester, Google OSINT, Photo Search, GrabCam и IP/RDAP.
 - Самостоятельные frontend workspaces: Domain Workspace, Photo Workspace, Username Workspace, AI Agent и History; Google OSINT также имеет собственную страницу в каталоге модуля.
