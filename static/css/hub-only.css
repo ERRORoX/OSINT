@@ -150,3 +150,34 @@ body.dashboard-page{margin:0!important;min-height:100vh;background:radial-gradie
 @media(max-width:680px){.dashboard-shell{display:block}.sidebar{position:relative;top:auto;width:100%;height:auto;padding:10px 14px;border-right:0;border-bottom:1px solid var(--dash-line)}.brand{padding:0 2px 9px;border:0}.brand-mark{width:34px;height:34px}.sidebar-scroll,.sidebar-promo{display:none}.topbar{position:relative;min-height:auto;padding:10px 14px;gap:9px}.mobile-brand{display:flex;align-items:center;gap:7px;white-space:nowrap;font-size:10px;font-weight:800}.mobile-brand>span:last-child{padding:3px 5px;border-radius:5px;background:#0e55c8;color:#fff}.mobile-brand-icon{color:#398eff;font-size:17px}.global-search{height:39px;padding:0 9px}.global-search kbd,.topbar-indicator,.topbar-settings,.user-meta,.user-chevron{display:none}.topbar-actions{gap:5px}.user-avatar{width:31px;height:31px}.dashboard-content{padding:14px 12px 22px}.welcome-panel{min-height:220px;padding:22px 18px}.welcome-copy h1{font-size:29px}.welcome-copy p{font-size:13px}.globe-art{right:-8%;width:47%;opacity:.45}.welcome-copy{max-width:75%}.metric-row{gap:8px;margin:10px 0}.metric-card{min-height:66px;padding:10px;gap:8px}.metric-icon{width:32px;height:32px;font-size:17px}.metric-card>div strong{font-size:16px}.metric-card>div small{font-size:9px}.metric-note{display:none}.hub-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.hub-card{min-height:132px;padding:10px}.hub-card-title{font-size:11px}.hub-card-desc{font-size:9px}.content-panel{padding:13px}.section-heading h2{font-size:14px}.secondary-column{grid-template-columns:1fr}.quick-access{grid-template-columns:1fr}.dashboard-footer{padding:11px 13px;font-size:8px}.dashboard-footer>span:last-child{gap:5px}.dashboard-footer b{margin-left:3px}}
 @media(max-width:390px){.mobile-brand{font-size:9px}.mobile-brand-icon{display:none}.global-search input{font-size:10px}.hub-filters{gap:4px}.hub-filter{padding:6px 7px;font-size:8px}.welcome-copy h1{font-size:25px}.welcome-copy{max-width:85%}.globe-art{opacity:.28}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+
+/* Sidebar cleanup: compact, consistent navigation and no duplicate promo blocks. */
+.sidebar{width:236px;min-width:236px;padding:18px 13px 14px}
+.dashboard-shell{grid-template-columns:236px minmax(0,1fr)}
+.sidebar-scroll{padding-top:19px;scrollbar-width:thin;scrollbar-color:rgba(69,125,198,.35) transparent}
+.nav-caption{padding:0 10px 9px;font-size:9px;letter-spacing:.13em}
+.sidebar-home{margin-bottom:7px}
+.sidebar-nav{gap:3px}
+.sidebar-nav .tool-link,.sidebar-link{min-height:37px;padding:0 10px;gap:10px;font-size:11px}
+.sidebar-nav .tool-link:before{display:none}
+.nav-item-icon{width:17px;height:17px;display:grid;place-items:center;flex:none;color:#58a4ff}
+.nav-item-icon svg{width:16px;height:16px}
+.sidebar-nav .tool-link.active{background:linear-gradient(100deg,rgba(16,101,255,.28),rgba(12,61,137,.1));}
+.sidebar-divider{margin:14px 5px}
+.sidebar-link .side-icon{width:17px;flex:none}
+.nav-more{margin-top:5px}
+.nav-more>summary{min-height:37px;display:flex;align-items:center;gap:10px;padding:0 10px;border:1px solid transparent;border-radius:9px;color:#9eb2cf;font-size:11px;cursor:pointer;list-style:none}
+.nav-more>summary::-webkit-details-marker{display:none}
+.nav-more>summary:hover{background:rgba(23,105,226,.11);color:#fff}
+.nav-more>summary .side-icon{width:17px;color:#58a4ff}
+.more-chevron{margin-left:auto;color:#6f8bad;transition:transform .18s}
+.nav-more[open] .more-chevron{transform:rotate(180deg)}
+.nav-more-list{padding:4px 0 3px 12px}
+.nav-more-list .tool-link{min-height:33px;font-size:10px}
+.sidebar-promo{display:none}
+.update-status{padding:3px 10px 0;font-size:9px;line-height:1.4}
+.sidebar-action:disabled{opacity:.55;cursor:wait}
+@media(max-width:1200px){.dashboard-shell{grid-template-columns:218px minmax(0,1fr)}.sidebar{width:218px;min-width:218px}}
+@media(max-width:960px){.dashboard-shell{grid-template-columns:190px minmax(0,1fr)}.sidebar{width:190px;min-width:190px}}
+@media(max-width:680px){.sidebar{width:100%;min-width:0}.sidebar-scroll{display:none}.sidebar-promo{display:none}}
