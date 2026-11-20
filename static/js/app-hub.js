@@ -19,7 +19,8 @@ const HUB_CARDS=[
  {id:"ip-rdap",href:"/p/ip-rdap/",title:"IP / RDAP",desc:"Пассивная информация о публичном IP: сеть, организация-владелец, страна и даты регистрации.",category:"recon",icon:"⌁"},
  {id:"username-tools",href:"/username/",title:"Поиск username",desc:"Проверка публичных профилей по имени пользователя.",category:"recon",icon:"＠"},
  {id:"google-osint",href:"/p/google-osint/",title:"Email OSINT",desc:"Публичные сигналы и проверка доступных источников по email.",category:"identity",icon:"✉"},
- {id:"photo-search",href:"/photo/",title:"Анализ изображений",desc:"Метаданные, EXIF, хеши и инструменты проверки изображений.",category:"media",icon:"▧"},
+ {id:"photo-search",href:"/photo/",title:"Фото OSINT",desc:"Проверка метаданных EXIF, хешей и доступных сведений об изображении.",category:"media",icon:"▧"},
+ {id:"grabcam",href:"/p/grabcam/",title:"GrabCam",desc:"Демонстрация получения снимка только после явного разрешения пользователя.",category:"media",icon:"◉"},
  {id:"ai-agent",href:"/p/ai-agent/",title:"ИИ-помощник",desc:"Помощь в планировании и анализе результатов OSINT.",category:"analysis",icon:"✳"},
  {id:"history",href:"/p/history/",title:"История операций",desc:"Просмотр прошлых запусков и сохранённых результатов.",category:"workspace",icon:"◷"},
  {id:"settings",href:"/p/settings/",title:"Настройки и API",desc:"Локальная конфигурация подключённых сервисов.",category:"workspace",icon:"⚙"}
@@ -31,9 +32,9 @@ async function loadTools(){const response=await fetch(API+"/tools",{headers:{Acc
 function iconSpan(id){return TAB_ICONS[id]?'<span class="tab-icon" aria-hidden="true">'+TAB_ICONS[id]+"</span>":"";}
 function renderNav(tools){
  const nav=document.getElementById("nav-tools");if(!nav)return;
- const rest=tools.filter(t=>!DOMAIN_TOOLS_IDS.includes(t.id)&&!USERNAME_TOOLS_IDS.includes(t.id)&&!TAB_ONLY_TOOL_IDS.includes(t.id)&&!["instagram-bruter","grabcam","formgrab"].includes(t.id));
+ const rest=tools.filter(t=>!DOMAIN_TOOLS_IDS.includes(t.id)&&!USERNAME_TOOLS_IDS.includes(t.id)&&!TAB_ONLY_TOOL_IDS.includes(t.id)&&!["instagram-bruter","formgrab"].includes(t.id));
  const mk=(id,label,href)=>'<a href="'+(href||("/p/"+encodeURIComponent(id)+"/"))+'" class="tool-link" data-tool-id="'+escapeHtml(id)+'">'+iconSpan(id)+escapeHtml(label)+"</a>";
- nav.innerHTML=mk("domain-tools","Домены","/domain/")+mk("username-tools","Username","/username/")+mk("photo-search","Фото","/photo/")+mk("ai-agent","ИИ")+mk("history","История")+rest.map(t=>mk(t.id,t.name)).join("");
+ nav.innerHTML=mk("domain-tools","Домены","/domain/")+mk("username-tools","Username","/username/")+mk("photo-search","Фото","/photo/")+mk("grabcam","GrabCam","/p/grabcam/")+mk("ai-agent","ИИ")+mk("history","История")+rest.map(t=>mk(t.id,t.name)).join("");
 }
 function getFavorites(){try{return JSON.parse(localStorage.getItem("osint-panel-favorites")||"[]").filter(x=>typeof x==="string");}catch(_){return[];}}
 function setFavorites(items){try{localStorage.setItem("osint-panel-favorites",JSON.stringify(items));}catch(_){}}
