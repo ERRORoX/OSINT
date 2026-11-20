@@ -144,7 +144,7 @@ function boot() {
 
 boot();
 
-import("/username/js/username-output.js")
+import("/modules/username-workspace/js/username-output.js")
   .then((m) => {
     if (m && typeof m.renderUsernameTabPane === "function") {
       renderUsernameTabPane = m.renderUsernameTabPane;
