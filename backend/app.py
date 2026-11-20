@@ -882,6 +882,9 @@ def ip_rdap_module_assets(filename):
 @app.route("/api/modules", methods=["GET"])
 def api_modules_list():
     """Return manifest diagnostics plus backend runtime loading status."""
+    # Ensure the central registry has performed its one-time runtime load before
+    # exposing runtime status in the diagnostics endpoint.
+    get_all_tools()
     result = discover_modules(_PROJECT_ROOT)
     runtime_issues = get_runtime_module_issues()
     issue_by_module = {item["module_id"]: item for item in runtime_issues}
