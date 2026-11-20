@@ -3,101 +3,94 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="OSINT Panel — единая панель для разведки в открытых источниках: домены, email, имена пользователей, утечки.">
-  <meta name="theme-color" content="#060608">
-  <title>OSINT Panel</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect fill='%23060608' width='32' height='32' rx='4'/><text x='16' y='22' font-size='16' text-anchor='middle' fill='%2300ff88' font-family='monospace'>O</text></svg>">
-  <link rel="stylesheet" href="/css/tool-bundle/hub.css"><link rel="stylesheet" href="/css/panel-41.css?v=4.2.0"><link rel="stylesheet" href="/css/panel-42-dashboard.css?v=4.2.1">
+  <meta name="description" content="OSINT Panel — рабочее пространство для разведки в открытых источниках и анализа цифровых следов.">
+  <meta name="theme-color" content="#050b14">
+  <title>OSINT Panel — Intelligence Workspace</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect fill='%23050b14' width='32' height='32' rx='7'/><circle cx='16' cy='16' r='9' fill='none' stroke='%233b9cff' stroke-width='2'/><path d='M7 16h18M16 7a15 15 0 0 1 0 18' stroke='%233b9cff' fill='none'/></svg>">
+  <link rel="stylesheet" href="/css/tool-bundle/hub.css">
+  <link rel="stylesheet" href="/css/panel-41.css?v=4.2.0">
+  <link rel="stylesheet" href="/css/panel-42-dashboard.css?v=4.2.2">
 </head>
 <body>
-  <div class="osint-bg cyber-grid" aria-hidden="true">
-    <div class="particle" style="left:10%;bottom:-5px;--duration:9s;--delay:0s"></div>
-    <div class="particle" style="left:22%;bottom:-5px;--duration:12s;--delay:1.2s"></div>
-    <div class="particle" style="left:34%;bottom:-5px;--duration:10s;--delay:2.2s"></div>
-    <div class="particle" style="left:46%;bottom:-5px;--duration:14s;--delay:3.4s"></div>
-    <div class="particle" style="left:58%;bottom:-5px;--duration:11s;--delay:4.4s"></div>
-    <div class="particle" style="left:70%;bottom:-5px;--duration:13s;--delay:5.6s"></div>
-    <div class="particle" style="left:82%;bottom:-5px;--duration:10s;--delay:6.1s"></div>
-    <div class="particle" style="left:94%;bottom:-5px;--duration:15s;--delay:7.0s"></div>
-  </div>
   <header class="osint-header app-header">
-    <div class="osint-header-inner scan-line">
-      <div class="osint-logo" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          
-          <circle cx="12" cy="12" r="6"></circle>
-          <circle cx="12" cy="12" r="2"></circle>
-        </svg>
-      </div>
-      <div class="osint-title">
-        <h1><span class="accent">OSINT</span><span class="dim">Panel</span></h1>
-        <p>◆ Разведка по открытым источникам | домены, username, email, утечки | Python + UI</p>
-      </div>
+    <div class="osint-header-inner">
+      <a class="brand-lockup" href="/" aria-label="OSINT Panel — главная">
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="11" stroke="currentColor" stroke-width="1.7"/><ellipse cx="16" cy="16" rx="5" ry="11" stroke="currentColor" stroke-width="1.4"/><path d="M5 16h22M8 9.5h16M8 22.5h16" stroke="currentColor" stroke-width="1.2"/></svg></span>
+        <span class="brand-copy"><strong>OSINT PANEL <b>4.2</b></strong><small>INTELLIGENCE WORKSPACE</small></span>
+      </a>
+      <button type="button" class="sidebar-toggle" id="sidebar-toggle" aria-controls="app-sidebar" aria-expanded="false" aria-label="Открыть навигацию">☰</button>
+      <label class="top-search" aria-label="Поиск инструментов"><span aria-hidden="true">⌕</span><input id="hub-search" type="search" placeholder="Поиск инструментов…  ( / )" autocomplete="off"></label>
       <div class="app-header-right">
-        <button type="button" class="sidebar-toggle" id="sidebar-toggle" aria-controls="app-sidebar" aria-expanded="false" aria-label="Открыть навигацию"><span aria-hidden="true">☰</span><span class="sidebar-toggle-label">Меню</span></button>
-        <span class="app-header-system" id="header-system">ОС: —</span>
+        <span class="app-header-system" id="header-system">ЛОКАЛЬНАЯ СРЕДА</span>
         <div class="app-update-control"><button type="button" class="app-update-btn" id="btn-check-updates">↻ Обновить</button><span class="app-update-status" id="update-status" role="status" aria-live="polite"></span></div>
         <div class="app-header-user" id="header-user">
-          <button type="button" class="app-header-user-btn" aria-expanded="false" aria-haspopup="true" id="btn-user-menu">
-            <span class="app-header-user-icon" aria-hidden="true"></span>
-            <span class="app-header-user-name">Admin</span>
-            <span class="app-header-user-chevron" aria-hidden="true"></span>
-          </button>
-          <div class="app-header-user-menu" id="user-menu" hidden>
-            <a href="/p/settings/" class="app-header-user-menu-item" data-tool-id="settings">API ключи</a>
-          </div>
+          <button type="button" class="app-header-user-btn" aria-expanded="false" aria-haspopup="true" id="btn-user-menu"><span class="app-header-user-icon" aria-hidden="true"></span><span class="app-header-user-name">Admin</span><span class="app-header-user-chevron" aria-hidden="true"></span></button>
+          <div class="app-header-user-menu" id="user-menu" hidden><a href="/p/settings/" class="app-header-user-menu-item" data-tool-id="settings">Настройки и API</a></div>
         </div>
       </div>
     </div>
   </header>
+
   <div class="app-body osint-body" id="app-shell">
     <aside class="app-sidebar" id="app-sidebar" aria-label="Основная навигация">
       <div class="sidebar-heading"><span>РАБОЧЕЕ ПРОСТРАНСТВО</span><button type="button" id="sidebar-collapse" class="sidebar-collapse" aria-label="Свернуть меню" aria-pressed="false">‹</button></div>
       <nav id="nav-tools" class="tab-nav" aria-label="Разделы"></nav>
-      <div class="sidebar-foot"><span class="sidebar-foot-dot"></span><span class="sidebar-foot-copy">Локальная среда · OSINT Panel</span></div>
+      <div class="sidebar-promo"><span class="promo-orbit" aria-hidden="true">◎</span><strong>OSINT PANEL <em>4.2</em></strong><p>Инструменты анализа. В одном рабочем пространстве.</p></div>
+      <div class="sidebar-foot"><i></i><span class="sidebar-foot-copy">Локальная среда</span><span class="sidebar-version">v4.2</span></div>
     </aside>
     <button type="button" class="sidebar-backdrop" id="sidebar-backdrop" aria-label="Закрыть навигацию" tabindex="-1"></button>
+
     <main class="main osint-main osint-scrollbar" id="main-content">
-      <section class="dashboard-intro" aria-labelledby="hub-title">
-        <div>
-          <div class="dashboard-eyebrow">OSINT PANEL <span>/</span> WORKSPACE</div>
-          <h2 id="hub-title">Центр <span>операций</span></h2>
-          <p>Единое рабочее пространство для поиска, проверки и анализа информации из открытых источников. Выберите инструмент или найдите нужный модуль.</p>
+      <div class="dashboard-layout">
+        <div class="dashboard-primary">
+          <section class="dashboard-intro" aria-labelledby="hub-title">
+            <div class="hero-copy">
+              <div class="dashboard-eyebrow"><span></span> INTELLIGENCE WORKSPACE <i> / </i> OVERVIEW</div>
+              <div class="hero-kicker">ЕДИНАЯ СРЕДА ИССЛЕДОВАНИЙ</div>
+              <h2 id="hub-title">OSINT PANEL <span>4.2</span></h2>
+              <p>Профессиональное пространство для поиска, проверки и анализа цифровых следов в открытых источниках.</p>
+              <div class="hero-actions"><a class="hero-primary" href="#hub-cards"><span>↗</span> Быстрый старт</a><a class="hero-secondary" href="/p/history/">История операций <span>→</span></a></div>
+            </div>
+            <div class="hero-globe" aria-hidden="true"><div class="globe-grid"></div><div class="globe-orbit orbit-one"></div><div class="globe-orbit orbit-two"></div><div class="globe-core"></div><div class="globe-cross"></div></div>
+            <div class="hero-bottomline"><span>LOCAL INTELLIGENCE ENVIRONMENT</span><span>SECURE WORKSPACE <i></i></span></div>
+          </section>
+
+          <section class="dashboard-metrics" aria-label="Сводка панели">
+            <article class="dashboard-metric"><span class="metric-icon">⌘</span><div><strong id="metric-tools">—</strong><span>Инструментов</span></div><small>ДОСТУПНО</small></article>
+            <article class="dashboard-metric"><span class="metric-icon">▦</span><div><strong id="metric-sections">—</strong><span>Рабочих разделов</span></div><small>ИНТЕГРИРОВАНО</small></article>
+            <article class="dashboard-metric"><span class="metric-icon">◈</span><div><strong id="metric-categories">—</strong><span>Категорий</span></div><small>КЛАССИФИКАЦИЯ</small></article>
+          </section>
+
+          <section class="hub-workspace">
+            <div class="hub-section-head"><div><span class="hub-kicker">WORKSPACE / MODULES</span><h2>Инструменты и модули</h2></div><span class="section-note">ВЫБЕРИТЕ РАБОЧИЙ ИНСТРУМЕНТ <b>↘</b></span></div>
+            <div class="hub-filters" role="group" aria-label="Фильтр разделов"><button class="hub-filter" type="button" data-hub-filter="all" aria-pressed="true">Все инструменты</button><button class="hub-filter" type="button" data-hub-filter="recon" aria-pressed="false">Разведка</button><button class="hub-filter" type="button" data-hub-filter="identity" aria-pressed="false">Идентификаторы</button><button class="hub-filter" type="button" data-hub-filter="media" aria-pressed="false">Медиа</button><button class="hub-filter" type="button" data-hub-filter="analysis" aria-pressed="false">Анализ</button><button class="hub-filter" type="button" data-hub-filter="workspace" aria-pressed="false">Рабочее место</button><button class="hub-filter" type="button" data-hub-filter="favorites" aria-pressed="false">★ Избранное</button></div>
+            <div id="hub-cards" class="hub-grid" aria-label="Инструменты панели"></div>
+            <p id="hub-empty" class="hub-empty" hidden>Ничего не найдено. Измените поисковый запрос или фильтр.</p>
+          </section>
         </div>
-        <div class="dashboard-local"><i aria-hidden="true"></i> Локальная среда</div>
-      </section>
-      <section class="dashboard-metrics" aria-label="Сводка панели">
-        <article class="dashboard-metric">
-          <span class="dashboard-metric-icon" aria-hidden="true">⌘</span>
-          <div><strong id="metric-tools">—</strong><span>Доступно инструментов</span></div>
-        </article>
-        <article class="dashboard-metric">
-          <span class="dashboard-metric-icon" aria-hidden="true">▦</span>
-          <div><strong id="metric-sections">—</strong><span>Рабочих разделов</span></div>
-        </article>
-        <article class="dashboard-metric">
-          <span class="dashboard-metric-icon" aria-hidden="true">◈</span>
-          <div><strong id="metric-categories">5</strong><span>Категорий анализа</span></div>
-        </article>
-      </section>
-      <section class="hub-workspace">
-        <div class="hub-section-head">
-          <div><span class="hub-kicker">КАТАЛОГ</span><h2>Инструменты и модули</h2></div>
-          <label class="hub-search-wrap">
-            <span aria-hidden="true">⌕</span>
-            <input id="hub-search" type="search" placeholder="Найти инструмент…" autocomplete="off" aria-label="Найти инструмент">
-          </label>
-        </div>
-        <div class="hub-filters" role="group" aria-label="Фильтр разделов"><button class="hub-filter" type="button" data-hub-filter="all" aria-pressed="true">Все</button><button class="hub-filter" type="button" data-hub-filter="recon" aria-pressed="false">Разведка</button><button class="hub-filter" type="button" data-hub-filter="identity" aria-pressed="false">Идентификаторы</button><button class="hub-filter" type="button" data-hub-filter="media" aria-pressed="false">Медиа</button><button class="hub-filter" type="button" data-hub-filter="analysis" aria-pressed="false">Анализ</button><button class="hub-filter" type="button" data-hub-filter="workspace" aria-pressed="false">Рабочее место</button><button class="hub-filter" type="button" data-hub-filter="favorites" aria-pressed="false">★ Избранное</button></div>
-        <div id="hub-cards" class="hub-grid" aria-label="Разделы панели"></div>
-        <p id="hub-empty" class="hub-empty" hidden>Ничего не найдено. Измените поисковый запрос.</p>
-      </section>
+
+        <aside class="dashboard-rail" aria-label="Состояние и быстрый доступ">
+          <section class="rail-panel system-panel">
+            <div class="rail-heading"><span class="status-led"></span><h2>Состояние панели</h2><span class="rail-live">LOCAL</span></div>
+            <div class="system-row"><span class="rail-icon">⌘</span><span>Список инструментов</span><strong id="rail-tools">Загрузка…</strong></div>
+            <div class="system-row"><span class="rail-icon">▦</span><span>Навигация модулей</span><strong id="rail-modules">Загрузка…</strong></div>
+            <div class="system-row"><span class="rail-icon">◉</span><span>Режим работы</span><strong class="state-local">Локальный</strong></div>
+            <div class="rail-divider"></div>
+            <div class="rail-footnote"><span>Состояние интерфейса</span><b><i></i> ГОТОВ К РАБОТЕ</b></div>
+          </section>
+          <section class="rail-panel quick-panel">
+            <div class="rail-heading"><span class="rail-heading-icon">◷</span><h2>Быстрый доступ</h2></div>
+            <a class="quick-link" href="/p/history/"><span class="quick-icon">◷</span><span><b>История операций</b><small>Предыдущие результаты</small></span><i>↗</i></a>
+            <a class="quick-link" href="/p/settings/"><span class="quick-icon">⚙</span><span><b>Настройки и API</b><small>Конфигурация сервисов</small></span><i>↗</i></a>
+            <a class="quick-link" href="/p/ai-agent/"><span class="quick-icon">✳</span><span><b>ИИ-помощник</b><small>Анализ и планирование</small></span><i>↗</i></a>
+          </section>
+          <section class="rail-panel note-panel"><span class="note-label">SYSTEM NOTE / 4.2</span><h3>Рабочее пространство</h3><p>Все модули доступны через единую навигацию. Состав каталога формируется на основе подключённых разделов.</p><a href="/p/history/">Перейти к истории <span>→</span></a></section>
+        </aside>
+      </div>
     </main>
   </div>
-  <footer class="app-footer">
-    <span>OSINT Panel</span>
-    <span class="footer-hint">Разведка в открытых источниках — домены, email, соцсети</span>
-  </footer>
+  <footer class="app-footer"><span><b>OSINT PANEL 4.2</b><i></i> INTELLIGENCE WORKSPACE</span><span><i class="footer-status"></i> ЛОКАЛЬНАЯ СРЕДА <b class="footer-separator">|</b> <span id="footer-clock">READY</span></span></footer>
+
   <script defer src="/js/header-env.js"></script>
   <script defer src="/js/header-ui.js"></script>
   <script>
@@ -107,6 +100,16 @@
       var legacy = { reports: "history", dashboard: "domain-tools", page: "domain-tools" };
       var id = legacy[h] || h;
       if (id) location.replace("/p/" + encodeURIComponent(id) + "/");
+    })();
+    (function () {
+      var input = document.getElementById("hub-search");
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "/" && !/INPUT|TEXTAREA/.test(document.activeElement.tagName)) {
+          event.preventDefault(); input && input.focus();
+        }
+      });
+      var clock = document.getElementById("footer-clock");
+      if (clock) clock.textContent = "SYSTEM READY";
     })();
   </script>
   <script src="/js/app-hub.js?v=4.2.0" type="module"></script>
