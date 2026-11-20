@@ -56,13 +56,15 @@
         '<div class="osint-ws-controls"><button class="osint-ws-action" data-ws-copy>Копировать</button><button class="osint-ws-action" data-ws-delete>Удалить</button></div></article>';
     }).join("");
   }
-  function saveResult(node) {
-    var text = (node.innerText || node.textContent || "").trim();
+  function saveResult(node, button) {
+    var cleanNode = node.cloneNode(true);
+    cleanNode.querySelectorAll("[data-ws-save]").forEach(function (el) { el.remove(); });
+    var text = (cleanNode.innerText || cleanNode.textContent || "").trim();
     if (text.length < 20) return;
     var titleNode = node.querySelector("h1,h2,h3,.tool-results-card__title,.card-header");
     var title = (titleNode && titleNode.textContent || pageName()).trim().slice(0, 100);
     var items = read(), signature = location.pathname + "|" + title + "|" + text.slice(0, 500);
-    var btn = node.querySelector("[data-ws-save]");
+    var btn = button;
     if (items.some(function (x) { return x.signature === signature; })) {
       if (btn) { btn.textContent = "Уже закреплено"; btn.disabled = true; } return;
     }
@@ -80,11 +82,11 @@
       if (node.dataset.wsObserved === "1" || node.closest("#osint-ws-panel")) return;
       if ((node.innerText || node.textContent || "").trim().length < 20) return;
       node.dataset.wsObserved = "1";
-      var host = node.querySelector(".tool-results-card__header,.card-header") || node;
+      var host = node.querySelector(".tool-results-card__header,.card-header");
       var btn = document.createElement("button"); btn.type = "button";
       btn.className = "osint-ws-action osint-ws-save"; btn.textContent = "В рабочую область"; btn.dataset.wsSave = "1";
-      btn.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); saveResult(node); });
-      host.appendChild(btn);
+      btn.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); saveResult(node, btn); });
+      if (host) host.appendChild(btn); else node.insertAdjacentElement("afterend", btn);
     });
   }
   function mount() {
