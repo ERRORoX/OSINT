@@ -5,7 +5,7 @@
 .mm-heading p{margin:0;color:var(--text-muted);font-size:13px}
 .mm-refresh{border:1px solid rgba(89,184,245,.3);border-radius:9px;background:var(--accent-dim);color:var(--accent);padding:10px 14px;font-weight:650;cursor:pointer;white-space:nowrap}
 .mm-refresh:disabled{opacity:.5;cursor:wait}
-.mm-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:18px}
+.mm-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:18px}
 .mm-stat{padding:15px;border:1px solid var(--border);border-radius:12px;background:var(--bg-card);display:flex;flex-direction:column;gap:7px}
 .mm-stat span{font-size:11px;color:var(--text-muted)}
 .mm-stat strong{font:700 24px var(--font-mono);color:var(--text-bright)}
