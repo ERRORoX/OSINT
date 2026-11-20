@@ -53,8 +53,33 @@
   </header>
   <div class="app-body osint-body">
     <main class="main osint-main osint-scrollbar" id="main-content">
-      <p class="hub-intro">Каждый раздел — отдельная страница (один HTML, один CSS, один JS). Выберите вкладку выше или карточку ниже.</p>
-      <div id="hub-cards" class="hub-grid" aria-label="Разделы панели"></div>
+      <section class="hub-hero" aria-labelledby="hub-title">
+        <div class="hub-hero-copy">
+          <span class="hub-kicker">OPEN SOURCE INTELLIGENCE / WORKSPACE</span>
+          <h2 id="hub-title">Центр <span>разведки</span></h2>
+          <p>Рабочее пространство для анализа открытых источников. Выберите направление или найдите нужный инструмент.</p>
+          <div class="hub-status-row">
+            <span class="hub-status"><i></i> Локальная панель</span>
+            <span class="hub-status hub-status-muted" id="hub-tool-count">Загрузка инструментов…</span>
+          </div>
+        </div>
+        <div class="hub-hero-mark" aria-hidden="true">
+          <div class="hub-orbit hub-orbit-one"></div>
+          <div class="hub-orbit hub-orbit-two"></div>
+          <div class="hub-mark-core">O</div>
+        </div>
+      </section>
+      <section class="hub-workspace">
+        <div class="hub-section-head">
+          <div><span class="hub-kicker">WORKSPACE</span><h2>Инструменты</h2></div>
+          <label class="hub-search-wrap">
+            <span aria-hidden="true">⌕</span>
+            <input id="hub-search" type="search" placeholder="Найти инструмент…" autocomplete="off" aria-label="Найти инструмент">
+          </label>
+        </div>
+        <div id="hub-cards" class="hub-grid" aria-label="Разделы панели"></div>
+        <p id="hub-empty" class="hub-empty" hidden>Ничего не найдено. Измените поисковый запрос.</p>
+      </section>
     </main>
   </div>
   <footer class="app-footer">
