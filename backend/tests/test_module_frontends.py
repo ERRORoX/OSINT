@@ -12,17 +12,18 @@ class ModuleFrontendTests(unittest.TestCase):
         return json.loads(path.read_text(encoding="utf-8"))
 
     def test_workspace_entrypoints_exist(self):
-        module_ids = ("domain-workspace", "photo-workspace", "username-workspace", "grabcam")
+        module_ids = ("domain-workspace", "photo-workspace", "username-workspace", "grabcam", "ip-rdap", "google-osint", "ai-agent", "history")
         for module_id in module_ids:
             with self.subTest(module=module_id):
                 manifest = self._manifest(module_id)
                 frontend = ROOT / manifest["entrypoints"]["frontend"]
                 self.assertTrue(frontend.is_file(), str(frontend))
-                self.assertTrue((ROOT / "tools" / module_id / "README.md").is_file())
+                readme = manifest.get("entrypoints", {}).get("manifest_readme") or f"tools/{module_id}/README.md"
+                self.assertTrue((ROOT / readme).is_file(), readme)
 
     def test_workspace_routes_are_registered(self):
         app_source = (ROOT / "backend" / "app.py").read_text(encoding="utf-8")
-        for module_id in ("domain-workspace", "photo-workspace", "username-workspace", "grabcam"):
+        for module_id in ("domain-workspace", "photo-workspace", "username-workspace", "grabcam", "ip-rdap", "google-osint", "ai-agent", "history"):
             with self.subTest(module=module_id):
                 self.assertIn(f'@app.route("/modules/{module_id}/"', app_source)
 
@@ -39,6 +40,18 @@ class ModuleFrontendTests(unittest.TestCase):
 
         grabcam_legacy = (ROOT / "static" / "p" / "grabcam" / "index.html").read_text(encoding="utf-8")
         self.assertIn('/modules/grabcam/', grabcam_legacy)
+
+        legacy_pages = {
+            "grabcam": "static/p/grabcam/index.html",
+            "ip-rdap": "static/p/ip-rdap/index.html",
+            "google-osint": "static/p/google-osint/index.html",
+            "ai-agent": "static/p/ai-agent/index.html",
+            "history": "static/p/history/index.html",
+        }
+        for module_id, relative_path in legacy_pages.items():
+            with self.subTest(module=module_id):
+                legacy = (ROOT / relative_path).read_text(encoding="utf-8")
+                self.assertIn(f"/modules/{module_id}/", legacy)
 
     def test_module_manager_uses_registry_api(self):
         page = (ROOT / "static" / "p" / "modules" / "index.html").read_text(encoding="utf-8")
