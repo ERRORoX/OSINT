@@ -471,6 +471,14 @@ def _worker_php_only(port: int = _PHP_PORT):
         )
         with _lock:
             _state["proc"] = proc
+        if not _wait_for_local_server(port, proc):
+            _terminate_process(proc)
+            with _lock:
+                _state["running"] = False
+                _state["proc"] = None
+                _state["local_url"] = None
+                _state["error"] = f"PHP-сервер не открыл локальный порт {port}. Проверьте PHP и доступность порта."
+            return
         proc.wait()
     except Exception as e:
         with _lock:
