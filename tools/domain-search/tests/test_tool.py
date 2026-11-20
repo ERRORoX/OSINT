@@ -7,6 +7,7 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "backend"))
 
 from tools.tool_domain_search import ToolDomainSearch, _MODULE
+from modules import DomainSearch, run_domain_search
 
 
 class DomainSearchModuleTests(unittest.TestCase):
@@ -20,6 +21,10 @@ class DomainSearchModuleTests(unittest.TestCase):
         result = self.tool.run({"domain": "not-a-domain"})
         self.assertFalse(result["success"])
         self.assertTrue(result.get("error"))
+
+    def test_legacy_modules_import_is_preserved(self):
+        self.assertTrue(DomainSearch)
+        self.assertTrue(run_domain_search)
 
     def test_normalizes_domain(self):
         self.assertEqual(
