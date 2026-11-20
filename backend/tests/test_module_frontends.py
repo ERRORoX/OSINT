@@ -90,6 +90,21 @@ class ModuleFrontendTests(unittest.TestCase):
         for forbidden in ("fetch(", "XMLHttpRequest", "sendBeacon"):
             self.assertNotIn(forbidden, demo)
 
+    def test_homepage_uses_responsive_grouped_sidebar(self):
+        page = (ROOT / "static" / "index.html").read_text(encoding="utf-8")
+        script = (ROOT / "static" / "js" / "app-hub.js").read_text(encoding="utf-8")
+        styles = (ROOT / "static" / "css" / "panel-42-dashboard.css").read_text(encoding="utf-8")
+        self.assertIn('id="app-sidebar"', page)
+        self.assertIn('id="sidebar-toggle"', page)
+        self.assertIn('id="sidebar-collapse"', page)
+        self.assertIn('id="sidebar-backdrop"', page)
+        self.assertIn('function wireSidebar()', script)
+        self.assertIn('function renderNav(tools)', script)
+        self.assertIn('localStorage.setItem("osint-sidebar-collapsed"', script)
+        self.assertIn('#app-shell.sidebar-open .app-sidebar', styles)
+        self.assertIn('#app-shell.sidebar-collapsed .app-sidebar', styles)
+        self.assertIn('@media(max-width:760px)', styles)
+
     def test_homepage_uses_professional_dashboard_layer(self):
         page = (ROOT / "static" / "index.html").read_text(encoding="utf-8")
         dashboard_css = ROOT / "static" / "css" / "panel-42-dashboard.css"
