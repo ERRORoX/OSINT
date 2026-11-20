@@ -60,12 +60,6 @@ function runFeaturesAfterMount(container) {
       const features = await import("./modules/features/index.js");
       const { showLink, pollStatus, showCopyFeedback } = features.initControl(container);
       features.initLink(container, showCopyFeedback);
-      features.initMap(container);
-      features.initPhotos(container);
-      features.initLocations(container);
-      features.initForms(container);
-      features.initScreen(container);
-      features.initAudio(container);
 
       try {
         const res = await fetch(API.runStatus);
