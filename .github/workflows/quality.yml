@@ -34,6 +34,9 @@ jobs:
       - name: Check settings JavaScript syntax
         run: node --input-type=module --check < static/js/settings.js
 
+      - name: Check home navigation JavaScript syntax
+        run: node --input-type=module --check < static/js/app-hub.js
+
       - name: Test module registry
         run: python -m unittest discover -s backend/tests -p "test_*.py" -v
 
