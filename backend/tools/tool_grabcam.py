@@ -1,8 +1,4 @@
-"""
-Инструмент Grabcam: тестирование доступа к веб-камере (Camera Phishing Tool).
-Запуск PHP-сервера и туннеля Serveo или только локального PHP-сервера.
-Только для образовательных целей и тестирования с разрешения.
-"""
+"""GrabCam: локальный сервер и туннели для изолированной учебной страницы."""
 import os
 import re
 import shutil
@@ -18,11 +14,6 @@ from .base import ToolBase
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 _GRABCAM_DIR = os.path.join(_PROJECT_ROOT, "tools", "grabcam")
 _DEMO_DIR = os.path.join(_GRABCAM_DIR, "demo")
-_OPTIONS_FILE = os.path.join(_GRABCAM_DIR, "options.json")
-
-_DEFAULT_FEATURES = {"camera": True, "geo": True, "form": True, "gallery": False, "mic": False, "screen": False}
-_SCRIPT = os.path.join(_GRABCAM_DIR, "grabcam.sh")
-_SENDLINK = os.path.join(_GRABCAM_DIR, "sendlink")
 _PHP_PORT = 3333
 _PHP_PORTS_RANGE = (3333, 3334, 3335, 3336, 3337)  # первый свободный выбирается на запуск
 
@@ -87,12 +78,6 @@ def _find_free_port() -> int | None:
         if not _port_in_use(p):
             return p
     return None
-
-
-def _extract_serveo_link(text: str) -> str | None:
-    """Извлекает ссылку Serveo из текста (serveo.net или serveousercontent.com)."""
-    m = _SERVEO_LINK_RE.search(text)
-    return m.group(0) if m else None
 
 
 def _wait_for_tunnel_link(proc: subprocess.Popen, pattern: re.Pattern, timeout: int) -> str | None:
@@ -160,18 +145,6 @@ def _monitor_tunnel_processes(proc_php: subprocess.Popen, proc_tunnel: subproces
 def _php_command(port: int, host: str = '127.0.0.1') -> list[str]:
     """Serve only the isolated training demo, never legacy GrabCam PHP endpoints."""
     return ["php", "-S", f"{host}:{port}", "-t", _DEMO_DIR]
-def _read_link_from_file() -> str | None:
-    """Читает ссылку Serveo из файла sendlink (для совместимости со скриптом)."""
-    if not os.path.isfile(_SENDLINK):
-        return None
-    try:
-        with open(_SENDLINK, "r", encoding="utf-8", errors="replace") as f:
-            text = f.read()
-        return _extract_serveo_link(text)
-    except OSError:
-        return None
-
-
 def _worker_serveo(port: int):
     """Запуск Serveo: PHP + SSH туннель, парсинг ссылки из вывода SSH."""
     with _lock:
@@ -207,9 +180,7 @@ def _worker_serveo(port: int):
                 _state["error"] = "PHP-сервер не запустился. Проверьте порт 3333 и наличие PHP."
             return
 
-        # 2) Генерация index2.html с плейсхолдером (ссылка подставится после получения)
-
-        # 3) Запуск SSH туннеля Serveo (сначала порт 22, при недоступности — 443)
+        # 2) Проброс только изолированной учебной страницы через SSH.
         ssh_opts = [
             "-o", "StrictHostKeyChecking=no",
             "-o", "UserKnownHostsFile=/dev/null",
@@ -465,7 +436,7 @@ def _worker_cloudflared():
 
 
 def _worker_php_only(port: int = _PHP_PORT):
-    """Только PHP-сервер в папке grabcam."""
+    """Только локальный PHP-сервер для учебной страницы."""
     with _lock:
         _state["running"] = True
         _state["local_url"] = f"http://127.0.0.1:{port}"
@@ -477,7 +448,7 @@ def _worker_php_only(port: int = _PHP_PORT):
     proc = None
     try:
         proc = subprocess.Popen(
-            _php_command(port, "0.0.0.0"),
+            _php_command(port, "127.0.0.1"),
             cwd=_DEMO_DIR,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
@@ -507,12 +478,14 @@ class ToolGrabcam(ToolBase):
 
     @property
     def description(self) -> str:
-        return "Тестирование доступа к веб-камере по ссылке. Только для образования и тестирования с явного разрешения."
+        return "Локальный сервер и туннели для безопасной учебной демонстрации браузерных разрешений."
 
     def run(self, params: dict[str, Any]) -> dict[str, Any]:
         method = (params.get("method") or "php_only").strip().lower()
         if method not in ("serveo", "php_only", "localhost_run", "cloudflared"):
             method = "php_only"
+        if not os.path.isfile(os.path.join(_DEMO_DIR, "index.html")):
+            return {"success": False, "error": "Учебная страница не найдена: tools/grabcam/demo/index.html"}
         # Выбираем порт под сессию (первый свободный).
         port = _find_free_port() or _PHP_PORT
         with _lock:
@@ -528,8 +501,6 @@ class ToolGrabcam(ToolBase):
             return {"success": False, "error": "PHP не найден. Установите PHP (apt install php, dnf install php и т.д.)."}
 
         if method == "php_only":
-            if not os.path.isfile(os.path.join(_DEMO_DIR, "index.html")):
-                return {"success": False, "error": "Учебная страница не найдена: tools/grabcam/demo/index.html"}
             if _port_in_use(port):
                 return {"success": False, "error": f"Порт {port} занят. Остановите другой сервер или выберите туннель."}
             thread = threading.Thread(target=_worker_php_only, args=(port,), daemon=True)
