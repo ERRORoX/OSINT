@@ -400,6 +400,107 @@ function showInitNotice(message){
  if(!notice){notice=document.createElement("div");notice.className="init-error";notice.setAttribute("role","alert");main.insertBefore(notice,main.firstChild);}
  notice.textContent=message;
 }
+
+// Interactive relationship graph — homepage only. Demo entities are fictional examples.
+const GRAPH_STORAGE_KEY="osint-panel-graph-data-v1";
+const GRAPH_TYPES=["person","domain","ip","email","organization"];
+const GRAPH_TYPE_LABELS={person:"Человек",domain:"Домен",ip:"IP-адрес",email:"Email",organization:"Организация"};
+const GRAPH_DEMO={
+ nodes:[
+  {id:"p1",type:"person",label:"Демо-объект 01",details:"Вымышленная сущность для демонстрации интерфейса.",x:365,y:190},
+  {id:"d1",type:"domain",label:"example.test",details:"Зарезервированный тестовый домен.",x:175,y:85},
+  {id:"i1",type:"ip",label:"192.0.2.10",details:"Тестовый IP-адрес из документационного диапазона.",x:565,y:80},
+  {id:"e1",type:"email",label:"analyst@example.test",details:"Демонстрационный адрес электронной почты.",x:150,y:305},
+  {id:"o1",type:"organization",label:"Demo Org",details:"Вымышленная организация.",x:570,y:305},
+  {id:"i2",type:"ip",label:"198.51.100.24",details:"Тестовый IP-адрес из документационного диапазона.",x:365,y:365}
+ ],
+ edges:[
+  {source:"p1",target:"d1",label:"упоминается рядом"},
+  {source:"d1",target:"i1",label:"пример DNS-связи"},
+  {source:"p1",target:"e1",label:"пример контакта"},
+  {source:"p1",target:"o1",label:"пример связи"},
+  {source:"o1",target:"i2",label:"пример инфраструктуры"},
+  {source:"d1",target:"e1",label:"демо-связь"}
+ ]
+};
+let graphData=GRAPH_DEMO,graphScale=1,graphPan={x:0,y:0},graphSelected=null,graphDrag=null;
+function graphReadLocal(){try{const value=JSON.parse(localStorage.getItem(GRAPH_STORAGE_KEY)||"null");return value&&Array.isArray(value.nodes)&&Array.isArray(value.edges)?value:null;}catch{return null;}}
+function graphValidate(value){
+ if(!value||!Array.isArray(value.nodes)||!Array.isArray(value.edges))throw new Error("Ожидаются массивы nodes и edges.");
+ if(value.nodes.length>250||value.edges.length>500)throw new Error("Лимит: 250 узлов и 500 связей.");
+ const ids=new Set();
+ const nodes=value.nodes.map((node,index)=>{
+  if(!node||typeof node!=="object")throw new Error("Некорректный узел №"+(index+1)+".");
+  const id=String(node.id||"").trim(),type=String(node.type||"").toLowerCase(),label=String(node.label||"").trim();
+  if(!id||id.length>80||ids.has(id))throw new Error("У каждого узла должен быть уникальный id (до 80 символов).");
+  if(!GRAPH_TYPES.includes(type))throw new Error("Неизвестный тип узла: "+type);
+  if(!label||label.length>180)throw new Error("Название узла обязательно (до 180 символов).");
+  ids.add(id);
+  return {id,type,label,details:String(node.details||"").slice(0,1200),x:Number.isFinite(Number(node.x))?Math.max(30,Math.min(730,Number(node.x))):100+(index%4)*180,y:Number.isFinite(Number(node.y))?Math.max(35,Math.min(390,Number(node.y))):80+Math.floor(index/4)*120};
+ });
+ const edges=value.edges.map((edge,index)=>{
+  if(!edge||!ids.has(String(edge.source))||!ids.has(String(edge.target)))throw new Error("Связь №"+(index+1)+" ссылается на неизвестный узел.");
+  return {source:String(edge.source),target:String(edge.target),label:String(edge.label||"Связь").slice(0,100)};
+ });
+ return {nodes,edges};
+}
+function graphSvg(tag,attrs,parent){const el=document.createElementNS("http://www.w3.org/2000/svg",tag);Object.entries(attrs||{}).forEach(([key,value])=>el.setAttribute(key,String(value)));if(parent)parent.appendChild(el);return el;}
+function graphApplyTransform(){const viewport=document.getElementById("graph-viewport");if(viewport)viewport.setAttribute("transform","translate("+graphPan.x+" "+graphPan.y+") scale("+graphScale+")");const reset=document.getElementById("graph-zoom-reset");if(reset)reset.textContent=Math.round(graphScale*100)+"%";}
+function graphVisibleNodes(){const enabled=new Set([...document.querySelectorAll("[data-graph-filter]:checked")].map(input=>input.dataset.graphFilter));return graphData.nodes.filter(node=>enabled.has(node.type));}
+function graphRender(){
+ const svg=document.getElementById("investigation-graph"),nodesLayer=document.getElementById("graph-nodes"),edgesLayer=document.getElementById("graph-edges");if(!svg||!nodesLayer||!edgesLayer)return;
+ nodesLayer.replaceChildren();edgesLayer.replaceChildren();
+ const visible=graphVisibleNodes(),visibleIds=new Set(visible.map(node=>node.id));
+ graphData.edges.forEach(edge=>{if(!visibleIds.has(edge.source)||!visibleIds.has(edge.target))return;const a=graphData.nodes.find(node=>node.id===edge.source),b=graphData.nodes.find(node=>node.id===edge.target);if(!a||!b)return;
+  graphSvg("line",{x1:a.x,y1:a.y,x2:b.x,y2:b.y,class:"graph-edge-line"},edgesLayer);
+  const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;const label=graphSvg("text",{x:mx,y:my-7,class:"graph-edge-label","text-anchor":"middle"},edgesLayer);label.textContent=edge.label;
+ });
+ visible.forEach(node=>{
+  const group=graphSvg("g",{class:"graph-node"+(graphSelected===node.id?" is-selected":""),transform:"translate("+node.x+" "+node.y+")",tabindex:"0",role:"button","aria-label":GRAPH_TYPE_LABELS[node.type]+": "+node.label,"data-node-id":node.id},nodesLayer);
+  graphSvg("circle",{r:node.type==="person"?24:19,class:"graph-node-halo"},group);
+  graphSvg("circle",{r:node.type==="person"?17:13,class:"graph-node-core type-"+node.type},group);
+  const short=GRAPH_TYPE_LABELS[node.type].toUpperCase();const type=graphSvg("text",{x:0,y:35,class:"graph-node-type","text-anchor":"middle"},group);type.textContent=short;
+  const label=graphSvg("text",{x:0,y:49,class:"graph-node-label","text-anchor":"middle"},group);label.textContent=node.label.length>23?node.label.slice(0,21)+"…":node.label;
+  group.addEventListener("click",()=>graphSelect(node.id));
+  group.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();graphSelect(node.id);}});
+  group.addEventListener("pointerdown",event=>{if(event.button!==0)return;event.preventDefault();graphDrag={kind:"node",id:node.id,x:event.clientX,y:event.clientY};svg.setPointerCapture(event.pointerId);});
+ });
+ const empty=document.getElementById("graph-empty-state");if(empty)empty.hidden=visible.length>0;
+ const summary=document.getElementById("graph-summary");if(summary)summary.textContent=visible.length+" узлов · "+graphData.edges.filter(edge=>visibleIds.has(edge.source)&&visibleIds.has(edge.target)).length+" связей";
+ graphApplyTransform();
+}
+function graphSelect(id){
+ graphSelected=id;const node=graphData.nodes.find(item=>item.id===id),panel=document.getElementById("graph-node-details");if(!panel||!node)return;
+ panel.replaceChildren();const type=document.createElement("span");type.className="graph-detail-type";type.textContent=GRAPH_TYPE_LABELS[node.type].toUpperCase();const title=document.createElement("strong");title.textContent=node.label;const description=document.createElement("p");description.textContent=node.details||"Дополнительное описание не указано.";const related=document.createElement("small");const edges=graphData.edges.filter(edge=>edge.source===id||edge.target===id);related.textContent="Связей: "+edges.length;panel.append(type,title,description,related);graphRender();
+}
+function graphResetView(){graphScale=1;graphPan={x:0,y:0};graphApplyTransform();}
+function graphWire(){
+ const svg=document.getElementById("investigation-graph");if(!svg)return;
+ const mode=document.getElementById("graph-dataset-mode"),badge=document.getElementById("graph-data-mode"),input=document.getElementById("graph-json-input"),status=document.getElementById("graph-import-status");
+ const local=graphReadLocal();
+ const setMode=value=>{const stored=graphReadLocal();if(value==="local"&&!stored){graphData={nodes:[],edges:[]};if(status)status.textContent="Локальный граф ещё не импортирован.";if(badge)badge.textContent="НЕТ ДАННЫХ";}else{graphData=value==="demo"?GRAPH_DEMO:stored;if(badge)badge.textContent=value==="demo"?"ДЕМО-ДАННЫЕ":"ЛОКАЛЬНЫЕ ДАННЫЕ";}graphSelected=null;graphResetView();graphRender();};
+ if(mode){mode.value=local?"local":"demo";mode.addEventListener("change",()=>setMode(mode.value));}
+ document.querySelectorAll("[data-graph-filter]").forEach(control=>control.addEventListener("change",graphRender));
+ document.getElementById("graph-zoom-in")?.addEventListener("click",()=>{graphScale=Math.min(2.5,graphScale*1.2);graphApplyTransform();});
+ document.getElementById("graph-zoom-out")?.addEventListener("click",()=>{graphScale=Math.max(.45,graphScale/1.2);graphApplyTransform();});
+ document.getElementById("graph-zoom-reset")?.addEventListener("click",graphResetView);
+ document.getElementById("graph-fit")?.addEventListener("click",graphResetView);
+ svg.addEventListener("wheel",event=>{event.preventDefault();graphScale=Math.max(.45,Math.min(2.5,graphScale*(event.deltaY<0?1.1:.9)));graphApplyTransform();},{passive:false});
+ svg.addEventListener("pointerdown",event=>{if(event.target===svg||event.target.id==="graph-viewport"||event.target.id==="graph-edges"){graphDrag={kind:"pan",x:event.clientX,y:event.clientY};svg.setPointerCapture(event.pointerId);}});
+ svg.addEventListener("pointermove",event=>{if(!graphDrag)return;const dx=(event.clientX-graphDrag.x)/graphScale,dy=(event.clientY-graphDrag.y)/graphScale;graphDrag.x=event.clientX;graphDrag.y=event.clientY;if(graphDrag.kind==="pan"){graphPan.x+=dx;graphPan.y+=dy;graphApplyTransform();}else{const node=graphData.nodes.find(item=>item.id===graphDrag.id);if(node){node.x=Math.max(25,Math.min(735,node.x+dx));node.y=Math.max(25,Math.min(395,node.y+dy));graphRender();}}});
+ const stop=()=>{graphDrag=null;};svg.addEventListener("pointerup",stop);svg.addEventListener("pointercancel",stop);svg.addEventListener("lostpointercapture",stop);
+ document.getElementById("graph-import-button")?.addEventListener("click",()=>{
+  try{const parsed=graphValidate(JSON.parse(input?.value||""));localStorage.setItem(GRAPH_STORAGE_KEY,JSON.stringify(parsed));if(mode){mode.value="local";}setMode("local");if(status)status.textContent="Импортировано: "+parsed.nodes.length+" узлов, "+parsed.edges.length+" связей. Сохранено локально.";}
+  catch(error){if(status)status.textContent="Ошибка: "+(error.message||"неверный JSON");}
+ });
+ document.getElementById("graph-export-button")?.addEventListener("click",()=>{
+  const data=mode?.value==="demo"?GRAPH_DEMO:(graphReadLocal()||{nodes:[],edges:[]});const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download="osint-relationship-graph.json";link.click();URL.revokeObjectURL(url);if(status)status.textContent="JSON подготовлен для экспорта.";
+ });
+ document.getElementById("graph-clear-button")?.addEventListener("click",()=>{localStorage.removeItem(GRAPH_STORAGE_KEY);if(mode){mode.value="local";}setMode("local");if(status)status.textContent="Локальный граф очищен.";});
+ if(input&&!input.value)input.value=JSON.stringify({nodes:[{id:"n1",type:"domain",label:"example.org",details:"Описание объекта"}],edges:[]},null,2);
+ setMode(mode?.value||"demo");
+}
+
 async function init(){
  // Keep the header and updater usable if a catalogue endpoint is temporarily unavailable.
  wireHeader();
