@@ -27,14 +27,45 @@ const HUB_CARDS=[
 ];
 let activeFilter="all";
 let loadedTools=[];
+let loadedNavigation=[];
 function escapeHtml(value){return String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 async function loadTools(){const response=await fetch(API+"/tools",{headers:{Accept:"application/json"}});if(!response.ok)throw new Error("Не удалось загрузить список инструментов");return response.json();}
+async function loadNavigation(){
+ try{
+  const response=await fetch(API+"/navigation",{headers:{Accept:"application/json"},cache:"no-store"});
+  if(!response.ok)return [];
+  const data=await response.json();
+  return Array.isArray(data.modules)?data.modules:[];
+ }catch(_){return [];}
+}
+function applyNavigationModules(items){
+ const cardIdMap={"domain-workspace":"domain-tools","username-workspace":"username-tools","photo-workspace":"photo-search"};
+ const categoryMap={domain:"recon",network:"recon",identity:"identity",photo:"media",education:"media",utility:"analysis",workspace:"workspace"};
+ items.forEach(module=>{
+  const cardId=cardIdMap[module.id]||module.id;
+  const existing=HUB_CARDS.find(card=>card.id===cardId);
+  if(existing){
+   existing.href=module.href;
+  }else{
+   HUB_CARDS.push({
+    id:cardId,
+    href:module.href,
+    title:module.name||module.id,
+    desc:module.description||"Модуль OSINT Panel.",
+    category:categoryMap[module.category]||"workspace",
+    icon:"◈"
+   });
+  }
+ });
+}
+
 function iconSpan(id){return TAB_ICONS[id]?'<span class="tab-icon" aria-hidden="true">'+TAB_ICONS[id]+"</span>":"";}
 function renderNav(tools){
  const nav=document.getElementById("nav-tools");if(!nav)return;
  const rest=tools.filter(t=>!DOMAIN_TOOLS_IDS.includes(t.id)&&!USERNAME_TOOLS_IDS.includes(t.id)&&!TAB_ONLY_TOOL_IDS.includes(t.id)&&!["instagram-bruter","grabcam","formgrab"].includes(t.id));
- const mk=(id,label,href)=>'<a href="'+(href||("/p/"+encodeURIComponent(id)+"/"))+'" class="tool-link" data-tool-id="'+escapeHtml(id)+'">'+iconSpan(id)+escapeHtml(label)+"</a>";
- nav.innerHTML=mk("domain-tools","Домены","/domain/")+mk("username-tools","Username","/username/")+mk("photo-search","Фото","/photo/")+mk("grabcam","GrabCam","/p/grabcam/")+mk("ai-agent","ИИ")+mk("history","История")+rest.map(t=>mk(t.id,t.name)).join("");
+ const pageById=new Map(loadedNavigation.map(item=>[item.id,item.href]));
+ const mk=(id,label,href)=>'<a href="'+(href||pageById.get(id)||("/p/"+encodeURIComponent(id)+"/"))+'" class="tool-link" data-tool-id="'+escapeHtml(id)+'">'+iconSpan(id)+escapeHtml(label)+"</a>";
+ nav.innerHTML=mk("domain-tools","Домены",pageById.get("domain-workspace")||"/domain/")+mk("username-tools","Username",pageById.get("username-workspace")||"/username/")+mk("photo-search","Фото",pageById.get("photo-workspace")||"/photo/")+mk("grabcam","GrabCam",pageById.get("grabcam")||"/p/grabcam/")+mk("ai-agent","ИИ",pageById.get("ai-agent"))+mk("history","История",pageById.get("history"))+rest.map(t=>mk(t.id,t.name)).join("");
 }
 function getFavorites(){try{return JSON.parse(localStorage.getItem("osint-panel-favorites")||"[]").filter(x=>typeof x==="string");}catch(_){return[];}}
 function setFavorites(items){try{localStorage.setItem("osint-panel-favorites",JSON.stringify(items));}catch(_){}}
@@ -135,5 +166,17 @@ function wireHeader(){
  const btn=document.getElementById("btn-user-menu"),menu=document.getElementById("user-menu");
  if(btn&&menu){btn.addEventListener("click",()=>{const open=btn.getAttribute("aria-expanded")==="true";btn.setAttribute("aria-expanded",String(!open));menu.hidden=open;});document.addEventListener("click",event=>{if(!btn.contains(event.target)&&!menu.contains(event.target)){btn.setAttribute("aria-expanded","false");menu.hidden=true;}});}
 }
-async function init(){loadedTools=await loadTools();renderNav(loadedTools);renderHubCards();updateHubStatus(loadedTools);document.getElementById("hub-search")?.addEventListener("input",renderHubCards);wireFilters();wireHeader();wireUpdater();}
+async function init(){
+ const results=await Promise.all([loadTools(),loadNavigation()]);
+ loadedTools=results[0];
+ loadedNavigation=results[1];
+ applyNavigationModules(loadedNavigation);
+ renderNav(loadedTools);
+ renderHubCards();
+ updateHubStatus(loadedTools);
+ document.getElementById("hub-search")?.addEventListener("input",renderHubCards);
+ wireFilters();
+ wireHeader();
+ wireUpdater();
+}
 init().catch(error=>{const message=error?.message||"Нет связи с сервером";const main=document.getElementById("main-content");if(main)main.insertAdjacentHTML("afterbegin",'<div class="init-error" role="alert"><strong>Ошибка загрузки:</strong> '+escapeHtml(message)+'<p>Проверьте сервер и обновите страницу.</p></div>');});
