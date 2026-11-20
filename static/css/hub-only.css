@@ -308,3 +308,20 @@ body.dashboard-page{margin:0!important;min-height:100vh;background:radial-gradie
 .hub-fav:hover{border-color:rgba(255,201,90,.5);background:rgba(255,201,90,.08)}
 .hub-fav:focus-visible,.hub-card-open:focus-visible,.hub-filter:focus-visible{outline:2px solid #4d9dff;outline-offset:2px}
 @media(max-width:680px){.catalog-meta{font-size:8px}.hub-card{min-height:144px;padding:10px}.hub-card-category{font-size:6px}.hub-card-title{font-size:11px}.hub-card-desc{font-size:9px}}
+
+
+/* Saved investigation materials — 4.2.13 */
+.saved-materials-panel{margin-top:16px}
+.saved-materials-note{margin:-5px 0 12px;color:#7188a9;font-size:10px;line-height:1.5}
+.saved-materials-list{display:grid;gap:8px}
+.saved-materials-empty{padding:15px;border:1px dashed rgba(91,133,184,.25);border-radius:9px;color:#8097b5;font-size:11px;line-height:1.6}
+.saved-material-item{min-width:0;padding:11px;border:1px solid rgba(72,111,158,.2);border-radius:9px;background:rgba(7,17,32,.32)}
+.saved-material-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.saved-material-head strong{color:#cbdcf2;font-size:11px;line-height:1.4;overflow-wrap:anywhere}
+.saved-material-head time,.saved-material-source{color:#7188a9;font-size:9px;white-space:nowrap}
+.saved-material-source{margin-top:4px;overflow-wrap:anywhere;white-space:normal}
+.saved-material-item p{margin:8px 0 0;color:#9db0c8;font:10px/1.5 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+.saved-material-actions{display:flex;gap:6px;margin-top:9px}
+.saved-material-actions button{padding:5px 8px;border:1px solid rgba(77,137,204,.2);border-radius:6px;background:rgba(15,48,83,.3);color:#9dbce1;font-size:9px;cursor:pointer}
+.saved-material-actions button:hover{border-color:#438bd0;color:#dceaff}
+.saved-materials-more{padding:4px 2px;color:#7188a9;font-size:9px}
