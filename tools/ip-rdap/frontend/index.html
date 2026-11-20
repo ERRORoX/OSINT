@@ -1,34 +1,31 @@
 <!doctype html>
-<html lang="ru">
-<head>
+<html lang="ru"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#080b10"><title>IP / RDAP — OSINT Panel</title>
-<link rel="stylesheet" href="/css/tool-bundle/hub.css">
-<link rel="stylesheet" href="/css/panel-41.css?v=4.2.0">
-<link rel="stylesheet" href="/css/unified-workstation.css?v=4.5.0">
+<meta name="theme-color" content="#080b10"><title>IP Registry — OSINT Panel</title>
+<link rel="stylesheet" href="/css/tool-bundle/hub.css"><link rel="stylesheet" href="/css/panel-41.css?v=4.2.0"><link rel="stylesheet" href="/css/unified-workstation.css?v=4.5.0">
 <style>
-.iprdap-wrap{max-width:900px;margin:32px auto;padding:clamp(18px,4vw,34px);border:1px solid rgba(89,184,245,.16);border-radius:18px;background:linear-gradient(145deg,#111c27,#0b1119)}
-.iprdap-wrap h2{margin:0 0 8px;font-size:clamp(1.5rem,4vw,2.2rem)}.iprdap-wrap p{color:#a9b7c8;line-height:1.6}
-.iprdap-form{display:flex;gap:10px;flex-wrap:wrap;margin:22px 0}.iprdap-form input{flex:1;min-width:220px;padding:13px 15px;border:1px solid #304153;border-radius:10px;background:#080e16;color:#e7eef7;font:inherit}
-.iprdap-form button{padding:12px 20px;border:1px solid rgba(89,184,245,.32);border-radius:10px;background:rgba(89,184,245,.10);color:#bfe4ff;font-weight:700;cursor:pointer}
-.iprdap-result{white-space:pre-wrap;overflow-wrap:anywhere;padding:18px;border:1px solid #253747;border-radius:12px;background:#070c12;color:#dbe7f2;min-height:90px;font: .9rem/1.7 ui-monospace,monospace}
-.iprdap-note{font-size:.8rem!important;color:#7f91a5!important}
-</style>
-</head>
+.iprdap-wrap{width:min(100% - 32px,1040px);margin:30px auto 54px;padding:clamp(20px,4vw,38px);border:1px solid rgba(89,184,245,.17);border-radius:20px;background:radial-gradient(ellipse at 90% 0,rgba(48,119,166,.13),transparent 42%),linear-gradient(145deg,#111c27,#0b1119);box-shadow:0 24px 70px rgba(0,0,0,.24)}
+.iprdap-kicker{display:inline-flex;align-items:center;gap:8px;color:#75c9ff;font:700 .72rem/1.2 ui-monospace,monospace;letter-spacing:.13em}.iprdap-kicker:before{content:"";width:7px;height:7px;border-radius:50%;background:#59b8f5;box-shadow:0 0 12px #59b8f5}
+.iprdap-wrap h2{margin:14px 0 8px;font-size:clamp(1.7rem,4vw,2.55rem);letter-spacing:-.04em;color:#edf6ff}.iprdap-wrap h2 span{color:#59b8f5}.iprdap-lead{max-width:720px;color:#a9b7c8;line-height:1.65;margin:0}
+.iprdap-form{display:flex;gap:10px;flex-wrap:wrap;margin:26px 0 12px}.iprdap-form input{flex:1;min-width:220px;padding:15px 16px;border:1px solid #304153;border-radius:11px;background:#080e16;color:#e7eef7;font:500 1rem ui-monospace,monospace;outline:none}.iprdap-form input:focus{border-color:#59b8f5;box-shadow:0 0 0 3px rgba(89,184,245,.12)}
+.iprdap-form button,.iprdap-copy{padding:13px 19px;border:1px solid rgba(89,184,245,.34);border-radius:11px;background:linear-gradient(135deg,rgba(89,184,245,.2),rgba(89,184,245,.08));color:#c7eaff;font-weight:750;cursor:pointer}.iprdap-form button:disabled{opacity:.55;cursor:wait}
+.iprdap-hint{font-size:.78rem;color:#72869a;margin:0 0 22px}.iprdap-status{display:flex;align-items:center;gap:9px;min-height:24px;margin:18px 0;color:#8fa5ba;font-size:.86rem}.iprdap-status:before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}.iprdap-status[data-state="success"]{color:#77d6a5}.iprdap-status[data-state="error"]{color:#ff9a9a}.iprdap-status[data-state="loading"]{color:#82cfff}
+.iprdap-result-card{border:1px solid #26394b;border-radius:14px;background:rgba(5,11,18,.72);overflow:hidden}.iprdap-result-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px;border-bottom:1px solid #213244;color:#b9cadd;font-size:.82rem;font-weight:700}.iprdap-result{margin:0;padding:20px;white-space:pre-wrap;overflow-wrap:anywhere;color:#dbe7f2;min-height:112px;font:.88rem/1.8 ui-monospace,monospace}.iprdap-copy{padding:7px 11px;font-size:.76rem}.iprdap-copy:disabled{opacity:.4;cursor:not-allowed}
+.iprdap-graph{margin-top:14px;padding:14px 16px;border:1px solid rgba(89,184,245,.15);border-radius:12px;background:rgba(18,39,55,.45);color:#9fb3c7;font-size:.82rem;line-height:1.5}.iprdap-graph strong{color:#c5e8ff}.iprdap-note{margin:18px 0 0;font-size:.78rem!important;color:#7f91a5!important;line-height:1.6}
+@media(max-width:560px){.iprdap-wrap{width:calc(100% - 20px);margin:14px auto 34px;padding:18px}.iprdap-form{display:grid}.iprdap-form input,.iprdap-form button{width:100%;min-width:0}.iprdap-result{padding:15px;font-size:.8rem}}
+</style></head>
 <body>
-<header class="osint-header app-header"><div class="osint-header-inner scan-line">
-<div class="osint-logo"><a href="/" style="color:inherit;text-decoration:none">◎</a></div>
-<div class="osint-title"><h1><a href="/" style="text-decoration:none;color:inherit"><span class="accent">OSINT</span><span class="dim">Panel</span></a></h1><p>Пассивная разведка по открытым источникам</p></div>
-</div></header>
-<main class="main osint-main"><section class="iprdap-wrap">
-<span class="hub-kicker">NETWORK INTELLIGENCE / RDAP</span>
-<h2>IP <span style="color:#59b8f5">Registry Lookup</span></h2>
-<p>Получение регистрационных сведений о публичном IPv4/IPv6 адресе через RDAP. Инструмент не сканирует порты и не отправляет запросы к самому адресу.</p>
-<form class="iprdap-form" id="iprdap-form"><input id="ip-address" name="ip" type="text" inputmode="url" autocomplete="off" placeholder="Например: 8.8.8.8" required aria-label="Публичный IP-адрес"><button id="ip-submit" type="submit">Проверить IP ↗</button></form>
-<pre class="iprdap-result" id="ip-result" role="status" aria-live="polite">Ожидание IP-адреса…</pre>
-<p class="iprdap-note">Данные предоставляет публичный RDAP-сервис. Сведения могут быть неполными или устаревшими. Используйте только в законных целях.</p>
+<header class="osint-header app-header"><div class="osint-header-inner scan-line"><div class="osint-logo"><a href="/" style="color:inherit;text-decoration:none">◎</a></div><div class="osint-title"><h1><a href="/" style="text-decoration:none;color:inherit"><span class="accent">OSINT</span><span class="dim">Panel</span></a></h1><p>Пассивная разведка по открытым источникам</p></div></div></header>
+<main class="main osint-main"><section class="iprdap-wrap" aria-labelledby="iprdap-title">
+<span class="iprdap-kicker">NETWORK INTELLIGENCE / RDAP</span><h2 id="iprdap-title">IP <span>Registry</span></h2>
+<p class="iprdap-lead">Проверьте регистрационные сведения публичного IPv4 или IPv6 адреса: сеть, организацию-владельца, страну и даты регистрации. Найденный IP автоматически добавится в постоянный граф расследований.</p>
+<form class="iprdap-form" id="iprdap-form"><input id="ip-address" name="ip" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Например: 8.8.8.8 или 2001:4860:4860::8888" required aria-label="Публичный IP-адрес"><button id="ip-submit" type="submit">Проверить IP <span aria-hidden="true">↗</span></button></form>
+<p class="iprdap-hint">Поддерживаются IPv4 и IPv6. Приватные и локальные адреса отклоняются.</p>
+<div class="iprdap-status" id="ip-status" role="status" aria-live="polite" data-state="idle">Ожидание IP-адреса</div>
+<section class="iprdap-result-card" aria-label="Результат проверки"><div class="iprdap-result-head"><span>РЕЗУЛЬТАТ RDAP</span><button class="iprdap-copy" id="ip-copy" type="button" disabled>Копировать</button></div><pre class="iprdap-result" id="ip-result">После проверки здесь появятся регистрационные сведения.</pre></section>
+<div class="iprdap-graph" id="ip-graph-status" role="status" aria-live="polite"><strong>Граф расследований:</strong> найденные IP и сведения об организации будут сохранены после успешного поиска.</div>
+<p class="iprdap-note">Данные предоставляет публичный RDAP-сервис. Сведения могут быть неполными или устаревшими. Инструмент не сканирует порты и не отправляет запросы к самому IP-адресу.</p>
 </section></main>
-<footer class="app-footer"><span><a href="/" style="color:inherit;text-decoration:none">OSINT Panel</a></span><span class="footer-hint">IP / RDAP · 4.2</span></footer>
-<script src="/modules/ip-rdap/page.js" defer></script>
-  <script defer src="/js/workspace.js?v=4.3.1"></script>
+<footer class="app-footer"><span><a href="/" style="color:inherit;text-decoration:none">OSINT Panel</a></span><span class="footer-hint">IP Registry · 4.2</span></footer>
+<script src="/modules/ip-rdap/page.js?v=4.2.1" defer></script><script defer src="/js/workspace.js?v=4.3.1"></script>
 </body></html>
