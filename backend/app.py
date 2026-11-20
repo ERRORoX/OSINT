@@ -23,6 +23,9 @@ _IP_RDAP_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "ip-rdap", "fronten
 _DOMAIN_WORKSPACE_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "domain-workspace", "frontend")
 _PHOTO_WORKSPACE_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "photo-workspace", "frontend")
 _USERNAME_WORKSPACE_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "username-workspace", "frontend")
+_AI_AGENT_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "ai-agent", "frontend")
+_HISTORY_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "history", "frontend")
+_GOOGLE_OSINT_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "google-osint", "frontend")
 if _BACKEND_DIR not in sys.path:
     sys.path.insert(0, _BACKEND_DIR)
 
@@ -142,6 +145,36 @@ def username_workspace_module_page():
 def username_workspace_module_assets(filename):
     """Serve static assets owned by the Username Workspace module."""
     return send_from_directory(_USERNAME_WORKSPACE_FRONTEND_DIR, filename)
+
+
+@app.route("/modules/ai-agent/", methods=["GET"])
+def ai_agent_module_page():
+    return send_from_directory(_AI_AGENT_FRONTEND_DIR, "index.html")
+
+
+@app.route("/modules/ai-agent/<path:filename>", methods=["GET"])
+def ai_agent_module_assets(filename):
+    return send_from_directory(_AI_AGENT_FRONTEND_DIR, filename)
+
+
+@app.route("/modules/history/", methods=["GET"])
+def history_module_page():
+    return send_from_directory(_HISTORY_FRONTEND_DIR, "index.html")
+
+
+@app.route("/modules/history/<path:filename>", methods=["GET"])
+def history_module_assets(filename):
+    return send_from_directory(_HISTORY_FRONTEND_DIR, filename)
+
+
+@app.route("/modules/google-osint/", methods=["GET"])
+def google_osint_module_page():
+    return send_from_directory(_GOOGLE_OSINT_FRONTEND_DIR, "index.html")
+
+
+@app.route("/modules/google-osint/<path:filename>", methods=["GET"])
+def google_osint_module_assets(filename):
+    return send_from_directory(_GOOGLE_OSINT_FRONTEND_DIR, filename)
 
 
 @app.route("/photo")
