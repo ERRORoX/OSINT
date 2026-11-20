@@ -32,7 +32,7 @@ async function loadTools(){const response=await fetch(API+"/tools",{headers:{Acc
 function iconSpan(id){return TAB_ICONS[id]?'<span class="tab-icon" aria-hidden="true">'+TAB_ICONS[id]+"</span>":"";}
 function renderNav(tools){
  const nav=document.getElementById("nav-tools");if(!nav)return;
- const rest=tools.filter(t=>!DOMAIN_TOOLS_IDS.includes(t.id)&&!USERNAME_TOOLS_IDS.includes(t.id)&&!TAB_ONLY_TOOL_IDS.includes(t.id)&&!["instagram-bruter","formgrab"].includes(t.id));
+ const rest=tools.filter(t=>!DOMAIN_TOOLS_IDS.includes(t.id)&&!USERNAME_TOOLS_IDS.includes(t.id)&&!TAB_ONLY_TOOL_IDS.includes(t.id)&&!["instagram-bruter","grabcam","formgrab"].includes(t.id));
  const mk=(id,label,href)=>'<a href="'+(href||("/p/"+encodeURIComponent(id)+"/"))+'" class="tool-link" data-tool-id="'+escapeHtml(id)+'">'+iconSpan(id)+escapeHtml(label)+"</a>";
  nav.innerHTML=mk("domain-tools","Домены","/domain/")+mk("username-tools","Username","/username/")+mk("photo-search","Фото","/photo/")+mk("grabcam","GrabCam","/p/grabcam/")+mk("ai-agent","ИИ")+mk("history","История")+rest.map(t=>mk(t.id,t.name)).join("");
 }
