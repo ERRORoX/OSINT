@@ -11,7 +11,8 @@
     "backend_adapter": "tools/google-osint/backend/tool.py",
     "tool_class": "ToolGoogleOsint",
     "page_url": "/modules/google-osint/",
-    "frontend": "tools/google-osint/frontend/index.html"
+    "frontend": "tools/google-osint/frontend/index.html",
+    "manifest_readme": "tools/google-osint/OSINT_PANEL.md"
   },
   "dependencies": {
     "python": [],
