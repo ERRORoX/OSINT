@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import subprocess
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -80,6 +81,26 @@ def install_update() -> dict:
             "Обновление не применено. Исходная версия сохранена в резервной ветке {}. {}".format(
                 backup_branch, str(exc)
             )
+        ) from exc
+
+    # Устанавливаем изменившиеся Python-зависимости до перезапуска приложения.
+    try:
+        subprocess.run(
+            [sys.executable, "-m", "pip", "install", "-r", str(ROOT / "requirements.txt")],
+            check=True, capture_output=True, text=True, timeout=600,
+        )
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+        detail = getattr(exc, "stderr", "") or str(exc)
+        try:
+            _git("reset", "--hard", backup_branch)
+        except UpdateError as rollback_exc:
+            raise UpdateError(
+                "Не удалось установить зависимости и выполнить автоматический откат. "
+                "Резервная ветка: {}. Ошибка отката: {}".format(backup_branch, rollback_exc)
+            ) from exc
+        raise UpdateError(
+            "Установка зависимостей завершилась ошибкой; код автоматически возвращён к предыдущей версии. "
+            "Резервная ветка: {}. {}".format(backup_branch, str(detail).strip())
         ) from exc
 
     after = check_update()
