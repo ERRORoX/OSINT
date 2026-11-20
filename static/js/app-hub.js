@@ -489,8 +489,8 @@ async function graphWire(){
  const mode=document.getElementById("graph-dataset-mode"),badge=document.getElementById("graph-data-mode"),input=document.getElementById("graph-json-input"),status=document.getElementById("graph-import-status");
  let serverGraph={nodes:[],edges:[]};
  let serverUpdatedAt=null;
- const requestGraph=async(method="GET",payload=null)=>{
-  const response=await fetch(API+"/graph",{method,headers:{"Content-Type":"application/json",Accept:"application/json"},body:payload?JSON.stringify(payload):undefined,cache:"no-store"});
+ const requestGraph=async(method="GET",payload=null,path="/graph")=>{
+  const response=await fetch(API+path,{method,headers:{"Content-Type":"application/json",Accept:"application/json"},body:payload?JSON.stringify(payload):undefined,cache:"no-store"});
   const data=await response.json().catch(()=>({}));
   if(!response.ok)throw new Error(data.error||"Не удалось обратиться к хранилищу графа.");
   return data;
@@ -540,7 +540,7 @@ async function graphWire(){
   }
  };
  const persistCurrent=async()=>{
-  const saved=await requestGraph("PUT",graphData);
+  const saved=await requestGraph("POST",graphData,"/graph/merge");
   serverGraph=graphValidate(saved);
   serverUpdatedAt=saved.updated_at||null;
   if(badge&&mode?.value==="local")badge.textContent="ПОСТОЯННОЕ ХРАНИЛИЩЕ";
