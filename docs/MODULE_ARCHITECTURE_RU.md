@@ -117,6 +117,7 @@ python backend/module_cli.py runtime-check
 ## Примеры текущей миграции
 
 - `tools/ip-rdap/` — самостоятельный frontend/backend-модуль с README и тестами; старый адрес и API сохранены через compatibility layer.
+- `/api/navigation` строится из валидных включённых integrated manifests; домашняя навигация и карточки используют только канонические `/modules/<id>/` URL, у которых существует frontend.
 - `tools/domain-workspace/` — frontend workspace доменного анализа; собственные CSS/JS и HTML обслуживаются из каталога модуля, backend-инструменты вызываются через прежние API.
 - В репозитории 20 manifests: 18 `integrated` и 2 `legacy`. Среди интегрированных backend-инструментов — Domain Search, DNS-инструменты, username-инструменты, Shodan, theHarvester, Google OSINT, Photo Search, GrabCam и IP/RDAP.
 - Самостоятельные frontend workspaces: Domain Workspace, Photo Workspace, Username Workspace, AI Agent и History; Google OSINT также имеет собственную страницу в каталоге модуля.
