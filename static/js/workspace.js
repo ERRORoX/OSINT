@@ -93,7 +93,8 @@
     var header = document.querySelector(".app-header-right") || document.querySelector(".osint-header-inner");
     if (header && !document.getElementById("osint-workspace-actions")) {
       var actions = document.createElement("div"); actions.id = "osint-workspace-actions";
-      actions.innerHTML = '<a class="osint-ws-action" href="/" title="Вернуться на главную">← Главная</a><button class="osint-ws-action" id="osint-ws-toggle" type="button">Рабочая область <span id="osint-ws-count">0</span></button>';
+      actions.innerHTML = '<button class="osint-ws-action" id="osint-ws-back" type="button">← Назад</button><a class="osint-ws-action" href="/" title="Вернуться на главную">Главная</a><button class="osint-ws-action" id="osint-ws-toggle" type="button">Рабочая область <span id="osint-ws-count">0</span></button>';
+      if (location.pathname === "/" || location.pathname === "/index.html") actions.querySelector("#osint-ws-back").hidden = true;
       header.prepend(actions);
     }
     var panel = document.createElement("section"); panel.id = "osint-ws-panel"; panel.setAttribute("aria-label","Сохранённые результаты");
@@ -101,6 +102,12 @@
     document.body.appendChild(panel);
     var toggle = document.getElementById("osint-ws-toggle");
     if (!toggle) { toggle = document.createElement("button"); toggle.id = "osint-ws-toggle"; toggle.className = "osint-ws-action"; toggle.type = "button"; toggle.innerHTML = 'Рабочая область <span id="osint-ws-count">0</span>'; document.body.appendChild(toggle); }
+    var back = document.getElementById("osint-ws-back");
+    if (back) back.addEventListener("click", function () {
+      var referrer = document.referrer;
+      if (referrer && new URL(referrer).origin === location.origin && history.length > 1) history.back();
+      else location.href = "/";
+    });
     toggle.addEventListener("click", function () { panel.classList.toggle("open"); render(); });
     document.getElementById("osint-ws-close").addEventListener("click", function () { panel.classList.remove("open"); });
     document.getElementById("osint-ws-clear").addEventListener("click", function () {
