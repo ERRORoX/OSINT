@@ -410,3 +410,40 @@ body.dashboard-page{margin:0!important;min-height:100vh;background:radial-gradie
 .graph-import>div{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
 .graph-import [role=status]{display:block;margin-top:6px;color:#8bb6e5;font-size:8px;overflow-wrap:anywhere}
 @media(max-width:760px){.graph-workspace{padding:12px}.interactive-relationship-graph{height:245px}.graph-toolbar{align-items:flex-start}.graph-filter-row{gap:7px}}
+
+
+/* Homepage block hierarchy and balanced layout — 4.2.17 */
+.investigation-hero{grid-template-columns:minmax(0,1fr) minmax(265px,320px);align-items:stretch}
+.investigation-intro{min-height:245px}
+.investigation-status{min-height:245px}
+.investigation-status .system-content{flex-direction:column;justify-content:center}
+.investigation-status .system-ring{flex:none}
+.investigation-visual.graph-workspace{display:flex;width:100%;min-height:0;margin:0 0 17px;box-sizing:border-box}
+.graph-canvas-wrap{min-height:260px}
+.interactive-relationship-graph{height:320px}
+.workspace-bottom-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-top:16px;align-items:start}
+.workspace-bottom-grid>.content-panel{min-width:0;margin:0}
+.content-columns{align-items:start}
+.primary-column,.secondary-column{min-width:0}
+.secondary-column{display:grid;align-content:start;gap:16px}
+.secondary-column>.content-panel{margin:0}
+@media(max-width:1250px){
+ .investigation-hero{grid-template-columns:minmax(0,1fr) minmax(245px,300px)}
+ .investigation-status{grid-column:auto}
+ .investigation-status .system-content{flex-direction:column}
+ .investigation-status .system-facts{max-width:none}
+}
+@media(max-width:900px){
+ .investigation-hero{grid-template-columns:minmax(0,1fr) minmax(230px,.75fr)}
+ .workspace-bottom-grid{grid-template-columns:1fr}
+}
+@media(max-width:760px){
+ .investigation-hero{grid-template-columns:1fr}
+ .investigation-status{grid-column:auto}
+ .investigation-status .system-content{flex-direction:row}
+ .investigation-status .system-facts{max-width:360px}
+ .interactive-relationship-graph{height:270px}
+ .graph-canvas-wrap{min-height:220px}
+ .workspace-bottom-grid{gap:12px;margin-top:12px}
+ .secondary-column{gap:12px}
+}
