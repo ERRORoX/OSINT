@@ -7,7 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 REMOTE = "origin"
-BRANCH = "main"
+BRANCH = "feature/panel-4.1-redesign"
 
 
 class UpdateError(RuntimeError):

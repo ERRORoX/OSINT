@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#060608">
   <title>OSINT Panel</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect fill='%23060608' width='32' height='32' rx='4'/><text x='16' y='22' font-size='16' text-anchor='middle' fill='%2300ff88' font-family='monospace'>O</text></svg>">
-  <link rel="stylesheet" href="/css/tool-bundle/hub.css">
+  <link rel="stylesheet" href="/css/tool-bundle/hub.css"><link rel="stylesheet" href="/css/panel-41.css?v=4.1.1">
 </head>
 <body>
   <div class="osint-bg cyber-grid" aria-hidden="true">
@@ -35,6 +35,7 @@
       </div>
       <div class="app-header-right">
         <span class="app-header-system" id="header-system">ОС: —</span>
+        <div class="app-update-control"><button type="button" class="app-update-btn" id="btn-check-updates">↻ Обновить</button><span class="app-update-status" id="update-status" role="status" aria-live="polite"></span></div>
         <div class="app-header-user" id="header-user">
           <button type="button" class="app-header-user-btn" aria-expanded="false" aria-haspopup="true" id="btn-user-menu">
             <span class="app-header-user-icon" aria-hidden="true"></span>
@@ -77,6 +78,7 @@
             <input id="hub-search" type="search" placeholder="Найти инструмент…" autocomplete="off" aria-label="Найти инструмент">
           </label>
         </div>
+        <div class="hub-filters" role="group" aria-label="Фильтр разделов"><button class="hub-filter" type="button" data-hub-filter="all" aria-pressed="true">Все</button><button class="hub-filter" type="button" data-hub-filter="recon" aria-pressed="false">Разведка</button><button class="hub-filter" type="button" data-hub-filter="identity" aria-pressed="false">Идентификаторы</button><button class="hub-filter" type="button" data-hub-filter="media" aria-pressed="false">Медиа</button><button class="hub-filter" type="button" data-hub-filter="analysis" aria-pressed="false">Анализ</button><button class="hub-filter" type="button" data-hub-filter="workspace" aria-pressed="false">Рабочее место</button><button class="hub-filter" type="button" data-hub-filter="favorites" aria-pressed="false">★ Избранное</button></div>
         <div id="hub-cards" class="hub-grid" aria-label="Разделы панели"></div>
         <p id="hub-empty" class="hub-empty" hidden>Ничего не найдено. Измените поисковый запрос.</p>
       </section>
@@ -97,6 +99,6 @@
       if (id) location.replace("/p/" + encodeURIComponent(id) + "/");
     })();
   </script>
-  <script src="/js/app-hub.js" type="module"></script>
+  <script src="/js/app-hub.js?v=4.1.1" type="module"></script>
 </body>
 </html>
