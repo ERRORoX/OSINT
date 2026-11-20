@@ -9,7 +9,7 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect fill='%23050b14' width='32' height='32' rx='7'/><circle cx='16' cy='16' r='9' fill='none' stroke='%233b9cff' stroke-width='2'/><path d='M7 16h18M16 7a15 15 0 0 1 0 18' stroke='%233b9cff' fill='none'/></svg>">
   <link rel="stylesheet" href="/css/tool-bundle/hub.css">
   <link rel="stylesheet" href="/css/panel-41.css?v=4.2.0">
-  <link rel="stylesheet" href="/css/panel-42-dashboard.css?v=4.2.3">
+  <link rel="stylesheet" href="/css/panel-42-dashboard.css?v=4.2.4">
 </head>
 <body data-dashboard-variant="2">
   <header class="osint-header app-header">
@@ -109,10 +109,26 @@
         }
       });
       var clock = document.getElementById("footer-clock");
-      if (clock) clock.textContent = "SYSTEM READY";
+      function updateLocalClock() {
+        if (!clock) return;
+        clock.textContent = new Intl.DateTimeFormat("ru-RU", {
+          day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit"
+        }).format(new Date()).replace(",", " ·");
+      }
+      updateLocalClock();
+      window.setInterval(updateLocalClock, 30000);
+      if (input) {
+        input.addEventListener("keydown", function (event) {
+          if (event.key === "Escape") {
+            input.value = "";
+            input.blur();
+            input.dispatchEvent(new Event("input", { bubbles: true }));
+          }
+        });
+      }
     })();
   </script>
-  <script src="/js/app-hub.js?v=4.2.0" type="module"></script>
+  <script src="/js/app-hub.js?v=4.2.1" type="module"></script>
   <script defer src="/js/workspace.js?v=4.3.1"></script>
 </body>
 </html>
