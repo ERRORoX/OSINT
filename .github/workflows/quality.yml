@@ -26,6 +26,9 @@ jobs:
       - name: Test module registry
         run: python -m unittest discover -s backend/tests -p "test_*.py" -v
 
+      - name: Test integrated module runtime
+        run: python -m unittest discover -s backend/tests -p "test_module_runtime.py" -v
+
       - name: Test IP/RDAP module
         run: python -m unittest discover -s tools/ip-rdap/tests -p "test_*.py" -v
 
