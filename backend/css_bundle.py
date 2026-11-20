@@ -11,6 +11,7 @@ BUNDLE_BASE = (
     "layout.css",
     "tools.css",
     "proba-theme.css",
+    "unified-workstation.css",
 )
 
 _SHARED_CLI = "tools/packs/_shared/cli.css"
