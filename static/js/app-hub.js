@@ -72,13 +72,18 @@ function renderNav(tools){
   {label:"РАБОЧЕЕ МЕСТО",ids:["history","settings"],cards:["history","settings"]}
  ];
  const cardById=new Map(HUB_CARDS.map(card=>[card.id,card]));
+ const workspaceHrefs={
+  "domain-tools":pageById.get("domain-workspace"),
+  "username-tools":pageById.get("username-workspace"),
+  "photo-search":pageById.get("photo-workspace")
+ };
  const makeLink=(id,label,href,icon)=>'<a href="'+escapeHtml(href)+'" class="tool-link" data-tool-id="'+escapeHtml(id)+'" title="'+escapeHtml(label)+'">'+(iconSpan(id)||'<span class="tab-icon sidebar-generic-icon" aria-hidden="true">'+(icon||"◈")+'</span>')+'<span class="sidebar-link-label">'+escapeHtml(label)+'</span></a>';
  const chunks=[];
  chunks.push('<div class="sidebar-group"><div class="sidebar-group-label">ОБЗОР</div>'+makeLink("overview","Главная","/","⌂")+'</div>');
  groups.slice(1).forEach(group=>{
   const links=group.cards.map(id=>{
    const card=cardById.get(id);if(!card)return "";
-   const canonical=pageById.get(id==="domain-tools"?"domain-workspace":id==="username-tools"?"username-workspace":id==="photo-search"?"photo-workspace":id);
+   const canonical=workspaceHrefs[id]||pageById.get(id);
    return makeLink(id,card.title,canonical||card.href,card.icon);
   }).join("");
   if(links)chunks.push('<div class="sidebar-group"><div class="sidebar-group-label">'+group.label+'</div>'+links+'</div>');
