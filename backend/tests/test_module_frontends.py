@@ -129,6 +129,18 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn('data-saved-index', script)
         self.assertIn('saved-material-source-link', styles)
 
+    def test_local_investigation_case_workspace(self):
+        page = (ROOT / "static" / "index.html").read_text(encoding="utf-8")
+        script = (ROOT / "static" / "js" / "app-hub.js").read_text(encoding="utf-8")
+        styles = (ROOT / "static" / "css" / "hub-only.css").read_text(encoding="utf-8")
+        self.assertIn('id="case-project-form"', page)
+        self.assertIn('id="case-project-list"', page)
+        self.assertIn('const CASE_PROJECTS_KEY="osint-panel-cases-v1"', script)
+        self.assertIn("function wireCaseProjects()", script)
+        self.assertIn("project.materialIds.push(selected)", script)
+        self.assertIn("projects:readCaseProjects()", script)
+        self.assertIn(".case-project-card", styles)
+
 
 if __name__ == "__main__":
     unittest.main()
