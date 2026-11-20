@@ -60,7 +60,7 @@ class ModuleRegistryTests(unittest.TestCase):
     def test_rejects_windows_style_path_traversal(self):
         temp, root = self._project({
             **self._manifest(),
-            "entrypoints": {"frontend": r"..\\outside.js"},
+            "entrypoints": {"frontend": r"..\outside.js"},
         })
         self.addCleanup(temp.cleanup)
         result = discover_modules(root)
@@ -70,7 +70,7 @@ class ModuleRegistryTests(unittest.TestCase):
     def test_rejects_windows_absolute_path(self):
         temp, root = self._project({
             **self._manifest(),
-            "legacy_paths": [r"C:\\outside\\module.py"],
+            "legacy_paths": [r"C:\outside\module.py"],
         })
         self.addCleanup(temp.cleanup)
         result = discover_modules(root)
