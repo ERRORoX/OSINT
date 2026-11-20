@@ -62,10 +62,36 @@ function applyNavigationModules(items){
 function iconSpan(id){return TAB_ICONS[id]?'<span class="tab-icon" aria-hidden="true">'+TAB_ICONS[id]+"</span>":"";}
 function renderNav(tools){
  const nav=document.getElementById("nav-tools");if(!nav)return;
- const rest=tools.filter(t=>!DOMAIN_TOOLS_IDS.includes(t.id)&&!USERNAME_TOOLS_IDS.includes(t.id)&&!TAB_ONLY_TOOL_IDS.includes(t.id)&&!["instagram-bruter","grabcam","formgrab"].includes(t.id));
  const pageById=new Map(loadedNavigation.map(item=>[item.id,item.href]));
- const mk=(id,label,href)=>'<a href="'+(href||pageById.get(id)||("/p/"+encodeURIComponent(id)+"/"))+'" class="tool-link" data-tool-id="'+escapeHtml(id)+'">'+iconSpan(id)+escapeHtml(label)+"</a>";
- nav.innerHTML=mk("domain-tools","Домены",pageById.get("domain-workspace")||"/domain/")+mk("username-tools","Username",pageById.get("username-workspace")||"/username/")+mk("photo-search","Фото",pageById.get("photo-workspace")||"/photo/")+mk("grabcam","GrabCam",pageById.get("grabcam")||"/p/grabcam/")+mk("ai-agent","ИИ",pageById.get("ai-agent"))+mk("history","История",pageById.get("history"))+rest.map(t=>mk(t.id,t.name)).join("");
+ const groups=[
+  {label:"ОБЗОР",ids:[],cards:[]},
+  {label:"РАЗВЕДКА",ids:["domain-tools","ip-rdap"],cards:["domain-tools","ip-rdap"]},
+  {label:"ИДЕНТИФИКАТОРЫ",ids:["username-tools","google-osint"],cards:["username-tools","google-osint"]},
+  {label:"МЕДИА",ids:["photo-search","grabcam"],cards:["photo-search","grabcam"]},
+  {label:"АНАЛИЗ",ids:["ai-agent"],cards:["ai-agent"]},
+  {label:"РАБОЧЕЕ МЕСТО",ids:["history","settings"],cards:["history","settings"]}
+ ];
+ const cardById=new Map(HUB_CARDS.map(card=>[card.id,card]));
+ const makeLink=(id,label,href,icon)=>'<a href="'+escapeHtml(href)+'" class="tool-link" data-tool-id="'+escapeHtml(id)+'" title="'+escapeHtml(label)+'">'+(iconSpan(id)||'<span class="tab-icon sidebar-generic-icon" aria-hidden="true">'+(icon||"◈")+'</span>')+'<span class="sidebar-link-label">'+escapeHtml(label)+'</span></a>';
+ const chunks=[];
+ chunks.push('<div class="sidebar-group"><div class="sidebar-group-label">ОБЗОР</div>'+makeLink("overview","Главная","/","⌂")+'</div>');
+ groups.slice(1).forEach(group=>{
+  const links=group.cards.map(id=>{
+   const card=cardById.get(id);if(!card)return "";
+   const canonical=pageById.get(id==="domain-tools"?"domain-workspace":id==="username-tools"?"username-workspace":id==="photo-search"?"photo-workspace":id);
+   return makeLink(id,card.title,canonical||card.href,card.icon);
+  }).join("");
+  if(links)chunks.push('<div class="sidebar-group"><div class="sidebar-group-label">'+group.label+'</div>'+links+'</div>');
+ });
+ const known=new Set(groups.flatMap(group=>group.ids));
+ const extras=tools.filter(tool=>!known.has(tool.id)&&!["instagram-bruter","anonsms","formgrab","grabcam"].includes(tool.id));
+ if(extras.length)chunks.push('<div class="sidebar-group"><div class="sidebar-group-label">ДОПОЛНИТЕЛЬНО</div>'+extras.map(tool=>makeLink(tool.id,tool.name,"/p/"+encodeURIComponent(tool.id)+"/", "◈")).join("")+'</div>');
+ nav.innerHTML=chunks.join("");
+ nav.querySelectorAll(".tool-link").forEach(link=>{
+  const href=new URL(link.href,location.origin);
+  if(href.pathname===location.pathname){link.classList.add("active");link.setAttribute("aria-current","page");}
+  link.addEventListener("click",()=>{document.getElementById("app-shell")?.classList.remove("sidebar-open");document.getElementById("sidebar-toggle")?.setAttribute("aria-expanded","false");});
+ });
 }
 function getFavorites(){try{return JSON.parse(localStorage.getItem("osint-panel-favorites")||"[]").filter(x=>typeof x==="string");}catch(_){return[];}}
 function setFavorites(items){try{localStorage.setItem("osint-panel-favorites",JSON.stringify(items));}catch(_){}}
@@ -161,6 +187,33 @@ function wireUpdater(){
  });
 }
 
+function wireSidebar(){
+ const shell=document.getElementById("app-shell");
+ const openButton=document.getElementById("sidebar-toggle");
+ const collapseButton=document.getElementById("sidebar-collapse");
+ const backdrop=document.getElementById("sidebar-backdrop");
+ if(!shell||!openButton||!collapseButton)return;
+ let collapsed=false;
+ try{collapsed=localStorage.getItem("osint-sidebar-collapsed")==="1";}catch(_){}
+ shell.classList.toggle("sidebar-collapsed",collapsed);
+ collapseButton.setAttribute("aria-pressed",String(collapsed));
+ collapseButton.textContent=collapsed?"›":"‹";
+ const closeMobile=()=>{shell.classList.remove("sidebar-open");openButton.setAttribute("aria-expanded","false");};
+ openButton.addEventListener("click",()=>{
+  const open=shell.classList.toggle("sidebar-open");
+  openButton.setAttribute("aria-expanded",String(open));
+ });
+ collapseButton.addEventListener("click",()=>{
+  collapsed=!shell.classList.contains("sidebar-collapsed");
+  shell.classList.toggle("sidebar-collapsed",collapsed);
+  collapseButton.setAttribute("aria-pressed",String(collapsed));
+  collapseButton.textContent=collapsed?"›":"‹";
+  try{localStorage.setItem("osint-sidebar-collapsed",collapsed?"1":"0");}catch(_){}
+ });
+ backdrop?.addEventListener("click",closeMobile);
+ document.addEventListener("keydown",event=>{if(event.key==="Escape")closeMobile();});
+ window.addEventListener("resize",()=>{if(window.innerWidth>760)closeMobile();});
+}
 function wireHeader(){
  const menuSettings=document.querySelector("#user-menu .app-header-user-menu-item[data-tool-id]");if(menuSettings)menuSettings.setAttribute("href","/p/settings/");
  const btn=document.getElementById("btn-user-menu"),menu=document.getElementById("user-menu");
