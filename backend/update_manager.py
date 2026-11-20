@@ -10,6 +10,7 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Callable
 
 ROOT = Path(__file__).resolve().parents[1]
 REMOTE = "origin"
@@ -67,8 +68,14 @@ def check_update() -> dict:
     }
 
 
-def install_update() -> dict:
+def install_update(progress: Callable[[int, str], None] | None = None) -> dict:
+    def report(percent: int, stage: str) -> None:
+        if progress:
+            progress(max(0, min(100, int(percent))), stage)
+
+    report(3, "Подготовка обновления")
     current_branch = _git("branch", "--show-current")
+    report(7, "Проверка рабочей ветки")
     if current_branch != BRANCH:
         raise UpdateError(
             "Обновление этой сборки разрешено только из ветки {}. Текущая ветка: {}.".format(
@@ -85,15 +92,18 @@ def install_update() -> dict:
         stash_ref = _git("rev-parse", "stash@{0}")
 
     try:
+        report(18, "Проверка обновлений на сервере")
         check = check_update()
         if not check["available"]:
             _restore_stash(stash_ref)
             return {"updated": False, "message": "Установлена последняя версия.", **check}
 
+        report(32, "Создание резервной копии")
         stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S-%f")
         backup_branch = "backup/before-update-{}".format(stamp)
         _git("branch", backup_branch, "HEAD")
         try:
+            report(48, "Загрузка файлов обновления")
             _git("merge", "--ff-only", "{}/{}".format(REMOTE, BRANCH))
         except UpdateError as exc:
             raise UpdateError(
@@ -104,6 +114,7 @@ def install_update() -> dict:
 
         # Устанавливаем изменившиеся Python-зависимости до перезапуска приложения.
         try:
+            report(65, "Установка Python-зависимостей")
             subprocess.run(
                 [sys.executable, "-m", "pip", "install", "-r", str(ROOT / "requirements.txt")],
                 check=True, capture_output=True, text=True, timeout=600,
@@ -123,8 +134,11 @@ def install_update() -> dict:
             ) from exc
 
         # Возвращаем пользовательские файлы только после успешного обновления кода и зависимостей.
+        report(91, "Восстановление ваших локальных файлов")
         _restore_stash(stash_ref)
+        report(97, "Завершение обновления")
         after = check_update()
+        report(100, "Обновление завершено")
         return {
             "updated": True,
             "backup_branch": backup_branch,
