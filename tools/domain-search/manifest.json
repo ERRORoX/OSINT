@@ -9,7 +9,8 @@
   "enabled": true,
   "entrypoints": {
     "backend_adapter": "tools/domain-search/backend/tool.py",
-    "manifest_readme": "tools/domain-search/OSINT_PANEL.md"
+    "manifest_readme": "tools/domain-search/OSINT_PANEL.md",
+    "tool_class": "ToolDomainSearch"
   },
   "dependencies": {
     "python": [
