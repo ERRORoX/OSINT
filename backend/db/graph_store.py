@@ -126,6 +126,10 @@ def merge_graph_data(payload):
                 old["label"] = node["label"]
                 if node["details"]:
                     old["details"] = node["details"]
+                if node["x"] is not None:
+                    old["x"] = node["x"]
+                if node["y"] is not None:
+                    old["y"] = node["y"]
             else:
                 position = len(nodes_by_id)
                 node["x"] = node["x"] or 50 + (position % 8) * 94
