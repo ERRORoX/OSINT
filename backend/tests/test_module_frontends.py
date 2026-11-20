@@ -204,6 +204,26 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn('Math.round((progress / totalSelected) * 100)', script)
 
 
+    def test_ip_registry_saves_successful_lookups_to_persistent_graph(self):
+        page = (ROOT / "tools" / "ip-rdap" / "frontend" / "index.html").read_text(encoding="utf-8")
+        script = (ROOT / "tools" / "ip-rdap" / "frontend" / "page.js").read_text(encoding="utf-8")
+        self.assertIn('id="ip-graph-status"', page)
+        self.assertIn('page.js?v=4.2.1', page)
+        self.assertIn('fetch("/api/graph/merge"', script)
+        self.assertIn('type: "ip"', script)
+        self.assertIn('type: "organization"', script)
+        self.assertIn('await saveToGraph(ip, lastOutput)', script)
+        self.assertIn('currentRequest !== requestId', script)
+
+    def test_ip_registry_page_has_accessible_loading_result_and_copy_controls(self):
+        page = (ROOT / "tools" / "ip-rdap" / "frontend" / "index.html").read_text(encoding="utf-8")
+        script = (ROOT / "tools" / "ip-rdap" / "frontend" / "page.js").read_text(encoding="utf-8")
+        self.assertIn('aria-live="polite"', page)
+        self.assertIn('id="ip-copy"', page)
+        self.assertIn('button.disabled = true', script)
+        self.assertIn('navigator.clipboard.writeText(lastOutput)', script)
+
+
 if __name__ == "__main__":
     unittest.main()
 
