@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#060608">
   <title>OSINT Panel</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect fill='%23060608' width='32' height='32' rx='4'/><text x='16' y='22' font-size='16' text-anchor='middle' fill='%2300ff88' font-family='monospace'>O</text></svg>">
-  <link rel="stylesheet" href="/css/tool-bundle/hub.css"><link rel="stylesheet" href="/css/panel-41.css?v=4.2.0">
+  <link rel="stylesheet" href="/css/tool-bundle/hub.css"><link rel="stylesheet" href="/css/panel-41.css?v=4.2.0"><link rel="stylesheet" href="/css/panel-42-dashboard.css?v=4.2.1">
 </head>
 <body>
   <div class="osint-bg cyber-grid" aria-hidden="true">
@@ -54,25 +54,31 @@
   </header>
   <div class="app-body osint-body">
     <main class="main osint-main osint-scrollbar" id="main-content">
-      <section class="hub-hero" aria-labelledby="hub-title">
-        <div class="hub-hero-copy">
-          <span class="hub-kicker">OPEN SOURCE INTELLIGENCE / WORKSPACE</span>
-          <h2 id="hub-title">Центр <span>разведки</span></h2>
-          <p>Рабочее пространство для анализа открытых источников. Выберите направление или найдите нужный инструмент.</p>
-          <div class="hub-status-row">
-            <span class="hub-status"><i></i> Локальная панель</span>
-            <span class="hub-status hub-status-muted" id="hub-tool-count">Загрузка инструментов…</span>
-          </div>
+      <section class="dashboard-intro" aria-labelledby="hub-title">
+        <div>
+          <div class="dashboard-eyebrow">OSINT PANEL <span>/</span> WORKSPACE</div>
+          <h2 id="hub-title">Центр <span>операций</span></h2>
+          <p>Единое рабочее пространство для поиска, проверки и анализа информации из открытых источников. Выберите инструмент или найдите нужный модуль.</p>
         </div>
-        <div class="hub-hero-mark" aria-hidden="true">
-          <div class="hub-orbit hub-orbit-one"></div>
-          <div class="hub-orbit hub-orbit-two"></div>
-          <div class="hub-mark-core">O</div>
-        </div>
+        <div class="dashboard-local"><i aria-hidden="true"></i> Локальная среда</div>
+      </section>
+      <section class="dashboard-metrics" aria-label="Сводка панели">
+        <article class="dashboard-metric">
+          <span class="dashboard-metric-icon" aria-hidden="true">⌘</span>
+          <div><strong id="metric-tools">—</strong><span>Доступно инструментов</span></div>
+        </article>
+        <article class="dashboard-metric">
+          <span class="dashboard-metric-icon" aria-hidden="true">▦</span>
+          <div><strong id="metric-sections">—</strong><span>Рабочих разделов</span></div>
+        </article>
+        <article class="dashboard-metric">
+          <span class="dashboard-metric-icon" aria-hidden="true">◈</span>
+          <div><strong id="metric-categories">5</strong><span>Категорий анализа</span></div>
+        </article>
       </section>
       <section class="hub-workspace">
         <div class="hub-section-head">
-          <div><span class="hub-kicker">WORKSPACE</span><h2>Инструменты</h2></div>
+          <div><span class="hub-kicker">КАТАЛОГ</span><h2>Инструменты и модули</h2></div>
           <label class="hub-search-wrap">
             <span aria-hidden="true">⌕</span>
             <input id="hub-search" type="search" placeholder="Найти инструмент…" autocomplete="off" aria-label="Найти инструмент">
