@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "id": "username-workspace",
+  "name": "Username Workspace",
+  "version": "1.0.0",
+  "category": "identity",
+  "description": "Единая рабочая область поиска публичных профилей по username через несколько OSINT-инструментов.",
+  "status": "integrated",
+  "enabled": true,
+  "entrypoints": {
+    "page_url": "/modules/username-workspace/",
+    "frontend": "tools/username-workspace/frontend/index.html",
+    "manifest_readme": "tools/username-workspace/README.md"
+  },
+  "dependencies": {
+    "python": [],
+    "system": [],
+    "optional": [
+      "Sherlock",
+      "Maigret",
+      "Blackbird",
+      "Social Analyzer runtime dependencies"
+    ]
+  },
+  "capabilities": [
+    "public-username-presence-search",
+    "multi-tool-workspace",
+    "progress-reporting"
+  ],
+  "legacy_paths": [
+    "static/username/index.html",
+    "static/username/css/username.css",
+    "static/username/js/"
+  ],
+  "notes": [
+    "Frontend перенесён в каталог модуля; backend-поисковики зарегистрированы как отдельные интегрированные модули.",
+    "Старый адрес /username/ перенаправляет на канонический адрес.",
+    "Модуль предназначен для поиска публичных профилей, не для аутентификации или перебора паролей."
+  ]
+}
