@@ -47,6 +47,18 @@ jobs:
       - name: Test Domain Search module
         run: python -m unittest discover -s tools/domain-search/tests -p "test_*.py" -v
 
+      - name: Test Sherlock module
+        run: python -m unittest discover -s tools/sherlock/tests -p "test_*.py" -v
+
+      - name: Test Maigret module
+        run: python -m unittest discover -s tools/maigret/tests -p "test_*.py" -v
+
+      - name: Test Blackbird module
+        run: python -m unittest discover -s tools/blackbird/tests -p "test_*.py" -v
+
+      - name: Test Social Analyzer module
+        run: python -m unittest discover -s tools/social-analyzer/tests -p "test_*.py" -v
+
       - name: Validate integrated runtime modules
         run: python backend/module_cli.py runtime-check
 
