@@ -59,7 +59,18 @@ function wireFilters(){
   renderHubCards();
  }));
 }
-function updateHubStatus(tools){const count=document.getElementById("hub-tool-count");if(count)count.textContent=HUB_CARDS.length+" разделов · "+tools.length+" инструментов";}
+function updateHubStatus(tools){
+ const set=(id,value)=>{const el=document.getElementById(id);if(el)el.textContent=value;};
+ const count=tools.length, sections=HUB_CARDS.length;
+ set("hub-tool-count",sections+" разделов · "+count+" инструментов");
+ ["metric-tools","system-tool-count"].forEach(id=>set(id,String(count)));
+ ["metric-sections","system-section-count"].forEach(id=>set(id,String(sections)));
+ set("metric-favorites",String(getFavorites().length));
+ set("system-state","OK");set("system-state-label","Онлайн");
+ set("backend-state","Доступен");
+ const backend=document.getElementById("backend-state");if(backend)backend.classList.add("is-online");
+ set("system-foot-label","Список модулей успешно загружен");
+}
 function formatEta(seconds){
  const safe=Math.max(0,Math.ceil(seconds));
  const minutes=Math.floor(safe/60);
@@ -131,9 +142,39 @@ function wireUpdater(){
 }
 
 function wireHeader(){
- const menuSettings=document.querySelector("#user-menu .app-header-user-menu-item[data-tool-id]");if(menuSettings)menuSettings.setAttribute("href","/p/settings/");
- const btn=document.getElementById("btn-user-menu"),menu=document.getElementById("user-menu");
- if(btn&&menu){btn.addEventListener("click",()=>{const open=btn.getAttribute("aria-expanded")==="true";btn.setAttribute("aria-expanded",String(!open));menu.hidden=open;});document.addEventListener("click",event=>{if(!btn.contains(event.target)&&!menu.contains(event.target)){btn.setAttribute("aria-expanded","false");menu.hidden=true;}});}
+ const menuSettings=document.querySelector("#user-menu .app-header-user-menu-item[data-tool-id]");
+ if(menuSettings)menuSettings.setAttribute("href","/p/settings/");
 }
-async function init(){loadedTools=await loadTools();renderNav(loadedTools);renderHubCards();updateHubStatus(loadedTools);document.getElementById("hub-search")?.addEventListener("input",renderHubCards);wireFilters();wireHeader();wireUpdater();}
+function renderActivity(){
+ const host=document.getElementById("hub-activity");if(!host)return;
+ let items=[];try{items=JSON.parse(localStorage.getItem("osint-panel-recent")||"[]");}catch(_){}
+ if(!items.length){host.innerHTML='<div class="activity-empty">Пока нет открытых разделов. Запущенные вами модули появятся здесь.</div>';return;}
+ host.innerHTML=items.slice(0,5).map(item=>'<a class="activity-item" href="'+escapeHtml(item.href)+'"><span class="activity-symbol">↗</span><span class="activity-copy"><strong>'+escapeHtml(item.title)+'</strong><small>'+escapeHtml(item.when)+'</small></span></a>').join("");
+}
+function wireActivity(){
+ const host=document.getElementById("hub-cards");if(!host)return;
+ host.addEventListener("click",event=>{
+  const link=event.target.closest(".hub-card-open");if(!link)return;
+  const card=link.closest(".hub-card");if(!card)return;
+  const title=card.querySelector(".hub-card-title")?.textContent||"Раздел";
+  const href=link.getAttribute("href")||"/";
+  let items=[];try{items=JSON.parse(localStorage.getItem("osint-panel-recent")||"[]");}catch(_){}
+  items=[{title,href,when:"Только что"},...items.filter(item=>item.href!==href)].slice(0,5);
+  try{localStorage.setItem("osint-panel-recent",JSON.stringify(items));}catch(_){}
+ });
+ renderActivity();
+}
+function wireSearchShortcut(){
+ document.addEventListener("keydown",event=>{
+  if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="k"){
+   event.preventDefault();const input=document.getElementById("hub-search");input?.focus();input?.select();
+  }
+ });
+}
+function wireFooterClock(){
+ const el=document.getElementById("footer-clock");if(!el)return;
+ const update=()=>{el.textContent=new Intl.DateTimeFormat("ru-RU",{hour:"2-digit",minute:"2-digit"}).format(new Date());};
+ update();setInterval(update,30000);
+}
+async function init(){loadedTools=await loadTools();renderNav(loadedTools);renderHubCards();updateHubStatus(loadedTools);document.getElementById("hub-search")?.addEventListener("input",renderHubCards);wireFilters();wireHeader();wireUpdater();wireActivity();wireSearchShortcut();wireFooterClock();}
 init().catch(error=>{const message=error?.message||"Нет связи с сервером";const main=document.getElementById("main-content");if(main)main.insertAdjacentHTML("afterbegin",'<div class="init-error" role="alert"><strong>Ошибка загрузки:</strong> '+escapeHtml(message)+'<p>Проверьте сервер и обновите страницу.</p></div>');});
