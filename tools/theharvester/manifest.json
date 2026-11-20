@@ -2,27 +2,34 @@
   "schema_version": 1,
   "id": "theharvester",
   "name": "theHarvester",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "category": "domain",
   "description": "Сбор открытых данных по домену через legacy backend-адаптер.",
-  "status": "legacy",
+  "status": "integrated",
   "enabled": true,
   "entrypoints": {
-    "backend_adapter": "backend/tools/tool_theharvester.py"
+    "backend_adapter": "tools/theharvester/backend/tool.py"
   },
   "dependencies": {
-    "python": [],
+    "python": [
+      "theHarvester",
+      "PyYAML"
+    ],
     "system": [],
-    "optional": []
+    "optional": [
+      "API keys for selected data providers"
+    ]
   },
   "capabilities": [
-    "legacy-backend-adapter"
+    "passive-domain-intelligence",
+    "multi-source-email-and-subdomain-discovery"
   ],
   "legacy_paths": [
     "backend/tools/tool_theharvester.py"
   ],
   "notes": [
-    "Manifest описывает существующий инструмент; код ещё не перенесён в каноническую структуру модуля.",
-    "Не удалять и не перемещать legacy-файлы до отдельной проверки импортов, маршрутов и тестов."
+    "Каноническая backend-реализация находится в каталоге этого модуля.",
+    "Старый backend/tools adapter сохранён для совместимости с центральным реестром.",
+    "Зависимости перечислены как метаданные; manifest не запускает установку пакетов."
   ]
 }
