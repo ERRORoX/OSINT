@@ -27,7 +27,7 @@ export function initPanel(container) {
       <div class="key-input-wrap" style="gap:10px;flex-wrap:wrap">
         <button type="button" class="btn btn-primary" id="btn-install-update">↻ Обновить</button>
       </div>
-      <div id="update-progress" hidden style="margin-top:16px;padding:14px;border:1px solid var(--border,rgba(145,170,198,.18));border-radius:10px;background:rgba(8,18,30,.55)">
+      <div id="update-progress" hidden aria-live="polite" style="margin-top:16px;padding:14px;border:1px solid var(--border,rgba(145,170,198,.18));border-radius:10px;background:rgba(8,18,30,.55)">
         <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:8px">
           <strong id="update-progress-stage">Подготовка…</strong>
           <span id="update-progress-percent" style="font-variant-numeric:tabular-nums">0%</span>
@@ -37,7 +37,7 @@ export function initPanel(container) {
         </div>
         <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:9px;color:var(--text-muted,#91a2b6);font-size:12px;font-variant-numeric:tabular-nums">
           <span>Прошло: <strong id="update-elapsed">00:00</strong></span>
-          <span>Осталось: <strong id="update-eta">рассчитывается</strong></span>
+          <span>Осталось (оценка): <strong id="update-eta">рассчитывается</strong></span>
         </div>
       </div>
     </section>
