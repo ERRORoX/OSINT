@@ -31,10 +31,31 @@ function escapeHtml(value){return String(value??"").replace(/[&<>"']/g,c=>({"&":
 async function loadTools(){const response=await fetch(API+"/tools",{headers:{Accept:"application/json"}});if(!response.ok)throw new Error("Не удалось загрузить список инструментов");return response.json();}
 function iconSpan(id){return TAB_ICONS[id]?'<span class="tab-icon" aria-hidden="true">'+TAB_ICONS[id]+"</span>":"";}
 function renderNav(tools){
- const nav=document.getElementById("nav-tools");if(!nav)return;
- const rest=tools.filter(t=>!DOMAIN_TOOLS_IDS.includes(t.id)&&!USERNAME_TOOLS_IDS.includes(t.id)&&!TAB_ONLY_TOOL_IDS.includes(t.id)&&!["instagram-bruter","grabcam","formgrab"].includes(t.id));
- const mk=(id,label,href)=>'<a href="'+(href||("/p/"+encodeURIComponent(id)+"/"))+'" class="tool-link" data-tool-id="'+escapeHtml(id)+'">'+iconSpan(id)+escapeHtml(label)+"</a>";
- nav.innerHTML=mk("domain-tools","Домены","/domain/")+mk("username-tools","Username","/username/")+mk("photo-search","Фото","/photo/")+mk("grabcam","GrabCam","/p/grabcam/")+mk("ai-agent","ИИ")+mk("history","История")+rest.map(t=>mk(t.id,t.name)).join("");
+ const nav=document.getElementById("nav-tools");
+ if(!nav)return;
+ const fixed=[
+  ["domain-tools","OSINT Категории","/domain/"],
+  ["ip-rdap","Поиск по IP","/p/ip-rdap/"],
+  ["photo-search","Поиск по фото","/photo/"],
+  ["grabcam","GrabCam","/p/grabcam/"],
+  ["username-tools","Username Search","/username/"],
+  ["ai-agent","AI Agent","/p/ai-agent/"]
+ ];
+ const excluded=new Set(["theharvester","domain-search","shodan","subfinder","dnsx","sherlock","maigret","social-analyzer","blackbird","photo-search","instagram-bruter","grabcam","formgrab","ip-rdap","google-osint","ai-agent","history","settings"]);
+ const mk=(id,label,href)=>'<a href="'+href+'" class="tool-link" data-tool-id="'+escapeHtml(id)+'"><span class="nav-item-icon" aria-hidden="true">'+(TAB_ICONS[id]||"")+'</span><span>'+escapeHtml(label)+'</span></a>';
+ nav.innerHTML=fixed.map(([id,label,href])=>mk(id,label,href)).join("");
+ const more=document.getElementById("nav-more-tools");
+ const details=document.getElementById("nav-more");
+ if(more&&details){
+  const extra=tools.filter(t=>t&&typeof t.id==="string"&&!excluded.has(t.id)&&t.name);
+  more.innerHTML=extra.map(t=>mk(t.id,t.name,"/p/"+encodeURIComponent(t.id)+"/")).join("");
+  details.hidden=extra.length===0;
+ }
+ const current=location.pathname.replace(/\/+$/,"")||"/";
+ nav.querySelectorAll("a").forEach(link=>{
+  const path=new URL(link.href,location.origin).pathname.replace(/\/+$/,"")||"/";
+  if(path===current){link.classList.add("active");link.setAttribute("aria-current","page");}
+ });
 }
 function getFavorites(){try{return JSON.parse(localStorage.getItem("osint-panel-favorites")||"[]").filter(x=>typeof x==="string");}catch(_){return[];}}
 function setFavorites(items){try{localStorage.setItem("osint-panel-favorites",JSON.stringify(items));}catch(_){}const metric=document.getElementById("metric-favorites");if(metric)metric.textContent=String(items.length);}
