@@ -7,6 +7,7 @@ import subprocess
 import threading
 import time
 import queue
+import socket
 from typing import Any
 
 from .base import ToolBase
@@ -110,6 +111,20 @@ def _wait_for_tunnel_link(proc: subprocess.Popen, pattern: re.Pattern, timeout: 
     match = pattern.search("".join(collected))
     return match.group(0) if match else None
 
+def _wait_for_local_server(port: int, proc: subprocess.Popen, timeout: float = 5.0) -> bool:
+    """Wait until PHP accepts local connections, or fail if it exits/times out."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if proc.poll() is not None:
+            return False
+        try:
+            with socket.create_connection(("127.0.0.1", port), timeout=0.25):
+                return True
+        except OSError:
+            time.sleep(0.1)
+    return False
+
+
 def _terminate_process(proc: subprocess.Popen | None) -> None:
     """Stop a child process cleanly when tunnel startup fails."""
     if proc is None or proc.poll() is not None:
@@ -172,12 +187,12 @@ def _worker_serveo(port: int):
         )
         with _lock:
             _state["proc"] = proc_php
-        time.sleep(0.8)
-        if proc_php.poll() is not None:
+        if not _wait_for_local_server(port, proc_php):
+            _terminate_process(proc_php)
             with _lock:
                 _state["running"] = False
                 _state["proc"] = None
-                _state["error"] = "PHP-сервер не запустился. Проверьте порт 3333 и наличие PHP."
+                _state["error"] = f"PHP-сервер не открыл локальный порт {port}. Проверьте PHP и доступность порта."
             return
 
         # 2) Проброс только изолированной учебной страницы через SSH.
@@ -290,12 +305,12 @@ def _worker_localhost_run():
         )
         with _lock:
             _state["proc"] = proc_php
-        time.sleep(0.8)
-        if proc_php.poll() is not None:
+        if not _wait_for_local_server(port, proc_php):
+            _terminate_process(proc_php)
             with _lock:
                 _state["running"] = False
                 _state["proc"] = None
-                _state["error"] = "PHP-сервер не запустился."
+                _state["error"] = f"PHP-сервер не открыл локальный порт {port}. Проверьте PHP и доступность порта."
             return
 
         cmd = [
@@ -378,12 +393,12 @@ def _worker_cloudflared():
         )
         with _lock:
             _state["proc"] = proc_php
-        time.sleep(0.8)
-        if proc_php.poll() is not None:
+        if not _wait_for_local_server(port, proc_php):
+            _terminate_process(proc_php)
             with _lock:
                 _state["running"] = False
                 _state["proc"] = None
-                _state["error"] = "PHP-сервер не запустился."
+                _state["error"] = f"PHP-сервер не открыл локальный порт {port}. Проверьте PHP и доступность порта."
             return
 
         try:
