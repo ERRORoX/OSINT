@@ -9,7 +9,7 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23050914'/><path d='M16 4 27 10v12l-11 6L5 22V10z' fill='none' stroke='%230b75ff' stroke-width='2'/></svg>">
   <link rel="stylesheet" href="/css/tool-bundle/hub.css">
   <link rel="stylesheet" href="/css/panel-41.css?v=4.2.0">
-  <link rel="stylesheet" href="/css/hub-only.css?v=4.2.11">
+  <link rel="stylesheet" href="/css/hub-only.css?v=4.2.12">
 </head>
 <body class="dashboard-page">
   <div class="dashboard-shell">
@@ -102,6 +102,7 @@
                 <button class="hub-filter" type="button" data-hub-filter="workspace" aria-pressed="false">Рабочее место</button>
                 <button class="hub-filter" type="button" data-hub-filter="favorites" aria-pressed="false">★</button>
               </div>
+              <div class="catalog-meta"><span id="catalog-result-count" role="status" aria-live="polite">Загрузка каталога…</span><span id="catalog-favorite-count">Избранное: 0</span></div>
               <div id="hub-cards" class="hub-grid" aria-label="Каталог инструментов"></div>
               <p id="hub-empty" class="hub-empty" hidden>Инструменты не найдены. Измените запрос или фильтр.</p>
               <div class="tools-footnote"><span>●</span> Список разделов загружается из локального сервера.</div>
@@ -169,6 +170,6 @@
       });
     })();
   </script>
-  <script src="/js/app-hub.js?v=4.2.11" type="module"></script>
+  <script src="/js/app-hub.js?v=4.2.12" type="module"></script>
 </body>
 </html>
