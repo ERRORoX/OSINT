@@ -5,7 +5,15 @@
   "description": "Declarative metadata for one OSINT Panel module. Manifests are data and must never be executed.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "id", "name", "version", "category", "status", "entrypoints"],
+  "required": [
+    "schema_version",
+    "id",
+    "name",
+    "version",
+    "category",
+    "status",
+    "entrypoints"
+  ],
   "properties": {
     "schema_version": {
       "type": "integer",
@@ -26,7 +34,16 @@
     },
     "category": {
       "type": "string",
-      "enum": ["domain", "identity", "photo", "network", "education", "utility", "workspace", "other"]
+      "enum": [
+        "domain",
+        "identity",
+        "photo",
+        "network",
+        "education",
+        "utility",
+        "workspace",
+        "other"
+      ]
     },
     "description": {
       "type": "string",
@@ -34,7 +51,13 @@
     },
     "status": {
       "type": "string",
-      "enum": ["planned", "legacy", "migrating", "integrated", "disabled"]
+      "enum": [
+        "planned",
+        "legacy",
+        "migrating",
+        "integrated",
+        "disabled"
+      ]
     },
     "enabled": {
       "type": "boolean",
@@ -44,34 +67,69 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "page_url": {"type": "string"},
-        "frontend": {"type": "string"},
-        "backend_adapter": {"type": "string"},
-        "manifest_readme": {"type": "string"}
+        "page_url": {
+          "type": "string"
+        },
+        "frontend": {
+          "type": "string"
+        },
+        "backend_adapter": {
+          "type": "string"
+        },
+        "manifest_readme": {
+          "type": "string"
+        },
+        "tool_class": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        }
       }
     },
     "dependencies": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "python": {"type": "array", "items": {"type": "string"}},
-        "system": {"type": "array", "items": {"type": "string"}},
-        "optional": {"type": "array", "items": {"type": "string"}}
+        "python": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "system": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "optional": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
       }
     },
     "capabilities": {
       "type": "array",
       "uniqueItems": true,
-      "items": {"type": "string", "pattern": "^[a-z][a-z0-9_-]*$"}
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_-]*$"
+      }
     },
     "legacy_paths": {
       "type": "array",
       "uniqueItems": true,
-      "items": {"type": "string"}
+      "items": {
+        "type": "string"
+      }
     },
     "notes": {
       "type": "array",
-      "items": {"type": "string", "maxLength": 500}
+      "items": {
+        "type": "string",
+        "maxLength": 500
+      }
     }
   }
 }
