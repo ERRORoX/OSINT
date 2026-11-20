@@ -14,9 +14,8 @@ let grabcamCssPromise = null;
 
 /** Стили Grabcam не в index.html — только при открытии вкладки, без конкуренции с остальными инструментами до этого. */
 function ensureGrabcamStylesLoaded() {
-  if (document.querySelector('link[href*="/css/tool-bundle/grabcam.css"]')) {
-    return Promise.resolve();
-  }
+  // Не считаем общий CSS-бандл признаком загрузки Grabcam:
+  // он может существовать, но не содержит полный набор модульных стилей панели.
   if (document.querySelector(`link[href="${GRABCAM_CSS_HREF}"][data-osint-grabcam-bundle]`)) {
     return Promise.resolve();
   }
