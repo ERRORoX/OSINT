@@ -43,6 +43,7 @@ _state = {
     "method": None,
     "started_at": None,
     "php_port": None,
+    "stop_requested": False,
 }
 _lock = threading.Lock()
 
@@ -141,6 +142,28 @@ def _terminate_process(proc: subprocess.Popen | None) -> None:
             pass
 
 
+def _abort_if_stop_requested(*processes: subprocess.Popen | None) -> bool:
+    """Abort a worker if Stop was pressed while its child process was starting."""
+    with _lock:
+        requested = bool(_state.get("stop_requested"))
+    if not requested:
+        return False
+    for process in processes:
+        _terminate_process(process)
+    with _lock:
+        _state["running"] = False
+        _state["proc"] = None
+        _state["proc_ssh"] = None
+        _state["proc_cloudflared"] = None
+        _state["link"] = None
+        _state["local_url"] = None
+        _state["method"] = None
+        _state["started_at"] = None
+        _state["php_port"] = None
+        _state["stop_requested"] = False
+    return True
+
+
 def _monitor_tunnel_processes(proc_php: subprocess.Popen, proc_tunnel: subprocess.Popen, tunnel_key: str) -> None:
     """Keep the UI state in sync and stop the companion process if a tunnel dies."""
     while proc_php.poll() is None and proc_tunnel.poll() is None:
@@ -173,6 +196,7 @@ def _claim_start(method: str, port: int) -> bool:
             "proc": None,
             "proc_ssh": None,
             "proc_cloudflared": None,
+            "stop_requested": False,
         })
         return True
 
@@ -207,6 +231,8 @@ def _worker_serveo(port: int):
         )
         with _lock:
             _state["proc"] = proc_php
+        if _abort_if_stop_requested(proc_php):
+            return
         if not _wait_for_local_server(port, proc_php):
             _terminate_process(proc_php)
             with _lock:
@@ -249,6 +275,8 @@ def _worker_serveo(port: int):
 
             with _lock:
                 _state["proc_ssh"] = proc_ssh
+            if _abort_if_stop_requested(proc_php, proc_ssh):
+                return
 
             link = _wait_for_tunnel_link(proc_ssh, _SERVEO_LINK_RE, 25)
             if link:
@@ -356,6 +384,8 @@ def _worker_localhost_run():
             return
         with _lock:
             _state["proc_ssh"] = proc_ssh
+        if _abort_if_stop_requested(proc_php, proc_ssh):
+            return
         link = _wait_for_tunnel_link(proc_ssh, _LOCALHOST_RUN_LINK_RE, 30)
         if link:
             with _lock:
@@ -439,6 +469,8 @@ def _worker_cloudflared():
             return
         with _lock:
             _state["proc_cloudflared"] = proc_cf
+        if _abort_if_stop_requested(proc_php, proc_cf):
+            return
         link = _wait_for_tunnel_link(proc_cf, _CLOUDFLARE_LINK_RE, 25)
         if link:
             with _lock:
@@ -491,6 +523,8 @@ def _worker_php_only(port: int = _PHP_PORT):
         )
         with _lock:
             _state["proc"] = proc
+        if _abort_if_stop_requested(proc):
+            return
         if not _wait_for_local_server(port, proc):
             _terminate_process(proc)
             with _lock:
@@ -598,7 +632,14 @@ class ToolGrabcam(ToolBase):
             proc_ssh = _state.get("proc_ssh")
             proc_cf = _state.get("proc_cloudflared")
             if not proc and not proc_ssh and not proc_cf:
+                if _state.get("running"):
+                    _state["stop_requested"] = True
+                    _state["running"] = False
+                    _state["link"] = None
+                    _state["local_url"] = None
+                    return True, "Остановка запрошена."
                 return False, "Ничего не запущено."
+            _state["stop_requested"] = True
             _state["proc"] = None
             _state["proc_ssh"] = None
             _state["proc_cloudflared"] = None
@@ -635,6 +676,7 @@ class ToolGrabcam(ToolBase):
             _state["method"] = None
             _state["started_at"] = None
             _state["php_port"] = None
+            _state["stop_requested"] = False
         return True, "Остановлено."
 
     def get_run_status(self) -> dict:
