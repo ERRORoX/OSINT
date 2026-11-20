@@ -78,6 +78,7 @@
       $("mm-valid").textContent = summary.valid ?? "—";
       $("mm-invalid").textContent = summary.invalid ?? "—";
       $("mm-enabled").textContent = summary.enabled ?? "—";
+      $("mm-runtime-errors").textContent = summary.runtime_errors ?? 0;
       $("mm-updated").textContent = "Обновлено: " + new Date().toLocaleTimeString();
       render();
     } catch (err) {
