@@ -19,6 +19,7 @@ if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
 from module_registry import discover_modules
+from module_runtime import load_integrated_tools
 
 MODULE_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,62}$")
 CATEGORIES = ("domain", "identity", "photo", "network", "education", "utility", "workspace", "other")
@@ -81,7 +82,7 @@ def create_module(module_id: str, name: str, category: str) -> Path:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="OSINT Panel module developer tools")
-    parser.add_argument("command", choices=("list", "check", "create"))
+    parser.add_argument("command", choices=("list", "check", "runtime-check", "create"))
     parser.add_argument("module_id", nargs="?", help="new module id for the create command")
     parser.add_argument("--name", help="display name for a new module")
     parser.add_argument("--category", choices=CATEGORIES, default="other")
@@ -98,6 +99,15 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Created module skeleton: {path.relative_to(PROJECT_ROOT)}")
         print("The module is disabled until its implementation and tests are ready.")
         return 0
+
+    if args.command == "runtime-check":
+        loaded, issues = load_integrated_tools(PROJECT_ROOT)
+        for tool in loaded:
+            print(f"[OK] {tool.tool_id:<22} {tool.name}")
+        for item in issues:
+            print(f"[ERROR] {item['module_id']}: {item['message']}", file=sys.stderr)
+        print(f"\nLoaded: {len(loaded)} | Runtime errors: {len(issues)}")
+        return 0 if not issues else 1
 
     result = discover_modules(PROJECT_ROOT)
     if args.command == "list":
