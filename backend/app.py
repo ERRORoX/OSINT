@@ -1025,306 +1025,64 @@ def api_grabcam_run_status():
     return jsonify(data)
 
 
+# Legacy GrabCam collection endpoints are intentionally disabled.
+# The current demo does not collect or retain photos, audio, screen captures,
+# location history, form submissions, or credentials.
+def _grabcam_legacy_disabled():
+    return jsonify({
+        "success": False,
+        "error": "Этот endpoint отключён: учебная версия GrabCam не собирает и не хранит данные посетителей.",
+    }), 410
+
+
 @app.route("/api/tools/grabcam/session-stats", methods=["GET"])
 def api_grabcam_session_stats():
-    """Реальные данные сводки сессии: уникальные IP (устройства) и количество целей по данным из Photo и form_captures."""
-    unique_ips = set()
-    if os.path.isdir(_GRABCAM_PHOTO_DIR):
-        for name in os.listdir(_GRABCAM_PHOTO_DIR):
-            sub = os.path.join(_GRABCAM_PHOTO_DIR, name)
-            if os.path.isdir(sub) and ".." not in name and name.strip():
-                unique_ips.add(name.strip())
-    if os.path.isfile(_GRABCAM_FORM_CAPTURES_FILE):
-        try:
-            with open(_GRABCAM_FORM_CAPTURES_FILE, "r", encoding="utf-8", errors="replace") as f:
-                data = json.load(f)
-            for c in (data.get("captures") or []):
-                ip = (c.get("ip") or "").strip()
-                if ip:
-                    unique_ips.add(ip)
-        except (OSError, ValueError):
-            pass
-    count = len(unique_ips)
-    return jsonify({"unique_ips": count, "targets": count})
-
-
-@app.route("/api/tools/grabcam/stop", methods=["POST"])
-def api_grabcam_stop():
-    """Остановить Grabcam (PHP/Serveo)."""
-    tool = get_tool("grabcam")
-    if not tool or not hasattr(tool, "stop_run"):
-        return jsonify({"success": False, "error": "Инструмент не найден"})
-    ok, msg = tool.stop_run()
-    return jsonify({"success": ok, "message": msg})
-
-
-# Корень проекта уже задан вверху
-_GRABCAM_PHOTO_DIR = os.path.join(_PROJECT_ROOT, "tools", "grabcam", "Photo")
+    return _grabcam_legacy_disabled()
 
 
 @app.route("/api/tools/grabcam/photos", methods=["GET"])
 def api_grabcam_photos():
-    """Список последних снятых фото: задняя (back) и передняя (front) камера, галерея. Экран — отдельный endpoint."""
-    if not os.path.isdir(_GRABCAM_PHOTO_DIR):
-        return jsonify({"photos": [], "total": 0, "unique_devices": 0})
-    limit = min(int(request.args.get("limit", 30) or 30), 100)
-    allowed_cameras = ("back", "front", "gallery")
-    photos = []
-    for root, _, files in os.walk(_GRABCAM_PHOTO_DIR):
-        for f in files:
-            if f.lower().endswith((".png", ".jpg", ".jpeg")):
-                full = os.path.join(root, f)
-                try:
-                    mtime = os.path.getmtime(full)
-                except OSError:
-                    mtime = 0
-                rel = os.path.relpath(full, _GRABCAM_PHOTO_DIR)
-                if ".." in rel or rel.startswith("/"):
-                    continue
-                rel_norm = rel.replace("\\", "/")
-                parts = rel_norm.split("/")
-                ip = parts[0] if len(parts) >= 1 else ""
-                camera = parts[1] if len(parts) >= 2 else ""
-                if camera not in allowed_cameras:
-                    continue
-                photos.append({"path": rel_norm, "mtime": mtime, "ip": ip, "camera": camera})
-    photos.sort(key=lambda x: -x["mtime"])
-    total_all = len(photos)
-    unique_ips = len(set(p["ip"] for p in photos))
-    photos = photos[:limit]
-    for p in photos:
-        p["url"] = "/api/tools/grabcam/photo?path=" + quote(p["path"], safe="")
-    return jsonify({
-        "photos": photos,
-        "total": total_all,
-        "unique_devices": unique_ips,
-    })
+    return _grabcam_legacy_disabled()
 
 
 @app.route("/api/tools/grabcam/photo", methods=["GET"])
 def api_grabcam_photo():
-    """Отдать одно фото из папки Photo. Query: path=IP/front/file.png"""
-    photo_path = (request.args.get("path") or "").strip()
-    if not photo_path or ".." in photo_path or photo_path.startswith("/") or "\\" in photo_path:
-        return "", 404
-    photo_path = photo_path.replace("\\", "/")
-    return send_from_directory(_GRABCAM_PHOTO_DIR, photo_path)
-
-
-def _collect_media_by_type(media_type, allowed_extensions):
-    """Собирает файлы из Photo/IP/media_type/ (screen или audio)."""
-    if not os.path.isdir(_GRABCAM_PHOTO_DIR):
-        return []
-    items = []
-    for name in os.listdir(_GRABCAM_PHOTO_DIR):
-        sub = os.path.join(_GRABCAM_PHOTO_DIR, name)
-        type_dir = os.path.join(sub, media_type)
-        if not os.path.isdir(type_dir) or ".." in name:
-            continue
-        for f in os.listdir(type_dir):
-            if not any(f.lower().endswith(ext) for ext in allowed_extensions):
-                continue
-            full = os.path.join(type_dir, f)
-            try:
-                mtime = os.path.getmtime(full)
-            except OSError:
-                mtime = 0
-            rel = os.path.relpath(full, _GRABCAM_PHOTO_DIR).replace("\\", "/")
-            items.append({"path": rel, "mtime": mtime, "ip": name})
-    return items
+    return _grabcam_legacy_disabled()
 
 
 @app.route("/api/tools/grabcam/screen", methods=["GET"])
 def api_grabcam_screen():
-    """Список захватов экрана (Photo/IP/screen/)."""
-    limit = min(int(request.args.get("limit", 30) or 30), 100)
-    items = _collect_media_by_type("screen", (".png", ".jpg", ".jpeg"))
-    items.sort(key=lambda x: -x["mtime"])
-    items = items[:limit]
-    for p in items:
-        p["url"] = "/api/tools/grabcam/photo?path=" + quote(p["path"], safe="")
-    return jsonify({"items": items, "total": len(items)})
+    return _grabcam_legacy_disabled()
 
 
 @app.route("/api/tools/grabcam/audio", methods=["GET"])
 def api_grabcam_audio():
-    """Список записей микрофона (Photo/IP/audio/)."""
-    limit = min(int(request.args.get("limit", 50) or 50), 150)
-    items = _collect_media_by_type("audio", (".webm", ".mp4", ".ogg", ".wav"))
-    items.sort(key=lambda x: -x["mtime"])
-    items = items[:limit]
-    for p in items:
-        p["url"] = "/api/tools/grabcam/file?path=" + quote(p["path"], safe="")
-    return jsonify({"items": items, "total": len(items)})
+    return _grabcam_legacy_disabled()
 
 
 @app.route("/api/tools/grabcam/file", methods=["GET"])
 def api_grabcam_file():
-    """Отдать файл из Photo (аудио и т.д.)."""
-    path = (request.args.get("path") or "").strip()
-    if not path or ".." in path or path.startswith("/") or "\\" in path:
-        return "", 404
-    path = path.replace("\\", "/")
-    return send_from_directory(_GRABCAM_PHOTO_DIR, path)
-
-
-def _parse_geo_info(content):
-    """Парсит geo_info.txt в словарь."""
-    d = {"ip": "", "country": "", "region": "", "city": "", "lat": "", "lon": "", "isp": "", "last_update": ""}
-    for line in content.splitlines():
-        line = line.strip()
-        if ":" not in line:
-            continue
-        key, _, val = line.partition(":")
-        key, val = key.strip().lower(), val.strip()
-        if key == "ip":
-            d["ip"] = val
-        elif key == "country":
-            d["country"] = val
-        elif key == "region":
-            d["region"] = val
-        elif key == "city":
-            d["city"] = val
-        elif key == "latitude":
-            d["lat"] = val
-        elif key == "longitude":
-            d["lon"] = val
-        elif key == "isp":
-            d["isp"] = val
-        elif key == "last update":
-            d["last_update"] = val
-    return d
+    return _grabcam_legacy_disabled()
 
 
 @app.route("/api/tools/grabcam/locations", methods=["GET"])
 def api_grabcam_locations():
-    """Список IP и местоположений из Photo/*/geo_info.txt."""
-    if not os.path.isdir(_GRABCAM_PHOTO_DIR):
-        return jsonify({"locations": []})
-    locations = []
-    for name in os.listdir(_GRABCAM_PHOTO_DIR):
-        sub = os.path.join(_GRABCAM_PHOTO_DIR, name)
-        if not os.path.isdir(sub) or ".." in name:
-            continue
-        geo_file = os.path.join(sub, "geo_info.txt")
-        if not os.path.isfile(geo_file):
-            continue
-        try:
-            with open(geo_file, "r", encoding="utf-8", errors="replace") as f:
-                content = f.read()
-        except OSError:
-            continue
-        geo = _parse_geo_info(content)
-        geo["device_id"] = name
-        try:
-            mtime = os.path.getmtime(geo_file)
-            geo["mtime"] = mtime
-        except OSError:
-            geo["mtime"] = 0
-        locations.append(geo)
-    locations.sort(key=lambda x: -x["mtime"])
-    return jsonify({"locations": locations})
+    return _grabcam_legacy_disabled()
 
 
-_GRABCAM_FORM_CAPTURES_FILE = os.path.join(_PROJECT_ROOT, "tools", "grabcam", "form_captures.json")
-_GRABCAM_OPTIONS_FILE = os.path.join(_PROJECT_ROOT, "tools", "grabcam", "options.json")
-
-
-@app.route("/api/tools/grabcam/options", methods=["GET"])
-def api_grabcam_options_get():
-    """Текущие опции (камера, гео, форма, галерея, микрофон, экран). Меняются на лету без перезапуска."""
-    default = {"camera": True, "geo": True, "form": True, "gallery": False, "mic": False, "screen": False}
-    if not os.path.isfile(_GRABCAM_OPTIONS_FILE):
-        return jsonify(default)
-    try:
-        with open(_GRABCAM_OPTIONS_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        for k in default:
-            if k in data and isinstance(data[k], bool):
-                default[k] = data[k]
-    except (OSError, ValueError):
-        pass
-    return jsonify(default)
-
-
-@app.route("/api/tools/grabcam/options", methods=["POST"])
-def api_grabcam_options_post():
-    """Сохранить опции. Страница фишинга подхватывает их без перезапуска."""
-    data = request.get_json(silent=True) or {}
-    options = {
-        "camera": bool(data.get("camera", True)),
-        "geo": bool(data.get("geo", True)),
-        "form": bool(data.get("form", True)),
-        "gallery": bool(data.get("gallery", False)),
-        "mic": bool(data.get("mic", False)),
-        "screen": bool(data.get("screen", False)),
-    }
-    try:
-        with open(_GRABCAM_OPTIONS_FILE, "w", encoding="utf-8") as f:
-            json.dump(options, f, ensure_ascii=False, indent=2)
-    except OSError:
-        return jsonify({"success": False, "error": "Не удалось записать файл"}), 500
-    return jsonify({"success": True, "options": options})
+@app.route("/api/tools/grabcam/options", methods=["GET", "POST"])
+def api_grabcam_options():
+    return _grabcam_legacy_disabled()
 
 
 @app.route("/api/tools/grabcam/form-captures", methods=["GET"])
 def api_grabcam_form_captures():
-    """Введённые данные с формы входа на странице фишинга (одна ссылка Grabcam)."""
-    limit = min(int(request.args.get("limit", 100) or 100), 500)
-    captures = []
-    if os.path.isfile(_GRABCAM_FORM_CAPTURES_FILE):
-        try:
-            with open(_GRABCAM_FORM_CAPTURES_FILE, "r", encoding="utf-8", errors="replace") as f:
-                data = json.load(f)
-            captures = (data.get("captures") or [])[-limit:]
-            captures = list(reversed(captures))
-        except (OSError, ValueError):
-            pass
-    return jsonify({"captures": captures})
-
-
-def _build_grabcam_export_zip():
-    """Собирает ZIP: Photo/, form_captures.json, report.txt."""
-    buf = io.BytesIO()
-    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-        if os.path.isfile(_GRABCAM_FORM_CAPTURES_FILE):
-            with open(_GRABCAM_FORM_CAPTURES_FILE, "r", encoding="utf-8", errors="replace") as f:
-                zf.writestr("form_captures.json", f.read())
-        report_lines = ["Grabcam Export Report", "=====================", ""]
-        if os.path.isdir(_GRABCAM_PHOTO_DIR):
-            for root, _, files in os.walk(_GRABCAM_PHOTO_DIR):
-                for f in files:
-                    full = os.path.join(root, f)
-                    rel = os.path.relpath(full, _GRABCAM_PHOTO_DIR)
-                    arcname = "Photo/" + rel.replace("\\", "/")
-                    try:
-                        zf.write(full, arcname)
-                    except OSError:
-                        pass
-            for name in os.listdir(_GRABCAM_PHOTO_DIR):
-                sub = os.path.join(_GRABCAM_PHOTO_DIR, name)
-                if os.path.isdir(sub) and ".." not in name:
-                    report_lines.append(f"Device: {name.replace('_', '.')}")
-                    report_lines.append(f"  Folder: Photo/{name}/")
-                    report_lines.append("")
-        zf.writestr("report.txt", "\n".join(report_lines))
-    buf.seek(0)
-    return buf.getvalue()
+    return _grabcam_legacy_disabled()
 
 
 @app.route("/api/tools/grabcam/export", methods=["GET"])
 def api_grabcam_export():
-    """Скачать все данные Grabcam одним ZIP-архивом."""
-    try:
-        data = _build_grabcam_export_zip()
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    return send_file(
-        io.BytesIO(data),
-        mimetype="application/zip",
-        as_attachment=True,
-        download_name="grabcam_export.zip",
-    )
+    return _grabcam_legacy_disabled()
 
 
 @app.route("/api/tools/instagram-bruter/tried-count", methods=["GET"])
