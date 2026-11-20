@@ -29,5 +29,11 @@ jobs:
       - name: Test IP/RDAP module
         run: python -m unittest discover -s tools/ip-rdap/tests -p "test_*.py" -v
 
+      - name: Test dnsx module
+        run: python -m unittest discover -s tools/dnsx/tests -p "test_*.py" -v
+
+      - name: Test Subfinder module
+        run: python -m unittest discover -s tools/subfinder/tests -p "test_*.py" -v
+
       - name: Validate module manifests
         run: python backend/module_cli.py check
