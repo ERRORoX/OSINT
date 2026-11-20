@@ -22,6 +22,7 @@ _GRABCAM_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "grabcam", "fronten
 _IP_RDAP_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "ip-rdap", "frontend")
 _DOMAIN_WORKSPACE_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "domain-workspace", "frontend")
 _PHOTO_WORKSPACE_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "photo-workspace", "frontend")
+_USERNAME_WORKSPACE_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "username-workspace", "frontend")
 if _BACKEND_DIR not in sys.path:
     sys.path.insert(0, _BACKEND_DIR)
 
@@ -127,12 +128,20 @@ def username_page_no_slash():
 
 @app.route("/username/")
 def username_page():
-    """Автономная страница Username: static/username/index.html."""
-    base = os.path.join(app.static_folder, "username")
-    index_path = os.path.join(base, "index.html")
-    if not os.path.isfile(index_path):
-        return jsonify({"error": "Страница не найдена", "page": "username"}), 404
-    return send_from_directory(base, "index.html")
+    """Compatibility URL for the canonical Username Workspace module."""
+    return redirect("/modules/username-workspace/", code=302)
+
+
+@app.route("/modules/username-workspace/", methods=["GET"])
+def username_workspace_module_page():
+    """Serve the canonical Username Workspace frontend."""
+    return send_from_directory(_USERNAME_WORKSPACE_FRONTEND_DIR, "index.html")
+
+
+@app.route("/modules/username-workspace/<path:filename>", methods=["GET"])
+def username_workspace_module_assets(filename):
+    """Serve static assets owned by the Username Workspace module."""
+    return send_from_directory(_USERNAME_WORKSPACE_FRONTEND_DIR, filename)
 
 
 @app.route("/photo")
