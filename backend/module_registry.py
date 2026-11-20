@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 _MODULE_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,62}$")
-_VERSION_RE = re.compile(r"^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$")
+_VERSION_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$")
 _ALLOWED_STATUS = {"planned", "legacy", "migrating", "integrated", "disabled"}
 _ALLOWED_CATEGORIES = {
     "domain", "identity", "photo", "network", "education",
