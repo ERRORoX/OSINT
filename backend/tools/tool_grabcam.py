@@ -10,12 +10,14 @@ import signal
 import subprocess
 import threading
 import time
+import queue
 from typing import Any
 
 from .base import ToolBase
 
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 _GRABCAM_DIR = os.path.join(_PROJECT_ROOT, "tools", "grabcam")
+_DEMO_DIR = os.path.join(_GRABCAM_DIR, "demo")
 _OPTIONS_FILE = os.path.join(_GRABCAM_DIR, "options.json")
 
 _DEFAULT_FEATURES = {"camera": True, "geo": True, "form": True, "gallery": False, "mic": False, "screen": False}
@@ -93,6 +95,39 @@ def _extract_serveo_link(text: str) -> str | None:
     return m.group(0) if m else None
 
 
+def _wait_for_tunnel_link(proc: subprocess.Popen, pattern: re.Pattern, timeout: int) -> str | None:
+    """Read tunnel output asynchronously so a quiet stdout cannot defeat the timeout."""
+    if proc.stdout is None:
+        return None
+    lines = queue.Queue()
+    def pump_output():
+        try:
+            for line in iter(proc.stdout.readline, ""):
+                lines.put(line)
+        finally:
+            lines.put("")
+    threading.Thread(target=pump_output, daemon=True).start()
+    deadline = time.monotonic() + timeout
+    collected = []
+    while time.monotonic() < deadline:
+        if proc.poll() is not None and lines.empty():
+            break
+        try:
+            line = lines.get(timeout=min(0.25, max(0.01, deadline - time.monotonic())))
+        except queue.Empty:
+            continue
+        if not line:
+            break
+        collected.append(line)
+        match = pattern.search(line)
+        if match:
+            return match.group(0)
+    match = pattern.search("".join(collected))
+    return match.group(0) if match else None
+
+def _php_command(port: int, host: str = '127.0.0.1') -> list[str]:
+    """Serve only the isolated training demo, never legacy GrabCam PHP endpoints."""
+    return ["php", "-S", f"{host}:{port}", "-t", _DEMO_DIR]
 def _read_link_from_file() -> str | None:
     """Читает ссылку Serveo из файла sendlink (для совместимости со скриптом)."""
     if not os.path.isfile(_SENDLINK):
@@ -124,8 +159,8 @@ def _worker_serveo(port: int):
     try:
         # 1) Запуск PHP-сервера в grabcam
         proc_php = subprocess.Popen(
-            ["php", "-S", f"127.0.0.1:{port}"],
-            cwd=_GRABCAM_DIR,
+            _php_command(port),
+            cwd=_DEMO_DIR,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             start_new_session=True,
@@ -141,7 +176,6 @@ def _worker_serveo(port: int):
             return
 
         # 2) Генерация index2.html с плейсхолдером (ссылка подставится после получения)
-        _ensure_serveo_payload_ready()
 
         # 3) Запуск SSH туннеля Serveo (сначала порт 22, при недоступности — 443)
         ssh_opts = [
@@ -177,26 +211,11 @@ def _worker_serveo(port: int):
             with _lock:
                 _state["proc_ssh"] = proc_ssh
 
-            # Читаем вывод SSH до появления ссылки или таймаута (25 сек)
-            deadline = time.monotonic() + 25
-            buf = []
-            while time.monotonic() < deadline:
-                if proc_ssh.poll() is not None:
-                    break
-                line = proc_ssh.stdout.readline()
-                if not line:
-                    time.sleep(0.3)
-                    continue
-                buf.append(line)
-                link = _extract_serveo_link(line)
-                if link:
-                    break
-            if not link and buf:
-                link = _extract_serveo_link("".join(buf))
+            link = _wait_for_tunnel_link(proc_ssh, _SERVEO_LINK_RE, 25)
             if link:
                 with _lock:
                     _state["link"] = link
-                _update_serveo_payload_link(link)
+
                 return
             # SSH завершился без ссылки или таймаут — пробуем порт 443
             try:
@@ -274,7 +293,7 @@ def _worker_localhost_run():
                 _state["proc"] = None
                 _state["error"] = "PHP-сервер не запустился."
             return
-        _ensure_serveo_payload_ready()
+
         cmd = [
             "ssh", "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null",
             "-o", "ServerAliveInterval=60", "-o", "ConnectTimeout=20",
@@ -297,27 +316,11 @@ def _worker_localhost_run():
             return
         with _lock:
             _state["proc_ssh"] = proc_ssh
-        deadline = time.monotonic() + 30
-        buf = []
-        while time.monotonic() < deadline:
-            if proc_ssh.poll() is not None:
-                break
-            line = proc_ssh.stdout.readline()
-            if not line:
-                time.sleep(0.3)
-                continue
-            buf.append(line)
-            link = _LOCALHOST_RUN_LINK_RE.search(line)
-            if link:
-                link = link.group(0)
-                break
-        if not link and buf:
-            m = _LOCALHOST_RUN_LINK_RE.search("".join(buf))
-            link = m.group(0) if m else None
+        link = _wait_for_tunnel_link(proc_ssh, _LOCALHOST_RUN_LINK_RE, 30)
         if link:
             with _lock:
                 _state["link"] = link
-            _update_serveo_payload_link(link)
+
             return
         with _lock:
             _state["error"] = "Не удалось получить ссылку localhost.run. Проверьте интернет и доступность localhost.run."
@@ -377,7 +380,7 @@ def _worker_cloudflared():
                 _state["proc"] = None
                 _state["error"] = "PHP-сервер не запустился."
             return
-        _ensure_serveo_payload_ready()
+
         try:
             proc_cf = subprocess.Popen(
                 ["cloudflared", "tunnel", "--url", f"http://127.0.0.1:{port}"],
@@ -395,27 +398,11 @@ def _worker_cloudflared():
             return
         with _lock:
             _state["proc_cloudflared"] = proc_cf
-        deadline = time.monotonic() + 25
-        buf = []
-        while time.monotonic() < deadline:
-            if proc_cf.poll() is not None:
-                break
-            line = proc_cf.stdout.readline()
-            if not line:
-                time.sleep(0.3)
-                continue
-            buf.append(line)
-            m = _CLOUDFLARE_LINK_RE.search(line)
-            if m:
-                link = m.group(0)
-                break
-        if not link and buf:
-            m = _CLOUDFLARE_LINK_RE.search("".join(buf))
-            link = m.group(0) if m else None
+        link = _wait_for_tunnel_link(proc_cf, _CLOUDFLARE_LINK_RE, 25)
         if link:
             with _lock:
                 _state["link"] = link
-            _update_serveo_payload_link(link)
+
             return
         with _lock:
             _state["error"] = "Не удалось получить ссылку Cloudflare. Проверьте интернет."
@@ -455,8 +442,8 @@ def _worker_php_only(port: int = _PHP_PORT):
     proc = None
     try:
         proc = subprocess.Popen(
-            ["php", "-S", f"0.0.0.0:{port}"],
-            cwd=_GRABCAM_DIR,
+            _php_command(port, "0.0.0.0"),
+            cwd=_DEMO_DIR,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             start_new_session=True,
@@ -500,7 +487,6 @@ class ToolGrabcam(ToolBase):
         port = _find_free_port() or _PHP_PORT
         with _lock:
             _state["php_port"] = port
-        _refresh_payload(f"http://127.0.0.1:{port}")
 
         with _lock:
             _state["error"] = None
