@@ -25,8 +25,7 @@ export function initPanel(container) {
       <p class="description">Проверка обновлений из официальной ветки GitHub. Перед установкой создаётся локальная резервная ветка.</p>
       <div id="update-status" class="settings-message" role="status">Проверяем версию…</div>
       <div class="key-input-wrap" style="gap:10px;flex-wrap:wrap">
-        <button type="button" class="btn btn-help" id="btn-check-update">Проверить обновления</button>
-        <button type="button" class="btn btn-primary" id="btn-install-update" disabled>Установить обновление</button>
+        <button type="button" class="btn btn-primary" id="btn-install-update">↻ Обновить</button>
       </div>
       <div id="update-progress" hidden style="margin-top:16px;padding:14px;border:1px solid var(--border,rgba(145,170,198,.18));border-radius:10px;background:rgba(8,18,30,.55)">
         <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:8px">
@@ -48,7 +47,6 @@ export function initPanel(container) {
   const form = container.querySelector("#form-settings-keys");
   const messageEl = container.querySelector("#settings-message");
   const updateStatus = container.querySelector("#update-status");
-  const checkUpdateBtn = container.querySelector("#btn-check-update");
   const installUpdateBtn = container.querySelector("#btn-install-update");
   const progressPanel = container.querySelector("#update-progress");
   const progressTrack = container.querySelector("#update-progress-track");
@@ -103,8 +101,8 @@ export function initPanel(container) {
   }
 
   async function checkForUpdates() {
-    checkUpdateBtn.disabled = true;
     installUpdateBtn.disabled = true;
+    installUpdateBtn.textContent = "Проверяем…";
     updateMessage("Проверяем GitHub…");
     try {
       const res = await fetch(`${API}/system/update`, { cache: "no-store" });
@@ -114,12 +112,14 @@ export function initPanel(container) {
       updateMessage(updateAvailable
         ? `Доступно обновление: ${data.commits_behind} новых коммит(ов). Текущая версия: ${data.current}.`
         : `Установлена последняя версия (${data.current}).`);
-      installUpdateBtn.disabled = !updateAvailable;
+      installUpdateBtn.disabled = false;
+      installUpdateBtn.textContent = "↻ Обновить";
     } catch (err) {
       updateAvailable = false;
       updateMessage("Проверка не выполнена: " + err.message, true);
     } finally {
-      checkUpdateBtn.disabled = false;
+      installUpdateBtn.disabled = false;
+      installUpdateBtn.textContent = "↻ Обновить";
     }
   }
 
@@ -141,16 +141,16 @@ export function initPanel(container) {
           updateMessage("Обновление установлено. Резервная ветка: " + (result.backup_branch || "создана") + ". Панель перезапускается автоматически; дождитесь её повторного открытия.");
         } else {
           updateMessage(result.message || "Обновление завершено.");
-          checkUpdateBtn.disabled = false;
-          installUpdateBtn.disabled = true;
+          installUpdateBtn.disabled = false;
+          installUpdateBtn.textContent = "↻ Обновить";
         }
         return;
       }
 
       if (data.state === "error") {
         updateMessage("Обновление не завершено: " + (data.error || "неизвестная ошибка"), true);
-        checkUpdateBtn.disabled = false;
         installUpdateBtn.disabled = false;
+        installUpdateBtn.textContent = "↻ Обновить";
         return;
       }
 
@@ -166,16 +166,36 @@ export function initPanel(container) {
         updateMessage("Сервер завершает обновление и перезапускается. Подождите несколько секунд, затем обновите страницу.");
       } else {
         updateMessage("Не удалось получить состояние обновления: " + err.message, true);
-        checkUpdateBtn.disabled = false;
+        installUpdateBtn.disabled = false;
       }
     }
   }
 
-  checkUpdateBtn.addEventListener("click", checkForUpdates);
   installUpdateBtn.addEventListener("click", async () => {
-    if (!updateAvailable || !confirm("Установить обновление из GitHub? Перед обновлением будет создана резервная ветка.")) return;
     installUpdateBtn.disabled = true;
-    checkUpdateBtn.disabled = true;
+    installUpdateBtn.textContent = "Проверяем…";
+    try {
+      const checkRes = await fetch(`${API}/system/update`, { cache: "no-store" });
+      const checkData = await checkRes.json();
+      if (!checkRes.ok) throw new Error(checkData.error || "Не удалось проверить обновления");
+      updateAvailable = Boolean(checkData.available);
+      if (!updateAvailable) {
+        updateMessage(`Установлена последняя версия (${checkData.current}).`);
+        installUpdateBtn.textContent = "↻ Обновить";
+        installUpdateBtn.disabled = false;
+        return;
+      }
+      if (!confirm("Найдены обновления (" + checkData.commits_behind + " коммитов). Установить их сейчас? Перед обновлением будет создана резервная ветка.")) {
+        installUpdateBtn.textContent = "↻ Обновить";
+        installUpdateBtn.disabled = false;
+        return;
+      }
+    } catch (err) {
+      updateMessage("Проверка не выполнена: " + err.message, true);
+      installUpdateBtn.textContent = "↻ Обновить";
+      installUpdateBtn.disabled = false;
+      return;
+    }
     progressPanel.hidden = false;
     updateStartedAt = Date.now();
     lastProgress = 0;
@@ -197,7 +217,8 @@ export function initPanel(container) {
     } catch (err) {
       updateMessage("Обновление не запущено: " + err.message, true);
       installUpdateBtn.disabled = false;
-      checkUpdateBtn.disabled = false;
+      installUpdateBtn.textContent = "↻ Обновить";
+      installUpdateBtn.disabled = false;
     }
   });
 
