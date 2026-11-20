@@ -128,7 +128,7 @@ function renderActivity(){
  host.innerHTML=items.map(item=>{
   const age=Math.max(0,Date.now()-(Number(item.at)||Date.now()));
   const time=age<60000?"только что":age<3600000?Math.floor(age/60000)+" мин назад":new Date(Number(item.at)||Date.now()).toLocaleDateString("ru-RU",{day:"2-digit",month:"short"});
-  return '<a class="activity-entry" href="'+escapeHtml(item.path)+'"><span class="activity-entry-dot"></span><span class="activity-entry-copy"><strong>'+escapeHtml(item.title)+'</strong><small>'+time+'</small></span><b>→</b></a>';
+  return '<a class="activity-entry" href="'+escapeHtml(item.path)+'"><span class="activity-symbol">◷</span><span class="activity-copy"><strong>'+escapeHtml(item.title)+'</strong><small>'+time+'</small></span><b>→</b></a>';
  }).join("");
 }
 function wireActivity(){
