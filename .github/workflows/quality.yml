@@ -30,34 +30,34 @@ jobs:
         run: python -m unittest discover -s backend/tests -p "test_module_runtime.py" -v
 
       - name: Test IP/RDAP module
-        run: python -m unittest discover -s tools/ip-rdap/tests -p "test_*.py" -v
+        run: python tools/ip-rdap/tests/test_tool.py -v
 
       - name: Test dnsx module
-        run: python -m unittest discover -s tools/dnsx/tests -p "test_*.py" -v
+        run: python tools/dnsx/tests/test_tool.py -v
 
       - name: Test Subfinder module
-        run: python -m unittest discover -s tools/subfinder/tests -p "test_*.py" -v
+        run: python tools/subfinder/tests/test_tool.py -v
 
       - name: Test Shodan module
-        run: python -m unittest discover -s tools/shodan/tests -p "test_*.py" -v
+        run: python tools/shodan/tests/test_tool.py -v
 
       - name: Test theHarvester module
-        run: python -m unittest discover -s tools/theharvester/tests -p "test_*.py" -v
+        run: python tools/theharvester/tests/test_tool.py -v
 
       - name: Test Domain Search module
-        run: python -m unittest discover -s tools/domain-search/tests -p "test_*.py" -v
+        run: python tools/domain-search/tests/test_tool.py -v
 
       - name: Test Sherlock module
-        run: python -m unittest discover -s tools/sherlock/tests -p "test_*.py" -v
+        run: python tools/sherlock/tests/test_tool.py -v
 
       - name: Test Maigret module
-        run: python -m unittest discover -s tools/maigret/tests -p "test_*.py" -v
+        run: python tools/maigret/tests/test_tool.py -v
 
       - name: Test Blackbird module
-        run: python -m unittest discover -s tools/blackbird/tests -p "test_*.py" -v
+        run: python tools/blackbird/tests/test_tool.py -v
 
       - name: Test Social Analyzer module
-        run: python -m unittest discover -s tools/social-analyzer/tests -p "test_*.py" -v
+        run: python tools/social-analyzer/tests/test_tool.py -v
 
       - name: Validate integrated runtime modules
         run: python backend/module_cli.py runtime-check
