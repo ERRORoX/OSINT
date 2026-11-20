@@ -2,27 +2,31 @@
   "schema_version": 1,
   "id": "social-analyzer",
   "name": "Social Analyzer",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "category": "identity",
   "description": "Поиск публичных профилей через legacy backend-адаптер.",
-  "status": "legacy",
+  "status": "integrated",
   "enabled": true,
   "entrypoints": {
-    "backend_adapter": "backend/tools/tool_social_analyzer.py"
+    "backend_adapter": "tools/social-analyzer/backend/tool.py",
+    "tool_class": "ToolSocialAnalyzer"
   },
   "dependencies": {
     "python": [],
     "system": [],
-    "optional": []
+    "optional": [
+      "Social Analyzer source and runtime dependencies"
+    ]
   },
   "capabilities": [
-    "legacy-backend-adapter"
+    "public-username-presence-search"
   ],
   "legacy_paths": [
     "backend/tools/tool_social_analyzer.py"
   ],
   "notes": [
-    "Manifest описывает существующий инструмент; код ещё не перенесён в каноническую структуру модуля.",
-    "Не удалять и не перемещать legacy-файлы до отдельной проверки импортов, маршрутов и тестов."
+    "Каноническая реализация находится в backend/tool.py внутри каталога модуля.",
+    "Старый backend/tools import path сохранён как compatibility adapter.",
+    "Инструмент предназначен для поиска публичных профилей без аутентификации и перебора паролей."
   ]
 }
