@@ -381,6 +381,23 @@ git push -u origin main
 
 ---
 
+
+---
+
+## Модульная архитектура (актуально)
+
+Новые и перенесённые инструменты находятся в `tools/<module-id>/`. У каждого модуля есть `manifest.json`, документация, собственные frontend/backend файлы и тесты. Старые backend import paths сохранены через compatibility adapters, поэтому миграция не требует одновременного переписывания всех страниц.
+
+- **Module Manager:** откройте `/p/modules/` в работающей панели.
+- **Список модулей:** `python backend/module_cli.py list`
+- **Проверка manifest:** `python backend/module_cli.py check`
+- **Проверка runtime-загрузки:** `python backend/module_cli.py runtime-check`
+- **Создание каркаса:** `python backend/module_cli.py create my-tool --name "My Tool" --category other`
+
+Подробные правила, схема manifest и этапы миграции: [`docs/MODULE_ARCHITECTURE_RU.md`](docs/MODULE_ARCHITECTURE_RU.md).
+
+Модули со статусом `legacy` пока работают через старый реестр. Не удаляйте compatibility adapters, пока все старые импорты и URL не переведены и не покрыты тестами.
+
 ## См. также
 
 - **`README_PANEL.md`** — краткий дубль для панели; при расхождении с **`README.md`** приоритет у **этого файла**.
