@@ -35,6 +35,7 @@ from flask_cors import CORS
 from datetime import datetime, timezone, timedelta
 
 from db import init_db, save_run, get_run_history, get_last_successful_run, delete_run, clear_runs
+from db.graph_store import get_graph_data, merge_graph_data, replace_graph_data, clear_graph_data
 from tools import get_all_tools, get_tool, run_tool
 from tools.tool_formgrab import add_capture, get_captures, get_grab_page_html, get_or_create_token
 from settings_keys import get_keys_for_api, save_keys_from_api, load_env_into_os
@@ -969,6 +970,30 @@ def api_navigation_list():
 def api_tools_list():
     """Список доступных инструментов."""
     return jsonify(get_all_tools())
+
+
+@app.route("/api/graph", methods=["GET", "PUT", "DELETE"])
+def api_relationship_graph():
+    """Чтение, замена или очистка постоянного графа расследований."""
+    if request.method == "GET":
+        return jsonify(get_graph_data())
+    if request.method == "DELETE":
+        return jsonify(clear_graph_data())
+    data = request.get_json(silent=True) or {}
+    try:
+        return jsonify(replace_graph_data(data))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
+@app.route("/api/graph/merge", methods=["POST"])
+def api_relationship_graph_merge():
+    """Добавить сущности и связи в общий граф, не удаляя предыдущие расследования."""
+    data = request.get_json(silent=True) or {}
+    try:
+        return jsonify(merge_graph_data(data))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
 
 
 @app.route("/api/tools/<tool_id>/run", methods=["POST"])
