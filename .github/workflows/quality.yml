@@ -41,5 +41,8 @@ jobs:
       - name: Test theHarvester module
         run: python -m unittest discover -s tools/theharvester/tests -p "test_*.py" -v
 
+      - name: Test Domain Search module
+        run: python -m unittest discover -s tools/domain-search/tests -p "test_*.py" -v
+
       - name: Validate module manifests
         run: python backend/module_cli.py check
