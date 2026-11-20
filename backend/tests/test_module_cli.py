@@ -42,6 +42,18 @@ class ModuleScaffoldingTests(unittest.TestCase):
             module_cli.create_module("sample-tool", "Replacement", "other")
         self.assertEqual(readme.read_text(encoding="utf-8"), "keep")
 
+    def test_rejects_tools_directory_symlink_outside_project(self):
+        outside = self.root.parent / (self.root.name + "-outside")
+        outside.mkdir()
+        tools_link = self.root / "tools"
+        try:
+            tools_link.symlink_to(outside, target_is_directory=True)
+        except (OSError, NotImplementedError):
+            self.skipTest("Symlink creation is not supported on this platform")
+        with self.assertRaises(ValueError):
+            module_cli.create_module("sample-tool", "Sample Tool", "other")
+        self.assertFalse((outside / "sample-tool").exists())
+
 
 if __name__ == "__main__":
     unittest.main()
