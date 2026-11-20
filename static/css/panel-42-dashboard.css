@@ -381,3 +381,35 @@ body{
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}
 }
+
+
+/* Variant 2 — final home-screen responsive corrections */
+@media(max-width:480px){
+  .osint-header-inner{row-gap:8px}
+  .top-search{
+    order:3!important;width:100%!important;min-width:0!important;
+    max-width:none!important;height:39px;margin:0!important;
+    flex:0 0 100%;padding:0 12px!important
+  }
+  .top-search>span{flex:0 0 auto}
+  .top-search input{display:block!important;width:100%!important;min-width:0!important}
+  .app-header-right{flex:0 0 auto}
+  .dashboard-intro{min-height:232px;padding:22px 17px 42px}
+  .dashboard-intro p{max-width:100%;font-size:11px}
+  .hero-globe{right:-100px;opacity:.2}
+  .hero-bottomline{left:17px;right:17px}
+  .hero-bottomline span:last-child{display:none}
+  .hub-section-head{gap:8px}
+  .hub-filters{margin-right:-2px}
+}
+.top-search input:focus-visible{outline:0}
+.hub-card:focus-within{outline:2px solid rgba(65,163,255,.55);outline-offset:2px}
+.hub-fav:focus-visible,.hub-filter:focus-visible,.app-update-btn:focus-visible,
+.app-header-user-btn:focus-visible,.hero-primary:focus-visible,.hero-secondary:focus-visible,
+.quick-link:focus-visible,#nav-tools .tool-link:focus-visible{
+  outline:2px solid rgba(91,178,255,.78);outline-offset:3px
+}
+@media(min-width:1121px){
+  .dashboard-layout{grid-template-columns:minmax(0,1fr) 278px}
+  .dashboard-primary{max-width:none}
+}
