@@ -165,17 +165,22 @@ function renderSavedMaterials(){
  const count=document.getElementById("saved-materials-count");
  if(!list||!count)return;
  const items=readSavedMaterials();
- if(items===null){count.textContent="Недоступно";list.innerHTML='<div class="saved-materials-empty">Браузер не разрешил доступ к локальному хранилищу.</div>';return;}
+ const exportButton=document.getElementById("saved-materials-export");
+ if(items===null){count.textContent="Недоступно";if(exportButton)exportButton.disabled=true;list.innerHTML='<div class="saved-materials-empty">Браузер не разрешил доступ к локальному хранилищу.</div>';return;}
  count.textContent=items.length+" материалов";
+ if(exportButton)exportButton.disabled=!items.length;
  if(!items.length){list.innerHTML='<div class="saved-materials-empty">Пока нет сохранённых материалов. Откройте инструмент и нажмите «В рабочую область» возле результата.</div>';return;}
- list.innerHTML=items.slice(0,4).map(item=>{
+ list.innerHTML=items.slice(0,4).map((item,index)=>{
   const id=escapeHtml(item.id||"");
   const title=escapeHtml(item.title||"Материал без названия");
-  const page=escapeHtml(item.page||item.url||"");
+  const rawPage=String(item.url||"");
+  const safePage=rawPage.startsWith("/")&&!rawPage.startsWith("//")?rawPage:"";
+  const page=escapeHtml(item.page||rawPage||"");
+  const source=safePage?'<a class="saved-material-source-link" href="'+escapeHtml(safePage)+'">'+page+' ↗</a>':'<span class="saved-material-source">'+page+'</span>';
   const time=escapeHtml(item.time||"");
   const preview=escapeHtml(item.text.slice(0,240));
-  return '<article class="saved-material-item" data-saved-id="'+id+'"><div class="saved-material-head"><strong>'+title+'</strong><time>'+time+'</time></div><div class="saved-material-source">'+page+'</div><p>'+preview+'</p><div class="saved-material-actions"><button type="button" data-saved-copy>Копировать</button><button type="button" data-saved-delete>Удалить</button></div></article>';
- }).join("")+(items.length>4?'<div class="saved-materials-more">Ещё '+(items.length-4)+' — откройте любой инструмент и нажмите «Рабочая область».</div>':"");
+  return '<article class="saved-material-item" data-saved-id="'+id+'" data-saved-index="'+index+'"><div class="saved-material-head"><strong>'+title+'</strong><time>'+time+'</time></div>'+source+'<p>'+preview+'</p><div class="saved-material-actions"><button type="button" data-saved-copy>Копировать</button><button type="button" data-saved-delete>Удалить</button></div></article>';
+ }).join("")+(items.length>4?'<div class="saved-materials-more">Показаны 4 из '+items.length+'. Полный архив можно сохранить через «Экспорт JSON».</div>':"");
 }
 function wireSavedMaterials(){
  const list=document.getElementById("saved-materials-list");
@@ -193,7 +198,7 @@ function wireSavedMaterials(){
   if(event.target.closest("[data-saved-delete]")){
    const items=readSavedMaterials();
    if(items===null)return;
-   try{localStorage.setItem(WORKSPACE_KEY,JSON.stringify(items.filter(x=>String(x.id||"")!==id)));renderSavedMaterials();}
+   try{localStorage.setItem(WORKSPACE_KEY,JSON.stringify(items.filter((x,i)=>id?String(x.id||"")!==id:i!==index)));renderSavedMaterials();}
    catch(_){event.target.textContent="Ошибка";}
   }
  });
