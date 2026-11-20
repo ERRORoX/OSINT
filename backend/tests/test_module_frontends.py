@@ -53,6 +53,16 @@ class ModuleFrontendTests(unittest.TestCase):
                 legacy = (ROOT / relative_path).read_text(encoding="utf-8")
                 self.assertIn(f"/modules/{module_id}/", legacy)
 
+
+    def test_home_navigation_is_manifest_driven(self):
+        app_source = (ROOT / "backend" / "app.py").read_text(encoding="utf-8")
+        hub_source = (ROOT / "static" / "js" / "app-hub.js").read_text(encoding="utf-8")
+        self.assertIn('@app.route("/api/navigation", methods=["GET"])', app_source)
+        self.assertIn("get_navigation_modules(_PROJECT_ROOT)", app_source)
+        self.assertIn('fetch(API+"/navigation"', hub_source)
+        self.assertIn("applyNavigationModules(loadedNavigation)", hub_source)
+        self.assertIn('pageById.get("domain-workspace")', hub_source)
+
     def test_module_manager_uses_registry_api(self):
         page = (ROOT / "static" / "p" / "modules" / "index.html").read_text(encoding="utf-8")
         script = (ROOT / "static" / "p" / "modules" / "page.js").read_text(encoding="utf-8")
