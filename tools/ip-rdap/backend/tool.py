@@ -53,6 +53,13 @@ class ToolIPRDAP(ToolBase):
             if action in {"registration", "last changed", "expiration"}:
                 dates[action] = event.get("eventDate", "—")
 
+        cidr_entries = []
+        for item in payload.get("cidr0_cidrs") or []:
+            if isinstance(item, dict):
+                prefix = item.get("v4prefix") or item.get("v6prefix")
+                length = item.get("length")
+                if prefix and length is not None:
+                    cidr_entries.append(f"{prefix}/{length}")
         entities = payload.get("entities") or []
         organizations = []
         for entity in entities:
@@ -64,7 +71,7 @@ class ToolIPRDAP(ToolBase):
             f"IP: {address.compressed}",
             f"Версия: IPv{address.version}",
             f"Сеть: {payload.get('startAddress', '—')} – {payload.get('endAddress', '—')}",
-            f"CIDR: {', '.join((str(item.get('v4prefix') or item.get('v6prefix') or '') + '/' + str(item.get('length') or '') for item in (payload.get('cidr0_cidrs') or []) if isinstance(item, dict)) or '—'}",
+            f"CIDR: {', '.join(cidr_entries) or '—'}",
             f"Название сети: {payload.get('name') or '—'}",
             f"Тип: {payload.get('type') or '—'}",
             f"Страна: {payload.get('country') or '—'}",
