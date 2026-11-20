@@ -199,7 +199,7 @@ function wireSavedMaterials(){
   if(event.target.closest("[data-saved-delete]")){
    const items=readSavedMaterials();
    if(items===null)return;
-   try{localStorage.setItem(WORKSPACE_KEY,JSON.stringify(items.filter((x,i)=>id?String(x.id||"")!==id:i!==index)));renderSavedMaterials();}
+   try{localStorage.setItem(WORKSPACE_KEY,JSON.stringify(items.filter((x,i)=>id?String(x.id||"")!==id:i!==index)));renderSavedMaterials();renderCaseProjects();}
    catch(_){event.target.textContent="Ошибка";}
   }
  });
