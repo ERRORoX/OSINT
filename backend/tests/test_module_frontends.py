@@ -40,6 +40,14 @@ class ModuleFrontendTests(unittest.TestCase):
         grabcam_legacy = (ROOT / "static" / "p" / "grabcam" / "index.html").read_text(encoding="utf-8")
         self.assertIn('/modules/grabcam/', grabcam_legacy)
 
+    def test_module_manager_uses_registry_api(self):
+        page = (ROOT / "static" / "p" / "modules" / "index.html").read_text(encoding="utf-8")
+        script = (ROOT / "static" / "p" / "modules" / "page.js").read_text(encoding="utf-8")
+        self.assertIn('href="/p/modules/page.css"', page)
+        self.assertIn('src="/p/modules/page.js"', page)
+        self.assertIn('fetch("/api/modules"', script)
+        self.assertIn("runtime_errors", script)
+
     def test_username_frontend_uses_only_canonical_asset_paths(self):
         js = (ROOT / "tools" / "username-workspace" / "frontend" / "js" / "username.js").read_text(encoding="utf-8")
         self.assertNotIn("/username/js/", js)
