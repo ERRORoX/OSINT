@@ -157,6 +157,26 @@ def _monitor_tunnel_processes(proc_php: subprocess.Popen, proc_tunnel: subproces
             _state["error"] = "Соединение с туннелем или локальным сервером завершилось. Запустите его повторно."
 
 
+def _claim_start(method: str, port: int) -> bool:
+    """Atomically reserve the single GrabCam server slot before starting a worker."""
+    with _lock:
+        if _state.get("running"):
+            return False
+        _state.update({
+            "running": True,
+            "error": None,
+            "method": method,
+            "started_at": time.time(),
+            "php_port": port,
+            "link": None,
+            "local_url": None,
+            "proc": None,
+            "proc_ssh": None,
+            "proc_cloudflared": None,
+        })
+        return True
+
+
 def _php_command(port: int, host: str = '127.0.0.1') -> list[str]:
     """Serve only the isolated training demo, never legacy GrabCam PHP endpoints."""
     return ["php", "-S", f"{host}:{port}", "-t", _DEMO_DIR]
@@ -526,6 +546,8 @@ class ToolGrabcam(ToolBase):
         if method == "php_only":
             if _port_in_use(port):
                 return {"success": False, "error": f"Порт {port} занят. Остановите другой сервер или выберите туннель."}
+            if not _claim_start(method, port):
+                return {"success": False, "error": "Сервер уже запускается или работает."}
             thread = threading.Thread(target=_worker_php_only, args=(port,), daemon=True)
             thread.start()
             time.sleep(0.5)
@@ -544,6 +566,8 @@ class ToolGrabcam(ToolBase):
                 return {"success": False, "error": "cloudflared не найден. Скачайте: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/ (часто работает в РФ)."}
             if _port_in_use(port):
                 return {"success": False, "error": f"Порт {port} занят."}
+            if not _claim_start(method, port):
+                return {"success": False, "error": "Сервер уже запускается или работает."}
             thread = threading.Thread(target=_worker_cloudflared, daemon=True)
             thread.start()
             return {"success": True, "started": True, "message": "Запуск PHP и Cloudflare Tunnel… Ссылка появится через 5–15 сек."}
@@ -556,10 +580,14 @@ class ToolGrabcam(ToolBase):
             if method == "localhost_run":
                 with _lock:
                     _state["php_port"] = port
+                if not _claim_start(method, port):
+                    return {"success": False, "error": "Сервер уже запускается или работает."}
                 thread = threading.Thread(target=_worker_localhost_run, daemon=True)
                 thread.start()
                 return {"success": True, "started": True, "message": "Запуск PHP и localhost.run… Ссылка появится через 10–30 сек. (рекомендуется для РФ.)"}
             else:
+                if not _claim_start(method, port):
+                    return {"success": False, "error": "Сервер уже запускается или работает."}
                 thread = threading.Thread(target=_worker_serveo, args=(port,), daemon=True)
                 thread.start()
                 return {"success": True, "started": True, "message": "Запуск PHP и Serveo… Ссылка появится через 10–25 сек."}
