@@ -60,28 +60,76 @@ function wireFilters(){
  }));
 }
 function updateHubStatus(tools){const count=document.getElementById("hub-tool-count");if(count)count.textContent=HUB_CARDS.length+" разделов · "+tools.length+" инструментов";}
+function formatEta(seconds){
+ const safe=Math.max(0,Math.ceil(seconds));
+ const minutes=Math.floor(safe/60);
+ const rest=safe%60;
+ return minutes>0?minutes+" мин "+String(rest).padStart(2,"0")+" сек":rest+" сек";
+}
 function wireUpdater(){
  const button=document.getElementById("btn-check-updates");
  const status=document.getElementById("update-status");
  if(!button||!status)return;
+ const panel=document.createElement("div");
+ panel.id="update-progress-panel";
+ panel.hidden=true;
+ panel.style.cssText="display:none;min-width:220px;max-width:360px;padding:10px 12px;margin-top:8px;border:1px solid #26394d;border-radius:10px;background:#0a1420;color:#dce8f4;font-size:12px";
+ panel.innerHTML='<div style="display:flex;justify-content:space-between;gap:12px;margin-bottom:7px"><span id="update-stage">Подготовка…</span><strong id="update-percent">0%</strong></div><div style="height:7px;border-radius:99px;background:#1c2b3b;overflow:hidden"><div id="update-progress-fill" style="height:100%;width:0%;background:#28b8d8;border-radius:99px;transition:width .35s ease"></div></div><div id="update-eta" style="margin-top:7px;color:#91a8bd">Осталось примерно: рассчитываем…</div>';
+ status.insertAdjacentElement("afterend",panel);
+ const stage=panel.querySelector("#update-stage");
+ const percent=panel.querySelector("#update-percent");
+ const fill=panel.querySelector("#update-progress-fill");
+ const eta=panel.querySelector("#update-eta");
+ let pollHandle=null;
+ const stopPolling=()=>{if(pollHandle){clearInterval(pollHandle);pollHandle=null;}};
+ const showError=message=>{stopPolling();panel.style.display="none";panel.hidden=true;status.textContent=message;button.disabled=false;};
  button.addEventListener("click",async()=>{
+  if(button.disabled)return;
   button.disabled=true;status.textContent="Проверка обновлений…";
   try{
    const checkResponse=await fetch("/api/system/update",{method:"GET",cache:"no-store",headers:{Accept:"application/json"}});
    const check=await checkResponse.json();
    if(!checkResponse.ok)throw new Error(check.error||"Не удалось проверить обновления");
-   if(!check.available){status.textContent="Установлена последняя версия.";return;}
+   if(!check.available){status.textContent="Установлена последняя версия.";button.disabled=false;return;}
    const promptText="Доступно обновление ("+check.commits_behind+" коммитов) из тестового канала 4.2. Установить? Перед обновлением будет создана резервная ветка.";
-   if(!window.confirm(promptText)){status.textContent="Обновление отложено.";return;}
-   status.textContent="Установка обновления…";
+   if(!window.confirm(promptText)){status.textContent="Обновление отложено.";button.disabled=false;return;}
+   panel.hidden=false;panel.style.display="block";status.textContent="Обновление выполняется…";
+   const startedAt=Date.now();
+   let latestProgress=0;
    const installResponse=await fetch("/api/system/update",{method:"POST",cache:"no-store",headers:{"Accept":"application/json","X-Requested-With":"OSINT-Panel"}});
-   const result=await installResponse.json();
-   if(!installResponse.ok)throw new Error(result.error||"Не удалось установить обновление");
-   status.textContent=result.updated?"Обновлено. Сервер автоматически перезапускается…":"Обновления не требуются.";
-  }catch(error){status.textContent=error.message||"Ошибка обновления";}
-  finally{button.disabled=false;}
+   const started=await installResponse.json();
+   if(!installResponse.ok)throw new Error(started.error||"Не удалось запустить обновление");
+   const jobId=started.job_id;
+   if(!jobId)throw new Error("Сервер не вернул идентификатор обновления");
+   const poll=async()=>{
+    try{
+     const response=await fetch("/api/system/update/status?job_id="+encodeURIComponent(jobId),{cache:"no-store",headers:{Accept:"application/json"}});
+     const job=await response.json();
+     if(!response.ok)throw new Error(job.error||"Не удалось получить состояние обновления");
+     latestProgress=Math.max(latestProgress,Number(job.progress)||0);
+     stage.textContent=job.stage||"Обновление…";
+     percent.textContent=latestProgress+"%";
+     fill.style.width=latestProgress+"%";
+     const elapsed=(Date.now()-startedAt)/1000;
+     if(latestProgress>=100)eta.textContent="Время выполнения: "+formatEta(elapsed);
+     else if(latestProgress>0)eta.textContent="Осталось примерно: "+formatEta(elapsed*(100-latestProgress)/latestProgress);
+     else eta.textContent="Осталось примерно: рассчитываем…";
+     if(job.state==="error"){showError(job.error||"Ошибка обновления");return;}
+     if(job.state==="completed"){
+      stopPolling();status.textContent="Обновлено. Сервер автоматически перезапускается…";
+      eta.textContent="Готово · время выполнения: "+formatEta(elapsed);
+      button.disabled=true;
+      return;
+     }
+    }catch(error){showError(error.message||"Не удалось получить состояние обновления");}
+   };
+   await poll();
+   if(button.disabled===false)return;
+   if(panel.style.display==="block"&&latestProgress<100)pollHandle=setInterval(poll,1000);
+  }catch(error){showError(error.message||"Ошибка обновления");}
  });
 }
+
 function wireHeader(){
  const menuSettings=document.querySelector("#user-menu .app-header-user-menu-item[data-tool-id]");if(menuSettings)menuSettings.setAttribute("href","/p/settings/");
  const btn=document.getElementById("btn-user-menu"),menu=document.getElementById("user-menu");
