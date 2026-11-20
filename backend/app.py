@@ -956,8 +956,13 @@ def api_modules_list():
 
 @app.route("/api/navigation", methods=["GET"])
 def api_navigation_list():
-    """Return safe navigation entries from enabled integrated module manifests."""
-    return jsonify({"modules": get_navigation_modules(_PROJECT_ROOT)})
+    """Return manifest entries only when their canonical page route is registered."""
+    registered_routes = {rule.rule for rule in app.url_map.iter_rules()}
+    modules = [
+        module for module in get_navigation_modules(_PROJECT_ROOT)
+        if module["href"] in registered_routes
+    ]
+    return jsonify({"modules": modules})
 
 
 @app.route("/api/tools", methods=["GET"])
