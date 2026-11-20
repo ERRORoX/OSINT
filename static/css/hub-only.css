@@ -244,3 +244,51 @@ body.dashboard-page{margin:0!important;min-height:100vh;background:radial-gradie
  .topbar-indicator{display:none}
  .dashboard-content{padding:14px 12px 22px}
 }
+
+
+/* Investigation command center — 4.2.10 */
+.dashboard-shell{grid-template-columns:minmax(0,1fr)}
+.investigation-hero{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(280px,.9fr) 265px;gap:16px;align-items:stretch;margin-bottom:15px}
+.investigation-intro{position:relative;min-height:290px;display:flex;flex-direction:column;justify-content:center;overflow:hidden;padding:30px 32px;border:1px solid rgba(49,128,255,.3);border-radius:16px;background:radial-gradient(ellipse at 5% 0,rgba(15,104,225,.2),transparent 48%),linear-gradient(135deg,#0b1b34 0%,#071224 75%);box-shadow:var(--dash-shadow)}
+.investigation-intro:after{content:"";position:absolute;right:-90px;bottom:-170px;width:360px;height:360px;border:1px solid rgba(51,137,255,.12);border-radius:50%;box-shadow:0 0 0 32px rgba(51,137,255,.025),0 0 0 68px rgba(51,137,255,.02);pointer-events:none}
+.investigation-kicker{display:flex;align-items:center;gap:9px;color:#8ba9d1;font-size:9px;font-weight:800;letter-spacing:.15em}
+.signal-pulse,.visual-live i{width:7px;height:7px;border-radius:50%;background:#27d9a0;box-shadow:0 0 12px rgba(39,217,160,.65)}
+.kicker-divider{color:#3c6397}
+.investigation-intro h1{position:relative;z-index:1;margin:22px 0 10px;color:#f0f6ff;font-size:clamp(27px,3vw,42px);line-height:1.12;letter-spacing:-.045em}
+.investigation-intro h1 span{color:#5aa5ff}
+.investigation-intro>p{position:relative;z-index:1;max-width:490px;margin:0;color:#9aacc7;font-size:13px;line-height:1.7}
+.investigation-actions{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:10px;margin-top:23px}
+.investigation-actions .primary-action,.investigation-actions .secondary-action{min-height:39px;display:inline-flex;align-items:center;gap:8px;padding:0 14px;border-radius:9px;font-size:11px;font-weight:700;text-decoration:none}
+.investigation-actions .primary-action{border:1px solid #277de9;background:linear-gradient(110deg,#176be0,#1252b2);color:#fff;box-shadow:0 7px 22px rgba(14,91,204,.22)}
+.investigation-actions .secondary-action{border:1px solid rgba(105,148,205,.25);background:rgba(8,22,43,.65);color:#b8cce8}
+.hero-meta{position:relative;z-index:1;display:flex;gap:18px;margin-top:25px;color:#7189aa;font-size:9px;letter-spacing:.07em}
+.hero-meta span{display:flex;align-items:center;gap:7px}.hero-meta i{width:6px;height:6px;border-radius:50%;background:#20d39b}.hero-meta b{color:#73adff}
+.investigation-visual{position:relative;min-width:0;min-height:290px;overflow:hidden;padding:16px 17px 12px;border:1px solid rgba(62,125,208,.22);border-radius:16px;background:radial-gradient(ellipse at 50% 48%,rgba(13,88,179,.17),transparent 68%),linear-gradient(145deg,#0a172b,#07101e)}
+.visual-topline,.visual-caption{display:flex;align-items:center;justify-content:space-between;color:#7894b9;font-size:8px;font-weight:800;letter-spacing:.13em}
+.visual-live{display:flex;align-items:center;gap:6px;color:#6fcea9;font-size:8px}
+.visual-live i{width:5px;height:5px}
+.relationship-graph{display:block;width:100%;height:218px;overflow:visible}
+.graph-links{fill:none;stroke:rgba(57,135,232,.38);stroke-width:1.2;stroke-dasharray:4 6}
+.graph-nodes circle{fill:#0d2748;stroke:#3e9cff;stroke-width:1.5;filter:drop-shadow(0 0 6px rgba(35,132,255,.42))}
+.graph-nodes .node-core{fill:#176bd0;stroke:#8bc8ff;stroke-width:2;filter:drop-shadow(0 0 13px rgba(32,132,255,.85))}
+.graph-labels{fill:#78a6d8;font:700 8px Inter,Arial,sans-serif;letter-spacing:1px}
+.visual-caption{padding-top:7px;border-top:1px solid rgba(91,145,220,.12);font-size:8px;font-weight:500;letter-spacing:.04em}
+.visual-caption span:last-child{color:#536d90}
+.investigation-status{min-width:0;min-height:290px;display:flex;flex-direction:column;justify-content:space-between;padding:17px 15px;border:1px solid var(--dash-line);border-radius:16px;background:linear-gradient(155deg,#0b1a30,#081222)}
+.investigation-status .panel-heading h2{font-size:11px}
+.investigation-status .system-content{display:flex;flex-direction:column;align-items:center;gap:12px;padding:12px 0}
+.investigation-status .system-ring{width:92px;height:92px}
+.investigation-status .system-facts{width:100%}
+.investigation-metrics{margin-bottom:14px}
+.investigation-strip{display:flex;align-items:center;gap:clamp(10px,2vw,25px);margin-bottom:17px;padding:14px 18px;border:1px solid var(--dash-line);border-radius:13px;background:linear-gradient(100deg,rgba(10,25,46,.96),rgba(7,17,32,.96))}
+.strip-heading{display:flex;flex-direction:column;gap:5px;min-width:145px;padding-right:17px;border-right:1px solid var(--dash-line)}
+.strip-heading strong{font-size:11px;color:#dceaff}
+.flow-step{display:flex;align-items:center;gap:9px;min-width:0}
+.flow-step>span{width:27px;height:27px;display:grid;place-items:center;border:1px solid rgba(57,133,228,.3);border-radius:8px;background:rgba(20,83,156,.16);color:#6caeff;font-size:9px;font-weight:800}
+.flow-step div{display:flex;flex-direction:column;gap:3px;min-width:0}
+.flow-step b{color:#cbdcf2;font-size:10px;white-space:nowrap}
+.flow-step small{color:#7086a5;font-size:8px;white-space:nowrap}
+.flow-arrow{color:#42648e;font-size:14px}
+@media(max-width:1250px){.investigation-hero{grid-template-columns:minmax(0,1fr) minmax(270px,.85fr)}.investigation-status{grid-column:1/-1;min-height:0}.investigation-status .system-content{flex-direction:row;justify-content:center}.investigation-status .system-ring{flex:none}.investigation-status .system-facts{max-width:360px}.investigation-strip{flex-wrap:wrap}.strip-heading{width:100%;border-right:0;border-bottom:1px solid var(--dash-line);padding:0 0 9px}}
+@media(max-width:760px){.investigation-hero{grid-template-columns:1fr}.investigation-intro{min-height:255px;padding:24px 21px}.investigation-visual{min-height:255px}.relationship-graph{height:185px}.investigation-status{grid-column:auto}.investigation-status .system-content{flex-direction:column}.investigation-status .system-facts{max-width:none}.investigation-strip{gap:10px;padding:13px}.flow-step{flex:1 1 42%}.flow-arrow{display:none}.strip-heading{min-width:100%}.investigation-intro h1{font-size:30px}.hero-meta{margin-top:19px}}
+@media(max-width:430px){.investigation-kicker{font-size:7px;letter-spacing:.1em}.investigation-intro>p{font-size:12px}.investigation-actions{gap:7px}.investigation-actions .primary-action,.investigation-actions .secondary-action{padding:0 10px;font-size:10px}.flow-step{flex-basis:100%}}
