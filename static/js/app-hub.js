@@ -404,7 +404,8 @@ async function init(){
  // Keep the header and updater usable if a catalogue endpoint is temporarily unavailable.
  wireHeader();
  wireUpdater();
- document.getElementById("hub-search")?.addEventListener("input",renderHubCards);\n document.getElementById("saved-materials-search")?.addEventListener("input",renderSavedMaterials);
+ document.getElementById("hub-search")?.addEventListener("input",renderHubCards);
+ document.getElementById("saved-materials-search")?.addEventListener("input",renderSavedMaterials);
  wireFilters();
  wireActivity();
  wireShowAllTools();
