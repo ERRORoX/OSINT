@@ -117,6 +117,7 @@
     }).join("");
   }
   function ensureSidebarLayout() {
+    if (document.body && document.body.classList.contains("iprdap-standalone")) return;
     if (document.getElementById("app-sidebar")) return;
     var header = document.querySelector(".app-header");
     if (!header) return;
