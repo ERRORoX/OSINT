@@ -2,27 +2,39 @@
   "schema_version": 1,
   "id": "domain-search",
   "name": "Поиск по домену",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "category": "domain",
   "description": "WHOIS, DNS, SSL и связанные доменные данные через legacy backend-адаптер.",
-  "status": "legacy",
+  "status": "integrated",
   "enabled": true,
   "entrypoints": {
-    "backend_adapter": "backend/tools/tool_domain_search.py"
+    "backend_adapter": "tools/domain-search/backend/tool.py",
+    "manifest_readme": "tools/domain-search/OSINT_PANEL.md"
   },
   "dependencies": {
-    "python": [],
-    "system": [],
+    "python": [
+      "dnspython",
+      "requests"
+    ],
+    "system": [
+      "whois"
+    ],
     "optional": []
   },
   "capabilities": [
-    "legacy-backend-adapter"
+    "passive-domain-intelligence",
+    "whois",
+    "dns",
+    "tls-certificate",
+    "certificate-transparency"
   ],
   "legacy_paths": [
-    "backend/tools/tool_domain_search.py"
+    "backend/tools/tool_domain_search.py",
+    "modules/domain_search.py"
   ],
   "notes": [
-    "Manifest описывает существующий инструмент; код ещё не перенесён в каноническую структуру модуля.",
-    "Не удалять и не перемещать legacy-файлы до отдельной проверки импортов, маршрутов и тестов."
+    "Каноническая логика доменного анализа находится в backend/domain_search.py внутри каталога модуля.",
+    "Старый backend/tools adapter и прежний импорт modules.domain_search сохранены через compatibility adapters.",
+    "Domain Workspace использует прежний tool id domain-search и прежний API."
   ]
 }
