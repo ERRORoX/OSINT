@@ -80,13 +80,25 @@ function renderNav(tools) {
 function renderHubCards() {
   const host = document.getElementById("hub-cards");
   if (!host) return;
-  host.innerHTML = HUB_CARDS.map(
-    (c) => `
-    <a class="hub-card" href="${escapeHtml(c.href)}">
-      <div class="hub-card-title">${escapeHtml(c.title)}</div>
-      <p class="hub-card-desc">${escapeHtml(c.desc)}</p>
-    </a>`
-  ).join("");
+  const search = document.getElementById("hub-search");
+  const empty = document.getElementById("hub-empty");
+  const query = (search?.value || "").trim().toLocaleLowerCase("ru");
+  const cards = HUB_CARDS.filter((card) =>
+    [card.title, card.desc, card.id].join(" ").toLocaleLowerCase("ru").includes(query)
+  );
+  host.innerHTML = cards.map((card) => `
+    <a class="hub-card" href="${escapeHtml(card.href)}">
+      <span class="hub-card-index">${String(HUB_CARDS.indexOf(card) + 1).padStart(2, "0")}</span>
+      <div class="hub-card-title">${escapeHtml(card.title)}</div>
+      <p class="hub-card-desc">${escapeHtml(card.desc)}</p>
+      <span class="hub-card-open">ОТКРЫТЬ РАЗДЕЛ <b aria-hidden="true">↗</b></span>
+    </a>`).join("");
+  if (empty) empty.hidden = cards.length !== 0;
+}
+
+function updateHubStatus(tools) {
+  const count = document.getElementById("hub-tool-count");
+  if (count) count.textContent = `${tools.length} инструментов доступно`;
 }
 
 function wireHeader() {
@@ -114,6 +126,8 @@ async function init() {
   const tools = await loadTools();
   renderNav(tools);
   renderHubCards();
+  updateHubStatus(tools);
+  document.getElementById("hub-search")?.addEventListener("input", renderHubCards);
   wireHeader();
 }
 
