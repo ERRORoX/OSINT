@@ -90,32 +90,31 @@ class ModuleFrontendTests(unittest.TestCase):
         for forbidden in ("fetch(", "XMLHttpRequest", "sendBeacon"):
             self.assertNotIn(forbidden, demo)
 
-    def test_homepage_uses_responsive_grouped_sidebar(self):
+    def test_homepage_uses_full_width_layout_without_sidebar(self):
         page = (ROOT / "static" / "index.html").read_text(encoding="utf-8")
         script = (ROOT / "static" / "js" / "app-hub.js").read_text(encoding="utf-8")
-        styles = (ROOT / "static" / "css" / "panel-42-dashboard.css").read_text(encoding="utf-8")
-        self.assertIn('id="app-sidebar"', page)
-        self.assertIn('id="sidebar-toggle"', page)
-        self.assertIn('id="sidebar-collapse"', page)
-        self.assertIn('id="sidebar-backdrop"', page)
-        self.assertIn('function wireSidebar()', script)
-        self.assertIn('function renderNav(tools)', script)
-        self.assertIn('localStorage.setItem("osint-sidebar-collapsed"', script)
-        self.assertIn('#app-shell.sidebar-open .app-sidebar', styles)
-        self.assertIn('#app-shell.sidebar-collapsed .app-sidebar', styles)
-        self.assertIn('@media(max-width:760px)', styles)
+        styles = (ROOT / "static" / "css" / "hub-only.css").read_text(encoding="utf-8")
+        self.assertNotIn('<aside class="sidebar">', page)
+        self.assertNotIn('id="sidebar-toggle"', page)
+        self.assertNotIn('function wireSidebar()', script)
+        self.assertIn('id="btn-check-updates"', page)
+        self.assertIn('id="update-status"', page)
+        self.assertIn('.dashboard-shell{display:block!important', styles)
+        self.assertIn('@media(max-width:680px)', styles)
 
     def test_homepage_uses_professional_dashboard_layer(self):
         page = (ROOT / "static" / "index.html").read_text(encoding="utf-8")
-        dashboard_css = ROOT / "static" / "css" / "panel-42-dashboard.css"
+        dashboard_css = ROOT / "static" / "css" / "hub-only.css"
         hub_script = (ROOT / "static" / "js" / "app-hub.js").read_text(encoding="utf-8")
         self.assertTrue(dashboard_css.is_file())
-        self.assertIn("/css/panel-42-dashboard.css", page)
-        self.assertIn('class="dashboard-intro"', page)
+        self.assertIn("/css/hub-only.css", page)
+        self.assertIn('class="welcome-grid"', page)
         self.assertIn('id="metric-tools"', page)
         self.assertIn('id="metric-sections"', page)
         self.assertIn('id="metric-categories"', page)
         self.assertIn('document.getElementById("metric-tools")', hub_script)
+        self.assertIn('document.getElementById("backend-state")', hub_script)
+        self.assertIn('Promise.allSettled', hub_script)
 
 
 if __name__ == "__main__":
