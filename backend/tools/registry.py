@@ -36,41 +36,46 @@ def _stats_from_text(text: str) -> dict[str, int]:
         "unique_hosts": len(hosts),
     }
 
-# Импорты модулей инструментов (по одному на инструмент)
+# Legacy modules remain registered through compatibility adapters.
+# Integrated modules are discovered and loaded from their manifest-controlled path.
+from pathlib import Path
+
 from .tool_anonsms import ToolAnonsms
 from .tool_instagram_bruter import ToolInstagramBruter
 from .tool_grabcam import ToolGrabcam
-from .tool_theharvester import ToolTheharvester
 from .tool_google_osint import ToolGoogleOsint
-from .tool_domain_search import ToolDomainSearch
 from .tool_sherlock import ToolSherlock
 from .tool_maigret import ToolMaigret
-from .tool_subfinder import ToolSubfinder
-from .tool_dnsx import ToolDnsx
 from .tool_social_analyzer import ToolSocialAnalyzer
 from .tool_blackbird import ToolBlackbird
-from .tool_shodan import ToolShodan
-from .tool_ip_rdap import ToolIPRDAP
 from .tool_photo_search import ToolPhotoSearch
 
-# Список всех инструментов (Holehe и h8mail объединены в Google OSINT)
-TOOLS: list[ToolBase] = [
+from module_runtime import load_integrated_tools
+
+_PROJECT_ROOT = Path(__file__).resolve().parents[2]
+_LEGACY_TOOLS: list[ToolBase] = [
     ToolAnonsms(),
     ToolInstagramBruter(),
     ToolGrabcam(),
     ToolPhotoSearch(),
     ToolGoogleOsint(),
-    ToolTheharvester(),
-    ToolDomainSearch(),
     ToolSherlock(),
     ToolMaigret(),
-    ToolSubfinder(),
-    ToolDnsx(),
     ToolSocialAnalyzer(),
     ToolBlackbird(),
-    ToolShodan(),
-    ToolIPRDAP(),
 ]
+_INTEGRATED_TOOLS, _MODULE_RUNTIME_ISSUES = load_integrated_tools(_PROJECT_ROOT)
+_TOOL_BY_ID = {tool.tool_id: tool for tool in _LEGACY_TOOLS}
+for _tool in _INTEGRATED_TOOLS:
+    _TOOL_BY_ID.setdefault(_tool.tool_id, _tool)
+
+# Preserve the existing UI order while implementation ownership moves into module folders.
+_TOOL_ORDER = [
+    "anonsms", "instagram-bruter", "grabcam", "photo-search", "google-osint",
+    "theharvester", "domain-search", "sherlock", "maigret", "subfinder",
+    "dnsx", "social-analyzer", "blackbird", "shodan", "ip-rdap",
+]
+TOOLS: list[ToolBase] = [_TOOL_BY_ID[tool_id] for tool_id in _TOOL_ORDER if tool_id in _TOOL_BY_ID]
 
 
 def get_all_tools() -> list[dict]:
