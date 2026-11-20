@@ -1,8 +1,7 @@
 """
-Реестр инструментов. Чтобы добавить новый инструмент:
-1. Создать файл backend/tools/tool_<id>.py с классом, наследующим ToolBase.
-2. Добавить один импорт и одну строку в TOOLS ниже.
-Остальной код не трогать.
+Центральный реестр инструментов.
+Интегрированные модули автоматически загружаются по manifest.json.
+Вручную остаются только временные legacy-адаптеры.
 """
 import re
 import time
@@ -36,19 +35,11 @@ def _stats_from_text(text: str) -> dict[str, int]:
         "unique_hosts": len(hosts),
     }
 
-# Legacy modules remain registered through compatibility adapters.
-# Integrated modules are discovered and loaded from their manifest-controlled path.
+# Only modules not yet migrated remain manually registered here.
 from pathlib import Path
 
 from .tool_anonsms import ToolAnonsms
 from .tool_instagram_bruter import ToolInstagramBruter
-from .tool_grabcam import ToolGrabcam
-from .tool_google_osint import ToolGoogleOsint
-from .tool_sherlock import ToolSherlock
-from .tool_maigret import ToolMaigret
-from .tool_social_analyzer import ToolSocialAnalyzer
-from .tool_blackbird import ToolBlackbird
-from .tool_photo_search import ToolPhotoSearch
 
 from module_runtime import load_integrated_tools
 
@@ -56,20 +47,13 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _LEGACY_TOOLS: list[ToolBase] = [
     ToolAnonsms(),
     ToolInstagramBruter(),
-    ToolGrabcam(),
-    ToolPhotoSearch(),
-    ToolGoogleOsint(),
-    ToolSherlock(),
-    ToolMaigret(),
-    ToolSocialAnalyzer(),
-    ToolBlackbird(),
 ]
 _INTEGRATED_TOOLS, _MODULE_RUNTIME_ISSUES = load_integrated_tools(_PROJECT_ROOT)
 _TOOL_BY_ID = {tool.tool_id: tool for tool in _LEGACY_TOOLS}
 for _tool in _INTEGRATED_TOOLS:
     _TOOL_BY_ID.setdefault(_tool.tool_id, _tool)
 
-# Preserve the existing UI order while implementation ownership moves into module folders.
+# Preserve the original UI order while runtime ownership moves into module folders.
 _TOOL_ORDER = [
     "anonsms", "instagram-bruter", "grabcam", "photo-search", "google-osint",
     "theharvester", "domain-search", "sherlock", "maigret", "subfinder",
