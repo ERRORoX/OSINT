@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "id": "photo-search",
+  "name": "Поиск по фотографии",
+  "version": "1.0.0",
+  "category": "photo",
+  "description": "Обработка изображения, метаданные и хэши; вспомогательные photo API пока остаются в общем backend.",
+  "status": "legacy",
+  "enabled": true,
+  "entrypoints": {
+    "backend_adapter": "backend/tools/tool_photo_search.py"
+  },
+  "dependencies": {
+    "python": [],
+    "system": [],
+    "optional": []
+  },
+  "capabilities": [
+    "legacy-backend-adapter"
+  ],
+  "legacy_paths": [
+    "backend/tools/tool_photo_search.py"
+  ],
+  "notes": [
+    "Manifest описывает существующий инструмент; код ещё не перенесён в каноническую структуру модуля.",
+    "Не удалять и не перемещать legacy-файлы до отдельной проверки импортов, маршрутов и тестов."
+  ]
+}
