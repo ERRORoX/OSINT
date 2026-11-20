@@ -427,7 +427,7 @@ let graphData=GRAPH_DEMO,graphScale=1,graphPan={x:0,y:0},graphSelected=null,grap
 function graphReadLocal(){try{const value=JSON.parse(localStorage.getItem(GRAPH_STORAGE_KEY)||"null");return value&&Array.isArray(value.nodes)&&Array.isArray(value.edges)?value:null;}catch{return null;}}
 function graphValidate(value){
  if(!value||!Array.isArray(value.nodes)||!Array.isArray(value.edges))throw new Error("Ожидаются массивы nodes и edges.");
- if(value.nodes.length>250||value.edges.length>500)throw new Error("Лимит: 250 узлов и 500 связей.");
+ if(value.nodes.length>1000||value.edges.length>3000)throw new Error("Лимит: 1000 узлов и 3000 связей.");
  const ids=new Set();
  const nodes=value.nodes.map((node,index)=>{
   if(!node||typeof node!=="object")throw new Error("Некорректный узел №"+(index+1)+".");
@@ -436,7 +436,7 @@ function graphValidate(value){
   if(!GRAPH_TYPES.includes(type))throw new Error("Неизвестный тип узла: "+type);
   if(!label||label.length>180)throw new Error("Название узла обязательно (до 180 символов).");
   ids.add(id);
-  return {id,type,label,details:String(node.details||"").slice(0,1200),x:Number.isFinite(Number(node.x))?Math.max(30,Math.min(730,Number(node.x))):100+(index%4)*180,y:Number.isFinite(Number(node.y))?Math.max(35,Math.min(390,Number(node.y))):80+Math.floor(index/4)*120};
+  return {id,type,label,details:String(node.details||"").slice(0,1200),x:Number.isFinite(Number(node.x))?Math.max(30,Math.min(730,Number(node.x))):100+(index%4)*180,y:Number.isFinite(Number(node.y))?Math.max(25,Math.min(12000,Number(node.y))):55+Math.floor(index/8)*95};
  });
  const edges=value.edges.map((edge,index)=>{
   if(!edge||!ids.has(String(edge.source))||!ids.has(String(edge.target)))throw new Error("Связь №"+(index+1)+" ссылается на неизвестный узел.");
@@ -474,31 +474,99 @@ function graphSelect(id){
  panel.replaceChildren();const type=document.createElement("span");type.className="graph-detail-type";type.textContent=GRAPH_TYPE_LABELS[node.type].toUpperCase();const title=document.createElement("strong");title.textContent=node.label;const description=document.createElement("p");description.textContent=node.details||"Дополнительное описание не указано.";const related=document.createElement("small");const edges=graphData.edges.filter(edge=>edge.source===id||edge.target===id);related.textContent="Связей: "+edges.length;panel.append(type,title,description,related);graphRender();
 }
 function graphResetView(){graphScale=1;graphPan={x:0,y:0};graphApplyTransform();}
-function graphWire(){
+function graphFitView(){
+ const nodes=graphData.nodes||[];
+ if(!nodes.length){graphResetView();return;}
+ const xs=nodes.map(node=>Number(node.x)||0),ys=nodes.map(node=>Number(node.y)||0);
+ const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
+ const spanX=Math.max(120,maxX-minX+100),spanY=Math.max(120,maxY-minY+100);
+ graphScale=Math.max(.035,Math.min(1,700/spanX,360/spanY));
+ graphPan={x:380-((minX+maxX)/2)*graphScale,y:210-((minY+maxY)/2)*graphScale};
+ graphApplyTransform();
+}
+async function graphWire(){
  const svg=document.getElementById("investigation-graph");if(!svg)return;
  const mode=document.getElementById("graph-dataset-mode"),badge=document.getElementById("graph-data-mode"),input=document.getElementById("graph-json-input"),status=document.getElementById("graph-import-status");
- const local=graphReadLocal();
- const setMode=value=>{const stored=graphReadLocal();if(value==="local"&&!stored){graphData={nodes:[],edges:[]};if(status)status.textContent="Локальный граф ещё не импортирован.";if(badge)badge.textContent="НЕТ ДАННЫХ";}else{graphData=value==="demo"?GRAPH_DEMO:stored;if(badge)badge.textContent=value==="demo"?"ДЕМО-ДАННЫЕ":"ЛОКАЛЬНЫЕ ДАННЫЕ";}graphSelected=null;graphResetView();graphRender();};
- if(mode){mode.value=local?"local":"demo";mode.addEventListener("change",()=>setMode(mode.value));}
+ let serverGraph={nodes:[],edges:[]};
+ let serverUpdatedAt=null;
+ const requestGraph=async(method="GET",payload=null)=>{
+  const response=await fetch(API+"/graph",{method,headers:{"Content-Type":"application/json",Accept:"application/json"},body:payload?JSON.stringify(payload):undefined,cache:"no-store"});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(data.error||"Не удалось обратиться к хранилищу графа.");
+  return data;
+ };
+ try{
+  const loaded=await requestGraph("GET");
+  serverGraph=graphValidate(loaded);
+  serverUpdatedAt=loaded.updated_at||null;
+ }catch(error){
+  if(status)status.textContent="Хранилище графа недоступно: "+(error.message||"ошибка");
+ }
+ const legacy=graphReadLocal();
+ if(!serverGraph.nodes.length&&legacy&&legacy.nodes.length){
+  try{
+   const migrated=await requestGraph("PUT",legacy);
+   serverGraph=graphValidate(migrated);
+   serverUpdatedAt=migrated.updated_at||null;
+   if(status)status.textContent="Старые локальные данные перенесены в постоянное хранилище.";
+  }catch(error){if(status)status.textContent="Не удалось перенести локальные данные: "+(error.message||"ошибка");}
+ }
+ const setMode=value=>{
+  if(value==="demo"){
+   graphData=GRAPH_DEMO;
+   if(badge)badge.textContent="ДЕМО-ДАННЫЕ";
+  }else{
+   graphData=serverGraph;
+   if(badge)badge.textContent=serverGraph.nodes.length?"ПОСТОЯННОЕ ХРАНИЛИЩЕ":"НЕТ ДАННЫХ";
+   if(status&&!serverGraph.nodes.length)status.textContent="Постоянный граф пока пуст. Запусти анализ домена — найденные связи появятся здесь автоматически.";
+  }
+  graphSelected=null;
+  graphFitView();
+  graphRender();
+ };
+ const persistCurrent=async()=>{
+  const saved=await requestGraph("PUT",graphData);
+  serverGraph=graphValidate(saved);
+  serverUpdatedAt=saved.updated_at||null;
+  if(badge&&mode?.value==="local")badge.textContent="ПОСТОЯННОЕ ХРАНИЛИЩЕ";
+ };
+ if(mode){
+  mode.value=serverGraph.nodes.length||!legacy?"local":"local";
+  mode.addEventListener("change",()=>setMode(mode.value));
+ }
  document.querySelectorAll("[data-graph-filter]").forEach(control=>control.addEventListener("change",graphRender));
  document.getElementById("graph-zoom-in")?.addEventListener("click",()=>{graphScale=Math.min(2.5,graphScale*1.2);graphApplyTransform();});
- document.getElementById("graph-zoom-out")?.addEventListener("click",()=>{graphScale=Math.max(.45,graphScale/1.2);graphApplyTransform();});
+ document.getElementById("graph-zoom-out")?.addEventListener("click",()=>{graphScale=Math.max(.035,graphScale/1.2);graphApplyTransform();});
  document.getElementById("graph-zoom-reset")?.addEventListener("click",graphResetView);
- document.getElementById("graph-fit")?.addEventListener("click",graphResetView);
- svg.addEventListener("wheel",event=>{event.preventDefault();graphScale=Math.max(.45,Math.min(2.5,graphScale*(event.deltaY<0?1.1:.9)));graphApplyTransform();},{passive:false});
+ document.getElementById("graph-fit")?.addEventListener("click",graphFitView);
+ svg.addEventListener("wheel",event=>{event.preventDefault();graphScale=Math.max(.035,Math.min(2.5,graphScale*(event.deltaY<0?1.1:.9)));graphApplyTransform();},{passive:false});
  svg.addEventListener("pointerdown",event=>{if(event.target===svg||event.target.id==="graph-viewport"||event.target.id==="graph-edges"){graphDrag={kind:"pan",x:event.clientX,y:event.clientY};svg.setPointerCapture(event.pointerId);}});
- svg.addEventListener("pointermove",event=>{if(!graphDrag)return;const dx=(event.clientX-graphDrag.x)/graphScale,dy=(event.clientY-graphDrag.y)/graphScale;graphDrag.x=event.clientX;graphDrag.y=event.clientY;if(graphDrag.kind==="pan"){graphPan.x+=dx;graphPan.y+=dy;graphApplyTransform();}else{const node=graphData.nodes.find(item=>item.id===graphDrag.id);if(node){node.x=Math.max(25,Math.min(735,node.x+dx));node.y=Math.max(25,Math.min(395,node.y+dy));graphRender();}}});
- const stop=()=>{graphDrag=null;};svg.addEventListener("pointerup",stop);svg.addEventListener("pointercancel",stop);svg.addEventListener("lostpointercapture",stop);
- document.getElementById("graph-import-button")?.addEventListener("click",()=>{
-  try{const parsed=graphValidate(JSON.parse(input?.value||""));localStorage.setItem(GRAPH_STORAGE_KEY,JSON.stringify(parsed));if(mode){mode.value="local";}setMode("local");if(status)status.textContent="Импортировано: "+parsed.nodes.length+" узлов, "+parsed.edges.length+" связей. Сохранено локально.";}
-  catch(error){if(status)status.textContent="Ошибка: "+(error.message||"неверный JSON");}
+ svg.addEventListener("pointermove",event=>{if(!graphDrag)return;const dx=(event.clientX-graphDrag.x)/graphScale,dy=(event.clientY-graphDrag.y)/graphScale;graphDrag.x=event.clientX;graphDrag.y=event.clientY;if(graphDrag.kind==="pan"){graphPan.x+=dx;graphPan.y+=dy;graphApplyTransform();}else{const node=graphData.nodes.find(item=>item.id===graphDrag.id);if(node){node.x=Math.max(25,Math.min(735,node.x+dx));node.y=Math.max(25,Math.min(12000,node.y+dy));graphRender();}}});
+ const stop=async()=>{const wasNodeDrag=graphDrag?.kind==="node";graphDrag=null;if(wasNodeDrag&&mode?.value==="local"){try{await persistCurrent();}catch(error){if(status)status.textContent="Не удалось сохранить расположение узлов: "+(error.message||"ошибка");}}};
+ svg.addEventListener("pointerup",stop);svg.addEventListener("pointercancel",stop);svg.addEventListener("lostpointercapture",()=>{graphDrag=null;});
+ document.getElementById("graph-import-button")?.addEventListener("click",async()=>{
+  try{
+   const parsed=graphValidate(JSON.parse(input?.value||""));
+   const saved=await requestGraph("PUT",parsed);
+   serverGraph=graphValidate(saved);serverUpdatedAt=saved.updated_at||null;
+   if(mode)mode.value="local";setMode("local");
+   if(status)status.textContent="Импортировано в постоянное хранилище: "+parsed.nodes.length+" узлов, "+parsed.edges.length+" связей.";
+  }catch(error){if(status)status.textContent="Ошибка: "+(error.message||"неверный JSON");}
  });
  document.getElementById("graph-export-button")?.addEventListener("click",()=>{
-  const data=mode?.value==="demo"?GRAPH_DEMO:(graphReadLocal()||{nodes:[],edges:[]});const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download="osint-relationship-graph.json";link.click();URL.revokeObjectURL(url);if(status)status.textContent="JSON подготовлен для экспорта.";
+  const data=mode?.value==="demo"?GRAPH_DEMO:graphData;
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download="osint-relationship-graph.json";link.click();URL.revokeObjectURL(url);if(status)status.textContent="JSON подготовлен для экспорта.";
  });
- document.getElementById("graph-clear-button")?.addEventListener("click",()=>{localStorage.removeItem(GRAPH_STORAGE_KEY);if(mode){mode.value="local";}setMode("local");if(status)status.textContent="Локальный граф очищен.";});
+ document.getElementById("graph-clear-button")?.addEventListener("click",async()=>{
+  if(mode?.value==="demo"){if(status)status.textContent="Переключись на «Мои расследования», чтобы очистить сохранённый граф.";return;}
+  try{
+   const cleared=await requestGraph("DELETE");
+   serverGraph=graphValidate(cleared);serverUpdatedAt=null;localStorage.removeItem(GRAPH_STORAGE_KEY);
+   setMode("local");if(status)status.textContent="Постоянный граф очищен на сервере.";
+  }catch(error){if(status)status.textContent="Не удалось очистить граф: "+(error.message||"ошибка");}
+ });
  if(input&&!input.value)input.value=JSON.stringify({nodes:[{id:"n1",type:"domain",label:"example.org",details:"Описание объекта"}],edges:[]},null,2);
- setMode(mode?.value||"demo");
+ setMode(mode?.value||"local");
 }
 
 async function init(){
@@ -512,7 +580,7 @@ async function init(){
  wireShowAllTools();
  wireSavedMaterials();
  wireCaseProjects();
- graphWire();
+ await graphWire();
  const [toolsResult,navigationResult]=await Promise.allSettled([loadTools(),loadNavigation()]);
  const toolsAvailable=toolsResult.status==="fulfilled"&&Array.isArray(toolsResult.value);
  loadedTools=toolsAvailable?toolsResult.value:[];
