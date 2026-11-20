@@ -167,7 +167,7 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn('@app.route("/api/graph", methods=["GET", "PUT", "DELETE"])', app_source)
         self.assertIn('@app.route("/api/graph/merge", methods=["POST"])', app_source)
         self.assertIn("CREATE TABLE IF NOT EXISTS relationship_graph", store_source)
-        self.assertIn('fetch(API+"/graph"', hub_source)
+        self.assertIn('fetch(API+path', hub_source)
         self.assertIn('requestGraph("POST",graphData,"/graph/merge")', hub_source)
         self.assertIn('requestGraph("DELETE")', hub_source)
 
