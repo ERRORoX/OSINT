@@ -137,7 +137,7 @@ function wireActivity(){
   const anchor=event.target.closest("a[href]");if(!anchor)return;
   let target;try{target=new URL(anchor.href,location.origin);}catch(_){return;}
   if(target.origin!==location.origin||!target.pathname.startsWith("/")||target.pathname===location.pathname||target.hash&&!target.pathname)return;
-  const title=(anchor.textContent||"").replace(/\\s+/g," ").trim()||target.pathname;
+  const title=(anchor.textContent||"").replace(/\s+/g," ").trim()||target.pathname;
   try{
    const next=[{title,path:target.pathname,at:Date.now()},...readRecent().filter(item=>item.path!==target.pathname)].slice(0,5);
    localStorage.setItem(RECENT_KEY,JSON.stringify(next));
