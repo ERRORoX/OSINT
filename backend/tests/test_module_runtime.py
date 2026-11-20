@@ -53,7 +53,7 @@ class ModuleRuntimeTests(unittest.TestCase):
         project_root = BACKEND_DIR.parent
         loaded, issues = load_integrated_tools(project_root)
         loaded_ids = {tool.tool_id for tool in loaded}
-        expected = {"ip-rdap", "domain-search", "dnsx", "subfinder", "shodan", "theharvester", "photo-search"}
+        expected = {"ip-rdap", "domain-search", "dnsx", "subfinder", "shodan", "theharvester", "photo-search", "google-osint"}
         self.assertTrue(expected.issubset(loaded_ids), f"Missing runtime modules: {expected - loaded_ids}")
         self.assertEqual(issues, [])
 
