@@ -119,6 +119,17 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn('Promise.allSettled', hub_script)
 
 
+
+    def test_saved_material_archive_controls(self):
+        page = (ROOT / "static" / "index.html").read_text(encoding="utf-8")
+        script = (ROOT / "static" / "js" / "app-hub.js").read_text(encoding="utf-8")
+        styles = (ROOT / "static" / "css" / "hub-only.css").read_text(encoding="utf-8")
+        self.assertIn('id="saved-materials-export"', page)
+        self.assertIn('link.download="osint-panel-materials-', script)
+        self.assertIn('data-saved-index', script)
+        self.assertIn('saved-material-source-link', styles)
+
+
 if __name__ == "__main__":
     unittest.main()
 
