@@ -9,7 +9,7 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23050914'/><path d='M16 4 27 10v12l-11 6L5 22V10z' fill='none' stroke='%230b75ff' stroke-width='2'/></svg>">
   <link rel="stylesheet" href="/css/tool-bundle/hub.css">
   <link rel="stylesheet" href="/css/panel-41.css?v=4.2.0">
-  <link rel="stylesheet" href="/css/hub-only.css?v=4.2.16">
+  <link rel="stylesheet" href="/css/hub-only.css?v=4.2.17">
 </head>
 <body class="dashboard-page">
   <div class="dashboard-shell">
@@ -43,20 +43,7 @@
             </div>
             <div class="hero-meta"><span><i></i> Локальная среда</span><span>OSINT PANEL <b>4.2</b></span></div>
           </div>
-          <section class="investigation-visual graph-workspace" id="investigation-graph-panel" aria-label="Интерактивная карта связей">
-            <div class="graph-heading"><div><span class="graph-eyebrow">RELATIONSHIP ANALYSIS</span><h2>Карта связей</h2></div><span class="graph-mode-badge" id="graph-data-mode">ДЕМО-ДАННЫЕ</span></div>
-            <div class="graph-toolbar">
-              <label class="graph-mode-select">Набор данных<select id="graph-dataset-mode"><option value="demo">Демонстрация</option><option value="local">Мои данные</option></select></label>
-              <div class="graph-zoom-controls" aria-label="Управление масштабом"><button type="button" id="graph-zoom-out" aria-label="Уменьшить">−</button><button type="button" id="graph-zoom-reset" aria-label="Сбросить масштаб">100%</button><button type="button" id="graph-zoom-in" aria-label="Увеличить">+</button><button type="button" id="graph-fit" aria-label="Вписать граф">Вписать</button></div>
-            </div>
-            <div class="graph-filter-row" aria-label="Фильтр типов сущностей">
-              <label><input type="checkbox" data-graph-filter="person" checked> Люди</label><label><input type="checkbox" data-graph-filter="domain" checked> Домены</label><label><input type="checkbox" data-graph-filter="ip" checked> IP</label><label><input type="checkbox" data-graph-filter="email" checked> Email</label><label><input type="checkbox" data-graph-filter="organization" checked> Организации</label>
-            </div>
-            <div class="graph-canvas-wrap"><svg id="investigation-graph" class="relationship-graph interactive-relationship-graph" viewBox="0 0 760 420" role="img" aria-label="Интерактивный граф сущностей и связей"><g id="graph-viewport"><g id="graph-edges"></g><g id="graph-nodes"></g></g></svg><div class="graph-empty-state" id="graph-empty-state" hidden>Нет данных для отображения. Импортируйте JSON с узлами и связями.</div></div>
-            <div class="graph-bottomline"><span id="graph-summary" role="status">Загрузка графа…</span><span>Перетаскивайте узлы · колесо мыши — масштаб</span></div>
-            <div class="graph-detail" id="graph-node-details"><span class="graph-detail-type">ОБЪЕКТ НЕ ВЫБРАН</span><strong>Выберите узел на карте</strong><p>Здесь появятся тип сущности, описание и связанные объекты.</p></div>
-            <details class="graph-import"><summary>Импортировать собственный граф (JSON)</summary><p>Локальный формат: массивы <code>nodes</code> и <code>edges</code>. Данные сохраняются только в этом браузере.</p><textarea id="graph-json-input" rows="5" spellcheck="false" placeholder='{"nodes":[{"id":"n1","type":"domain","label":"example.org"}],"edges":[]}'></textarea><div><button type="button" id="graph-import-button">Загрузить граф</button><button type="button" id="graph-export-button">Экспортировать JSON</button><button type="button" id="graph-clear-button">Очистить мои данные</button></div><span id="graph-import-status" role="status"></span></details>
-          </section>
+
           <aside class="system-card investigation-status">
             <div class="panel-heading"><span class="heading-dot"></span><h2>Состояние системы</h2><span class="live-label">LOCAL</span></div>
             <div class="system-content">
@@ -89,6 +76,22 @@
           <div class="flow-step"><span>04</span><div><b>Результат</b><small>История и заметки</small></div></div>
         </section>
 
+        <section class="investigation-visual graph-workspace" id="investigation-graph-panel" aria-label="Интерактивная карта связей">
+            <div class="graph-heading"><div><span class="graph-eyebrow">RELATIONSHIP ANALYSIS</span><h2>Карта связей</h2></div><span class="graph-mode-badge" id="graph-data-mode">ДЕМО-ДАННЫЕ</span></div>
+            <div class="graph-toolbar">
+              <label class="graph-mode-select">Набор данных<select id="graph-dataset-mode"><option value="demo">Демонстрация</option><option value="local">Мои данные</option></select></label>
+              <div class="graph-zoom-controls" aria-label="Управление масштабом"><button type="button" id="graph-zoom-out" aria-label="Уменьшить">−</button><button type="button" id="graph-zoom-reset" aria-label="Сбросить масштаб">100%</button><button type="button" id="graph-zoom-in" aria-label="Увеличить">+</button><button type="button" id="graph-fit" aria-label="Вписать граф">Вписать</button></div>
+            </div>
+            <div class="graph-filter-row" aria-label="Фильтр типов сущностей">
+              <label><input type="checkbox" data-graph-filter="person" checked> Люди</label><label><input type="checkbox" data-graph-filter="domain" checked> Домены</label><label><input type="checkbox" data-graph-filter="ip" checked> IP</label><label><input type="checkbox" data-graph-filter="email" checked> Email</label><label><input type="checkbox" data-graph-filter="organization" checked> Организации</label>
+            </div>
+            <div class="graph-canvas-wrap"><svg id="investigation-graph" class="relationship-graph interactive-relationship-graph" viewBox="0 0 760 420" role="img" aria-label="Интерактивный граф сущностей и связей"><g id="graph-viewport"><g id="graph-edges"></g><g id="graph-nodes"></g></g></svg><div class="graph-empty-state" id="graph-empty-state" hidden>Нет данных для отображения. Импортируйте JSON с узлами и связями.</div></div>
+            <div class="graph-bottomline"><span id="graph-summary" role="status">Загрузка графа…</span><span>Перетаскивайте узлы · колесо мыши — масштаб</span></div>
+            <div class="graph-detail" id="graph-node-details"><span class="graph-detail-type">ОБЪЕКТ НЕ ВЫБРАН</span><strong>Выберите узел на карте</strong><p>Здесь появятся тип сущности, описание и связанные объекты.</p></div>
+            <details class="graph-import"><summary>Импортировать собственный граф (JSON)</summary><p>Локальный формат: массивы <code>nodes</code> и <code>edges</code>. Данные сохраняются только в этом браузере.</p><textarea id="graph-json-input" rows="5" spellcheck="false" placeholder='{"nodes":[{"id":"n1","type":"domain","label":"example.org"}],"edges":[]}'></textarea><div><button type="button" id="graph-import-button">Загрузить граф</button><button type="button" id="graph-export-button">Экспортировать JSON</button><button type="button" id="graph-clear-button">Очистить мои данные</button></div><span id="graph-import-status" role="status"></span></details>
+          </section>
+
+
         <div class="content-columns">
           <div class="primary-column">
             <section class="content-panel tools-panel" id="tools-section">
@@ -111,6 +114,17 @@
               <div class="tools-footnote"><span>●</span> Список разделов загружается из локального сервера.</div>
             </section>
 
+
+
+
+
+          </div>
+
+          <aside class="secondary-column">
+            <section class="content-panel activity-panel">
+              <div class="section-heading compact-heading"><div><span class="eyebrow">SESSION</span><h2>Последняя активность</h2></div><span class="activity-live">LOCAL</span></div>
+              <div id="hub-activity" class="activity-list"><div class="activity-empty">Здесь появятся недавно открытые разделы.</div></div>
+            </section>
             <section class="content-panel insight-panel">
               <div class="section-heading compact-heading"><div><span class="eyebrow">YOUR WORKSPACE</span><h2>Быстрый доступ</h2></div><span class="subtle-label">Локальные данные</span></div>
               <div class="quick-access">
@@ -118,7 +132,19 @@
                 <a href="/p/settings/"><span class="quick-icon">⚙</span><span><strong>Настройки API</strong><small>Конфигурация подключений</small></span><b>→</b></a>
               </div>
             </section>
+            <section class="content-panel info-panel">
+              <div class="section-heading compact-heading"><div><span class="eyebrow">PROJECT INFO</span><h2>О проекте</h2></div><span class="info-symbol">◈</span></div>
+              <p>OSINT Panel объединяет инструменты для работы с общедоступными источниками, проверки инфраструктуры и анализа цифровых следов.</p>
+              <div class="info-meta"><span>Версия интерфейса</span><strong>4.2</strong></div>
+              <div class="info-meta"><span>Режим</span><strong>Локальный</strong></div>
+            </section>
+            <section class="content-panel safety-panel">
+              <span class="safety-icon">◇</span><div><strong>Ответственное использование</strong><p>Используйте инструменты законно и уважайте приватность других людей.</p></div>
+            </section>
+          </aside>
+        </div>
 
+        <div class="workspace-bottom-grid">
             <section class="content-panel saved-materials-panel" id="saved-materials-panel">
               <div class="section-heading compact-heading">
                 <div><span class="eyebrow">CASE MATERIALS</span><h2>Сохранённые материалы</h2></div>
@@ -140,23 +166,6 @@
               </form>
               <div id="case-project-list" class="case-project-list"><div class="saved-materials-empty">Пока нет дел. Создайте первое расследование.</div></div>
             </section>
-          </div>
-
-          <aside class="secondary-column">
-            <section class="content-panel activity-panel">
-              <div class="section-heading compact-heading"><div><span class="eyebrow">SESSION</span><h2>Последняя активность</h2></div><span class="activity-live">LOCAL</span></div>
-              <div id="hub-activity" class="activity-list"><div class="activity-empty">Здесь появятся недавно открытые разделы.</div></div>
-            </section>
-            <section class="content-panel info-panel">
-              <div class="section-heading compact-heading"><div><span class="eyebrow">PROJECT INFO</span><h2>О проекте</h2></div><span class="info-symbol">◈</span></div>
-              <p>OSINT Panel объединяет инструменты для работы с общедоступными источниками, проверки инфраструктуры и анализа цифровых следов.</p>
-              <div class="info-meta"><span>Версия интерфейса</span><strong>4.2</strong></div>
-              <div class="info-meta"><span>Режим</span><strong>Локальный</strong></div>
-            </section>
-            <section class="content-panel safety-panel">
-              <span class="safety-icon">◇</span><div><strong>Ответственное использование</strong><p>Используйте инструменты законно и уважайте приватность других людей.</p></div>
-            </section>
-          </aside>
         </div>
       </main>
 
