@@ -18,6 +18,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 _BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
 _PROJECT_ROOT = os.path.dirname(_BACKEND_DIR)
 _GRABCAM_PANEL_DIR = os.path.join(_PROJECT_ROOT, "tools", "grabcam", "panel")
+_IP_RDAP_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "ip-rdap", "frontend")
 if _BACKEND_DIR not in sys.path:
     sys.path.insert(0, _BACKEND_DIR)
 
@@ -842,6 +843,18 @@ def grabcam_panel_static(path):
 
 
 # --- API ---
+
+@app.route("/modules/ip-rdap/", methods=["GET"])
+def ip_rdap_module_page():
+    """Serve the canonical IP/RDAP module frontend."""
+    return send_from_directory(_IP_RDAP_FRONTEND_DIR, "index.html")
+
+
+@app.route("/modules/ip-rdap/<path:filename>", methods=["GET"])
+def ip_rdap_module_assets(filename):
+    """Serve static assets owned by the IP/RDAP module."""
+    return send_from_directory(_IP_RDAP_FRONTEND_DIR, filename)
+
 
 @app.route("/api/modules", methods=["GET"])
 def api_modules_list():
