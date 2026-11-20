@@ -338,7 +338,7 @@ body.dashboard-page{margin:0!important;min-height:100vh;background:radial-gradie
 .case-project-form{display:grid;gap:10px;padding:13px;border:1px solid rgba(72,111,158,.22);border-radius:10px;background:rgba(7,17,32,.25);margin-bottom:12px}
 .case-project-field{display:grid;gap:5px;min-width:0}
 .case-project-field>span{color:#8fa8c8;font-size:10px}
-.case-project-field input,.case-project-field textarea,.case-project-field select{width:100%;box-sizing:border-box;padding:9px 10px;border:1px solid rgba(88,132,183,.28);border-radius:7px;background:#091525;color:#d4e3f6;font:11px/1.5 inherit;outline:none}
+.case-project-field input,.case-project-field textarea,.case-project-field select{width:100%;box-sizing:border-box;padding:9px 10px;border:1px solid rgba(88,132,183,.28);border-radius:7px;background:#091525;color:#d4e3f6;font:inherit;font-size:11px;line-height:1.5;outline:none}
 .case-project-field input:focus,.case-project-field textarea:focus,.case-project-field select:focus{border-color:#4b91d3;box-shadow:0 0 0 2px rgba(75,145,211,.12)}
 .case-project-field textarea{resize:vertical;min-height:58px}
 .case-project-list{display:grid;gap:10px}
