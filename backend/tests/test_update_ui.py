@@ -23,8 +23,14 @@ class UpdateUITests(unittest.TestCase):
         self.assertIn("/system/update/status?job_id=", source)
         self.assertIn("data.progress", source)
         self.assertIn("formatDuration(elapsed)", source)
-        self.assertIn("data.state === \"completed\"", source)
-        self.assertIn("data.state === \"error\"", source)
+        self.assertIn('data.state === "completed"', source)
+        self.assertIn('data.state === "error"', source)
+
+    def test_updater_uses_one_check_and_update_button(self):
+        source = (ROOT / "static" / "js" / "settings.js").read_text(encoding="utf-8")
+        self.assertIn('id="btn-install-update"', source)
+        self.assertIn("↻ Обновить", source)
+        self.assertNotIn("btn-check-update", source)
 
     def test_backend_exposes_update_job_status(self):
         source = (ROOT / "backend" / "app.py").read_text(encoding="utf-8")
