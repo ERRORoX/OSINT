@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "id": "grabcam",
+  "name": "GrabCam",
+  "version": "2.0.0",
+  "category": "education",
+  "description": "Учебная демонстрация браузерных разрешений с явным действием пользователя; серверная версия не собирает данные посетителей.",
+  "status": "legacy",
+  "enabled": true,
+  "entrypoints": {
+    "page_url": "/p/grabcam/",
+    "frontend": "static/p/grabcam/page.js",
+    "backend_adapter": "backend/tools/tool_grabcam.py",
+    "manifest_readme": "tools/grabcam/README.md"
+  },
+  "dependencies": {
+    "python": [],
+    "system": ["php"],
+    "optional": ["ssh", "cloudflared"]
+  },
+  "capabilities": [
+    "local-demo-server",
+    "explicit-browser-permission-demo",
+    "tunnel-link-management"
+  ],
+  "legacy_paths": [
+    "static/p/grabcam/index.html",
+    "static/p/grabcam/page.js",
+    "backend/tools/tool_grabcam.py",
+    "tools/grabcam/panel/",
+    "tools/grabcam/demo/"
+  ],
+  "notes": [
+    "Это первый manifest и пример целевой структуры, а не завершённый перенос.",
+    "До отдельной проверки старые файлы не удалять и не переносить массово.",
+    "Активная учебная демонстрация требует явного действия пользователя; скрытый сбор данных и автоматическая отправка данных не поддерживаются."
+  ]
+}
