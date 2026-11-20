@@ -43,6 +43,11 @@ def check_update() -> dict:
 
 
 def install_update() -> dict:
+    current_branch = _git("branch", "--show-current")
+    if current_branch != BRANCH:
+        raise UpdateError(
+            f"Установка разрешена только из ветки {BRANCH}; сейчас активна ветка {current_branch or 'detached HEAD'}."
+        )
     status = _git("status", "--porcelain")
     if status:
         raise UpdateError(
