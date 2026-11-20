@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>GrabCam — учебная демонстрация</title>
+  <style>
+    :root{color-scheme:dark;--bg:#080d18;--panel:#101a2b;--line:#22334d;--text:#e8f0ff;--muted:#9aacc7;--accent:#58a6ff;--ok:#52d6a2}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;padding:28px 16px;display:grid;place-items:center;background:radial-gradient(ellipse at 50% 0,#152b49 0,transparent 55%),var(--bg);font:15px/1.55 Inter,system-ui,sans-serif;color:var(--text)}
+    main{width:min(100%,720px);padding:clamp(22px,5vw,42px);border:1px solid var(--line);border-radius:22px;background:rgba(16,26,43,.96);box-shadow:0 24px 80px #0008}
+    .eyebrow{color:var(--accent);font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+    h1{margin:10px 0;font-size:clamp(26px,5vw,38px);line-height:1.15}p{color:var(--muted)}
+    .notice{margin:22px 0;padding:14px 16px;border:1px solid #31537a;border-radius:12px;background:#10233a;color:#c8ddf8}
+    .actions{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0}
+    button{border:1px solid var(--line);border-radius:10px;padding:11px 15px;background:#17263d;color:var(--text);font:inherit;font-weight:600;cursor:pointer}
+    button.primary{background:#1d65ad;border-color:#347fc8}button:disabled{opacity:.55;cursor:not-allowed}
+    video{display:block;width:100%;max-height:360px;background:#05080e;border:1px solid var(--line);border-radius:12px}
+    .result{min-height:24px;margin-top:14px;color:var(--ok);overflow-wrap:anywhere}
+    footer{margin-top:28px;padding-top:16px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+  </style>
+</head>
+<body>
+<main>
+  <div class="eyebrow">Cybersecurity lab · controlled demonstration</div>
+  <h1>Учебная демонстрация GrabCam</h1>
+  <p>Эта страница предназначена для показа принципов браузерных разрешений в тестовой лаборатории.</p>
+  <div class="notice"><strong>Важно:</strong> камера и геолокация не включаются автоматически. Доступ запрашивается только после нажатия соответствующей кнопки. Данные не отправляются на сервер и не сохраняются.</div>
+  <section aria-labelledby="camera-title">
+    <h2 id="camera-title">Проверка разрешения камеры</h2>
+    <p>Нажмите кнопку, чтобы браузер показал стандартный запрос доступа. Изображение отображается только в этом окне.</p>
+    <div class="actions"><button class="primary" id="camera-start">Запросить доступ к камере</button><button id="camera-stop" disabled>Остановить камеру</button></div>
+    <video id="preview" autoplay playsinline muted></video>
+  </section>
+  <section aria-labelledby="geo-title">
+    <h2 id="geo-title">Проверка разрешения геолокации</h2>
+    <p>Запрос координат выполняется отдельно и только после нажатия.</p>
+    <div class="actions"><button id="geo-request">Запросить геолокацию</button></div>
+  </section>
+  <div class="result" id="result" role="status" aria-live="polite"></div>
+  <footer>Лабораторная страница не является страницей входа стороннего сервиса. Не вводите реальные пароли или персональные данные.</footer>
+</main>
+<script>
+(() => {
+  const video = document.getElementById("preview");
+  const result = document.getElementById("result");
+  const start = document.getElementById("camera-start");
+  const stop = document.getElementById("camera-stop");
+  let stream = null;
+  start.addEventListener("click", async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      result.textContent = "Камера недоступна: откройте страницу через HTTPS или localhost и проверьте поддержку браузера.";
+      return;
+    }
+    start.disabled = true;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+      video.srcObject = stream;
+      stop.disabled = false;
+      result.textContent = "Камера включена локально. Поток не отправляется и не записывается.";
+    } catch (error) {
+      result.textContent = "Доступ к камере не предоставлен: " + (error.name || "ошибка");
+    } finally {
+      start.disabled = false;
+    }
+  });
+  stop.addEventListener("click", () => {
+    if (stream) stream.getTracks().forEach(track => track.stop());
+    stream = null;
+    video.srcObject = null;
+    stop.disabled = true;
+    result.textContent = "Камера остановлена.";
+  });
+  document.getElementById("geo-request").addEventListener("click", () => {
+    if (!navigator.geolocation) {
+      result.textContent = "Геолокация не поддерживается этим браузером.";
+      return;
+    }
+    result.textContent = "Ожидание ответа браузера…";
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        const {latitude,longitude,accuracy} = position.coords;
+        result.textContent = "Разрешение получено. Координаты показаны только здесь: " +
+          latitude.toFixed(5) + ", " + longitude.toFixed(5) + " (точность ±" + Math.round(accuracy) + " м).";
+      },
+      error => { result.textContent = "Геолокация не предоставлена: " + (error.message || error.code); },
+      {enableHighAccuracy:false,timeout:10000,maximumAge:0}
+    );
+  });
+  window.addEventListener("pagehide", () => {
+    if (stream) stream.getTracks().forEach(track => track.stop());
+  });
+})();
+</script>
+</body>
+</html>
