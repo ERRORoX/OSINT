@@ -19,5 +19,5 @@ export const html = `<section class="gc-widget gc-widget-control" data-gc-module
 </form>
 </div>
 <p id="gc-method-hint" class="gc-control-hint" aria-live="polite"></p>
-<p class="gc-control-desc">Камера и геолокация на учебной странице запрашиваются отдельно после нажатия. Данные не отправляются и не сохраняются.</p>
+<p class="gc-control-desc">Камера и геолокация запрашиваются отдельно после действия посетителя. Страница показывает их локально: фото, файлы, звук, экран, формы и координаты не отправляются в панель и не сохраняются.</p>
 </section>`;
