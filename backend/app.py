@@ -19,6 +19,7 @@ _BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
 _PROJECT_ROOT = os.path.dirname(_BACKEND_DIR)
 _GRABCAM_PANEL_DIR = os.path.join(_PROJECT_ROOT, "tools", "grabcam", "panel")
 _IP_RDAP_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "ip-rdap", "frontend")
+_DOMAIN_WORKSPACE_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "domain-workspace", "frontend")
 if _BACKEND_DIR not in sys.path:
     sys.path.insert(0, _BACKEND_DIR)
 
@@ -155,12 +156,20 @@ def domain_page_no_slash():
 
 @app.route("/domain/")
 def domain_page():
-    """Автономная страница Domain tools: static/domain/index.html."""
-    base = os.path.join(app.static_folder, "domain")
-    index_path = os.path.join(base, "index.html")
-    if not os.path.isfile(index_path):
-        return jsonify({"error": "Страница не найдена", "page": "domain"}), 404
-    return send_from_directory(base, "index.html")
+    """Compatibility URL for the canonical Domain Workspace module."""
+    return redirect("/modules/domain-workspace/", code=302)
+
+
+@app.route("/modules/domain-workspace/", methods=["GET"])
+def domain_workspace_module_page():
+    """Serve the canonical Domain Workspace frontend."""
+    return send_from_directory(_DOMAIN_WORKSPACE_FRONTEND_DIR, "index.html")
+
+
+@app.route("/modules/domain-workspace/<path:filename>", methods=["GET"])
+def domain_workspace_module_assets(filename):
+    """Serve static assets owned by the Domain Workspace module."""
+    return send_from_directory(_DOMAIN_WORKSPACE_FRONTEND_DIR, filename)
 
 
 @app.route("/api/exif", methods=["POST"])
