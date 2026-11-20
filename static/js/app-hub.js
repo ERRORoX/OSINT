@@ -114,6 +114,45 @@ function renderHubCards(){
   const id=button.dataset.favorite;const next=getFavorites();const updated=next.includes(id)?next.filter(x=>x!==id):[...next,id];setFavorites(updated);renderHubCards();
  }));
 }
+const RECENT_KEY="osint-panel-recent";
+function readRecent(){
+ try{
+  const items=JSON.parse(localStorage.getItem(RECENT_KEY)||"[]");
+  return Array.isArray(items)?items.filter(item=>item&&typeof item.title==="string"&&typeof item.path==="string"&&item.path.startsWith("/")&&!item.path.startsWith("//")).slice(0,5):[];
+ }catch(_){return[];}
+}
+function renderActivity(){
+ const host=document.getElementById("hub-activity");if(!host)return;
+ const items=readRecent();
+ if(!items.length){host.innerHTML='<div class="activity-empty">Здесь появятся недавно открытые разделы.</div>';return;}
+ host.innerHTML=items.map(item=>{
+  const age=Math.max(0,Date.now()-(Number(item.at)||Date.now()));
+  const time=age<60000?"только что":age<3600000?Math.floor(age/60000)+" мин назад":new Date(Number(item.at)||Date.now()).toLocaleDateString("ru-RU",{day:"2-digit",month:"short"});
+  return '<a class="activity-entry" href="'+escapeHtml(item.path)+'"><span class="activity-entry-dot"></span><span class="activity-entry-copy"><strong>'+escapeHtml(item.title)+'</strong><small>'+time+'</small></span><b>→</b></a>';
+ }).join("");
+}
+function wireActivity(){
+ renderActivity();
+ document.addEventListener("click",event=>{
+  const anchor=event.target.closest("a[href]");if(!anchor)return;
+  let target;try{target=new URL(anchor.href,location.origin);}catch(_){return;}
+  if(target.origin!==location.origin||!target.pathname.startsWith("/")||target.pathname===location.pathname||target.hash&&!target.pathname)return;
+  const title=(anchor.textContent||"").replace(/\\s+/g," ").trim()||target.pathname;
+  try{
+   const next=[{title,path:target.pathname,at:Date.now()},...readRecent().filter(item=>item.path!==target.pathname)].slice(0,5);
+   localStorage.setItem(RECENT_KEY,JSON.stringify(next));
+  }catch(_){}
+ });
+}
+function wireShowAllTools(){
+ const link=document.getElementById("show-all-tools");if(!link)return;
+ link.addEventListener("click",()=>{
+  activeFilter="all";
+  const search=document.getElementById("hub-search");if(search)search.value="";
+  document.querySelectorAll("[data-hub-filter]").forEach(button=>button.setAttribute("aria-pressed",String(button.dataset.hubFilter==="all")));
+  renderHubCards();
+ });
+}
 function wireFilters(){
  document.querySelectorAll("[data-hub-filter]").forEach(button=>button.addEventListener("click",()=>{
   activeFilter=button.dataset.hubFilter;
@@ -228,6 +267,8 @@ async function init(){
  wireUpdater();
  document.getElementById("hub-search")?.addEventListener("input",renderHubCards);
  wireFilters();
+ wireActivity();
+ wireShowAllTools();
  const [toolsResult,navigationResult]=await Promise.allSettled([loadTools(),loadNavigation()]);
  const toolsAvailable=toolsResult.status==="fulfilled"&&Array.isArray(toolsResult.value);
  loadedTools=toolsAvailable?toolsResult.value:[];
