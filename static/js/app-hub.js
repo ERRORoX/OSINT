@@ -153,8 +153,7 @@ function wireUpdater(){
    const check=await checkResponse.json();
    if(!checkResponse.ok)throw new Error(check.error||"Не удалось проверить обновления");
    if(!check.available){status.textContent="Установлена последняя версия.";button.disabled=false;return;}
-   const promptText="Доступно обновление ("+check.commits_behind+" коммитов) из тестового канала 4.2. Установить? Перед обновлением будет создана резервная ветка.";
-   if(!window.confirm(promptText)){status.textContent="Обновление отложено.";button.disabled=false;return;}
+   status.textContent="Доступно обновление ("+check.commits_behind+" коммитов). Запускаю установку…";
    panel.hidden=false;panel.style.display="block";status.textContent="Обновление выполняется…";
    const startedAt=Date.now();
    let latestProgress=0;
