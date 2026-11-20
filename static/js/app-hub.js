@@ -70,13 +70,13 @@ function wireUpdater(){
    const check=await checkResponse.json();
    if(!checkResponse.ok)throw new Error(check.error||"Не удалось проверить обновления");
    if(!check.available){status.textContent="Установлена последняя версия.";return;}
-   const promptText="Доступно обновление ("+check.commits_behind+" коммитов). Установить его сейчас? Перед обновлением будет создана резервная ветка.";
+   const promptText="Доступно обновление ("+check.commits_behind+" коммитов) из тестового канала 4.2. Установить? Перед обновлением будет создана резервная ветка.";
    if(!window.confirm(promptText)){status.textContent="Обновление отложено.";return;}
    status.textContent="Установка обновления…";
    const installResponse=await fetch("/api/system/update",{method:"POST",cache:"no-store",headers:{"Accept":"application/json","X-Requested-With":"OSINT-Panel"}});
    const result=await installResponse.json();
    if(!installResponse.ok)throw new Error(result.error||"Не удалось установить обновление");
-   status.textContent=result.updated?"Обновлено. Перезапусти сервер.":"Обновления не требуются.";
+   status.textContent=result.updated?"Обновлено. Сервер автоматически перезапускается…":"Обновления не требуются.";
   }catch(error){status.textContent=error.message||"Ошибка обновления";}
   finally{button.disabled=false;}
  });
