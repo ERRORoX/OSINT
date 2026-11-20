@@ -110,7 +110,7 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn("/css/hub-only.css", page)
         self.assertIn('class="investigation-hero"', page)
         self.assertIn('class="relationship-graph"', page)
-        self.assertIn('Схема интерфейса', page)
+        self.assertIn('id="investigation-graph"', page)
         self.assertIn('id="metric-tools"', page)
         self.assertIn('id="metric-sections"', page)
         self.assertIn('id="metric-categories"', page)
