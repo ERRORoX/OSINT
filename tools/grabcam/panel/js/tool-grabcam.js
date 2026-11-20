@@ -71,6 +71,9 @@ function runFeaturesAfterMount(container) {
         const submitBtn = container.querySelector("#gc-btn-start");
         const stopBtn = container.querySelector("#gc-btn-stop");
         const statusEl = container.querySelector("#gc-status");
+        if (!st.running && st.error && statusEl) {
+          statusEl.textContent = st.error;
+        }
         if (st.running || st.link || st.local_url) {
           if (st.link || st.local_url) showLink(st.link || null, st.local_url || null);
           const statusToggle = container.querySelector("#gc-feat-status");
