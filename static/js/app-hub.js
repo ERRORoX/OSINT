@@ -230,6 +230,7 @@ async function init(){
  document.getElementById("hub-search")?.addEventListener("input",renderHubCards);
  wireFilters();
  wireHeader();
+ wireSidebar();
  wireUpdater();
 }
 init().catch(error=>{const message=error?.message||"Нет связи с сервером";const main=document.getElementById("main-content");if(main)main.insertAdjacentHTML("afterbegin",'<div class="init-error" role="alert"><strong>Ошибка загрузки:</strong> '+escapeHtml(message)+'<p>Проверьте сервер и обновите страницу.</p></div>');});
