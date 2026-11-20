@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "id": "ai-agent",
+  "name": "AI Agent",
+  "version": "1.0.0",
+  "category": "utility",
+  "description": "Интерфейс AI-агента для последовательного выполнения разрешённых OSINT-задач через зарегистрированные инструменты.",
+  "status": "integrated",
+  "enabled": true,
+  "entrypoints": {
+    "page_url": "/modules/ai-agent/",
+    "frontend": "tools/ai-agent/frontend/index.html",
+    "manifest_readme": "tools/ai-agent/README.md"
+  },
+  "dependencies": {
+    "python": [],
+    "system": [],
+    "optional": [
+      "OpenRouter API key"
+    ]
+  },
+  "capabilities": [
+    "ai-assisted-workflow",
+    "tool-orchestration",
+    "user-confirmed-actions"
+  ],
+  "legacy_paths": [
+    "static/p/ai-agent/index.html",
+    "static/p/ai-agent/page.js"
+  ],
+  "notes": [
+    "Frontend перенесён в tools/ai-agent; backend orchestration использует API приложения.",
+    "Ключи провайдеров хранятся в настройках, не в manifest."
+  ]
+}
