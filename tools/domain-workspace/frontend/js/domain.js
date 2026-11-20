@@ -915,7 +915,7 @@ function renderSearch() {
     </div>
     ${
       anyR
-        ? `<div class="progress-wrap"><div class="progress-bar"><div class="progress-fill" style="width:${(progress / totalSelected) * 100}%"></div></div><div class="progress-text"><span>${doneSet.size}/${totalSelected} готово · ${running.size} выполняется</span><span>${Math.round((progress / TOOLS.length) * 100)}%</span></div></div>`
+        ? `<div class="progress-wrap"><div class="progress-bar"><div class="progress-fill" style="width:${(progress / totalSelected) * 100}%"></div></div><div class="progress-text"><span>${doneSet.size}/${totalSelected} готово · ${running.size} выполняется</span><span>${Math.round((progress / totalSelected) * 100)}%</span></div></div>`
         : ""
     }`;
   }
