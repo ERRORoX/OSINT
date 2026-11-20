@@ -30,6 +30,7 @@ from tools.tool_formgrab import add_capture, get_captures, get_grab_page_html, g
 from settings_keys import get_keys_for_api, save_keys_from_api, load_env_into_os
 
 from css_bundle import BUNDLE_TOOL_IDS, build_tool_css_bundle
+from update_manager import check_update, install_update, UpdateError
 
 import requests
 from bs4 import BeautifulSoup
@@ -1475,6 +1476,44 @@ def api_ai_automate():
     })
 
 
+
+def _local_update_request():
+    """Разрешает управление обновлениями только с localhost и same-origin."""
+    try:
+        if not ipaddress.ip_address(request.remote_addr or "").is_loopback:
+            return False
+    except ValueError:
+        return False
+    origin = request.headers.get("Origin")
+    if origin:
+        parsed = urlparse(origin)
+        if parsed.netloc != request.host:
+            return False
+    return True
+
+
+@app.route("/api/system/update", methods=["GET"])
+def api_system_update_check():
+    if not _local_update_request():
+        return jsonify({"error": "Доступ разрешён только с этого компьютера."}), 403
+    try:
+        return jsonify(check_update())
+    except UpdateError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
+@app.route("/api/system/update", methods=["POST"])
+def api_system_update_install():
+    if not _local_update_request():
+        return jsonify({"error": "Доступ разрешён только с этого компьютера."}), 403
+    if request.headers.get("X-Requested-With") != "OSINT-Panel":
+        return jsonify({"error": "Недопустимый запрос обновления."}), 400
+    try:
+        return jsonify(install_update())
+    except UpdateError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
 @app.route("/api/settings/keys", methods=["GET"])
 def api_settings_keys_get():
     """Список ключей с подсказками и замаскированными значениями."""
@@ -1498,4 +1537,4 @@ def static_files(path):
 
 if __name__ == "__main__":
     os.makedirs(os.path.join(os.path.dirname(__file__), "..", "static"), exist_ok=True)
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="127.0.0.1", port=5000, debug=False)
