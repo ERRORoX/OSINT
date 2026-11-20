@@ -47,5 +47,8 @@ jobs:
       - name: Test Domain Search module
         run: python -m unittest discover -s tools/domain-search/tests -p "test_*.py" -v
 
+      - name: Validate integrated runtime modules
+        run: python backend/module_cli.py runtime-check
+
       - name: Validate module manifests
         run: python backend/module_cli.py check
