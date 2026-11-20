@@ -158,6 +158,7 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn('fetch(API + "/graph/merge"', domain_script)
         self.assertIn("await persistReportToGraph(lastReport)", domain_script)
         self.assertIn("Карта связей обновлена", domain_script)
+        self.assertIn("if (!successfulTools.length) return { nodes, edges };", domain_script)
 
     def test_relationship_graph_uses_server_sqlite_api(self):
         app_source = (ROOT / "backend" / "app.py").read_text(encoding="utf-8")
