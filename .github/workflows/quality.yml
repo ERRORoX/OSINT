@@ -33,6 +33,9 @@ jobs:
         run: python -m unittest discover -s backend/tests -p "test_module_runtime.py" -v
 
       - name: Test Photo Search module
+      - name: Test Google OSINT module
+        run: python tools/google-osint/tests/test_tool.py -v
+
         run: python tools/photo-search/tests/test_tool.py -v
 
       - name: Test IP/RDAP module
