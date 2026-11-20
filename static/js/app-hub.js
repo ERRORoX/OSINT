@@ -121,7 +121,7 @@ function wireFilters(){
   renderHubCards();
  }));
 }
-function updateHubStatus(tools){const toolCount=document.getElementById("metric-tools");const sectionCount=document.getElementById("metric-sections");const categoryCount=document.getElementById("metric-categories");if(toolCount)toolCount.textContent=String(tools.length);if(sectionCount)sectionCount.textContent=String(HUB_CARDS.length);if(categoryCount)categoryCount.textContent=String(new Set(HUB_CARDS.map(card=>card.category)).size);}
+function updateHubStatus(tools){const toolCount=document.getElementById("metric-tools");const sectionCount=document.getElementById("metric-sections");const categoryCount=document.getElementById("metric-categories");const railTools=document.getElementById("rail-tools");const railModules=document.getElementById("rail-modules");if(toolCount)toolCount.textContent=String(tools.length);if(sectionCount)sectionCount.textContent=String(HUB_CARDS.length);if(categoryCount)categoryCount.textContent=String(new Set(HUB_CARDS.map(card=>card.category)).size);if(railTools)railTools.textContent=String(tools.length);if(railModules)railModules.textContent=loadedNavigation.length?String(loadedNavigation.length):"Нет данных";}
 function formatEta(seconds){
  const safe=Math.max(0,Math.ceil(seconds));
  const minutes=Math.floor(safe/60);
