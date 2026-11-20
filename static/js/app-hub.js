@@ -189,6 +189,7 @@ function wireSavedMaterials(){
   const card=event.target.closest("[data-saved-id]");
   if(!card)return;
   const id=card.dataset.savedId;
+   const index=Number(card.dataset.savedIndex);
   if(event.target.closest("[data-saved-copy]")){
    const item=(readSavedMaterials()||[]).find(x=>String(x.id||"")===id);
    if(!item)return;
@@ -202,7 +203,15 @@ function wireSavedMaterials(){
    catch(_){event.target.textContent="Ошибка";}
   }
  });
- window.addEventListener("storage",event=>{if(event.key===WORKSPACE_KEY)renderSavedMaterials();});
+ const exportButton=document.getElementById("saved-materials-export");
+  if(exportButton)exportButton.addEventListener("click",()=>{
+   const items=readSavedMaterials();if(!items||!items.length)return;
+   const blob=new Blob([JSON.stringify({exportedAt:new Date().toISOString(),items},null,2)],{type:"application/json"});
+   const url=URL.createObjectURL(blob);const link=document.createElement("a");
+   link.href=url;link.download="osint-panel-materials-"+new Date().toISOString().slice(0,10)+".json";
+   document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url);
+  });
+  window.addEventListener("storage",event=>{if(event.key===WORKSPACE_KEY)renderSavedMaterials();});
  renderSavedMaterials();
 }
 function wireShowAllTools(){
