@@ -49,6 +49,14 @@ class ModuleRuntimeTests(unittest.TestCase):
             "    def run(self, params): return {'success': True, 'output': 'ok'}\n"
         )
 
+    def test_loads_current_integrated_project_modules(self):
+        project_root = BACKEND_DIR.parent
+        loaded, issues = load_integrated_tools(project_root)
+        loaded_ids = {tool.tool_id for tool in loaded}
+        expected = {"ip-rdap", "domain-search", "dnsx", "subfinder", "shodan", "theharvester"}
+        self.assertTrue(expected.issubset(loaded_ids), f"Missing runtime modules: {expected - loaded_ids}")
+        self.assertEqual(issues, [])
+
     def test_loads_only_valid_integrated_tool(self):
         temp, root = self._project(source=self._tool_source())
         self.addCleanup(temp.cleanup)
