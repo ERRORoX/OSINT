@@ -73,7 +73,7 @@ def _validate_manifest(data: Any, expected_id: str, module_dir: Path, project_ro
                 issue("entrypoint_type", f"entrypoints.{key} must be a non-empty relative path.")
                 continue
             rel = Path(value)
-            if rel.is_absolute() or ".." in rel.parts:
+            if "\\\\" in value or "\\x00" in value or re.match(r"^[A-Za-z]:", value) or rel.is_absolute() or ".." in rel.parts:
                 issue("unsafe_entrypoint", f"Unsafe path in entrypoints.{key}.")
                 continue
             # Entry points may intentionally point to legacy files elsewhere in the repository.
@@ -97,7 +97,7 @@ def _validate_manifest(data: Any, expected_id: str, module_dir: Path, project_ro
     else:
         for value in legacy_paths:
             rel = Path(value)
-            if rel.is_absolute() or ".." in rel.parts:
+            if "\\\\" in value or "\\x00" in value or re.match(r"^[A-Za-z]:", value) or rel.is_absolute() or ".." in rel.parts:
                 issue("unsafe_legacy_path", "A legacy path is absolute or escapes the project root.")
                 continue
             target = project_root / rel
