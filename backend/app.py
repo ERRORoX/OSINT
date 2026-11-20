@@ -32,6 +32,7 @@ from tools.tool_formgrab import add_capture, get_captures, get_grab_page_html, g
 from settings_keys import get_keys_for_api, save_keys_from_api, load_env_into_os
 
 from css_bundle import BUNDLE_TOOL_IDS, build_tool_css_bundle
+from module_registry import discover_modules
 from update_manager import check_update, install_update, UpdateError
 
 # Background update job state for the local UI.
@@ -841,6 +842,12 @@ def grabcam_panel_static(path):
 
 
 # --- API ---
+
+@app.route("/api/modules", methods=["GET"])
+def api_modules_list():
+    """Read-only module manifest discovery and diagnostics; does not import module code."""
+    return jsonify(discover_modules(_PROJECT_ROOT))
+
 
 @app.route("/api/tools", methods=["GET"])
 def api_tools_list():
