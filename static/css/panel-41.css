@@ -12,6 +12,7 @@ body {
   background: #080d14;
   color: var(--p41-text);
 }
+.osint-bg { display: none !important; }
 .osint-header-inner {
   background: rgba(8,13,20,.96);
   border-bottom: 1px solid var(--p41-line);
