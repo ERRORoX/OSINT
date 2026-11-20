@@ -278,8 +278,8 @@ def _worker_localhost_run():
     try:
         port = _state.get("php_port") or _PHP_PORT
         proc_php = subprocess.Popen(
-            ["php", "-S", f"127.0.0.1:{port}"],
-            cwd=_GRABCAM_DIR,
+            _php_command(port),
+            cwd=_DEMO_DIR,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             start_new_session=True,
@@ -365,8 +365,8 @@ def _worker_cloudflared():
     try:
         port = _state.get("php_port") or _PHP_PORT
         proc_php = subprocess.Popen(
-            ["php", "-S", f"127.0.0.1:{port}"],
-            cwd=_GRABCAM_DIR,
+            _php_command(port),
+            cwd=_DEMO_DIR,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             start_new_session=True,
