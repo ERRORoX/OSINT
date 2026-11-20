@@ -52,9 +52,6 @@ from .tool_blackbird import ToolBlackbird
 from .tool_shodan import ToolShodan
 from .tool_ip_rdap import ToolIPRDAP
 from .tool_photo_search import ToolPhotoSearch
-from .tool_photo_ai import ToolPhotoAI
-from .tool_photo_ocr import ToolPhotoOCR
-from .tool_photo_qr import ToolPhotoQR
 
 # Список всех инструментов (Holehe и h8mail объединены в Google OSINT)
 TOOLS: list[ToolBase] = [
@@ -62,9 +59,6 @@ TOOLS: list[ToolBase] = [
     ToolInstagramBruter(),
     ToolGrabcam(),
     ToolPhotoSearch(),
-    ToolPhotoAI(),
-    ToolPhotoOCR(),
-    ToolPhotoQR(),
     ToolGoogleOsint(),
     ToolTheharvester(),
     ToolDomainSearch(),
