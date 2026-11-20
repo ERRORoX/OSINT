@@ -109,7 +109,7 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertTrue(dashboard_css.is_file())
         self.assertIn("/css/hub-only.css", page)
         self.assertIn('class="investigation-hero"', page)
-        self.assertIn('class="relationship-graph"', page)
+        self.assertIn('class="relationship-graph interactive-relationship-graph"', page)
         self.assertIn('id="investigation-graph"', page)
         self.assertIn('id="metric-tools"', page)
         self.assertIn('id="metric-sections"', page)
