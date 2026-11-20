@@ -90,7 +90,7 @@ function wireFilters(){
   renderHubCards();
  }));
 }
-function updateHubStatus(tools){const count=document.getElementById("hub-tool-count");if(count)count.textContent=HUB_CARDS.length+" разделов · "+tools.length+" инструментов";}
+function updateHubStatus(tools){const toolCount=document.getElementById("metric-tools");const sectionCount=document.getElementById("metric-sections");const categoryCount=document.getElementById("metric-categories");if(toolCount)toolCount.textContent=String(tools.length);if(sectionCount)sectionCount.textContent=String(HUB_CARDS.length);if(categoryCount)categoryCount.textContent=String(new Set(HUB_CARDS.map(card=>card.category)).size);}
 function formatEta(seconds){
  const safe=Math.max(0,Math.ceil(seconds));
  const minutes=Math.floor(safe/60);
