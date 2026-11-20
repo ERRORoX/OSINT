@@ -79,7 +79,7 @@ API для диагностики: `GET /api/modules`. Ответ содержи
 python -m unittest discover -s backend/tests -p 'test_module_registry.py'
 ```
 
-Сейчас manifests заведены для всех 15 инструментов, присутствующих в текущем backend registry. Их статус `legacy` означает, что описание уже есть, но физический перенос frontend/backend-кода ещё не завершён.
+Сейчас в `tools/` находятся 20 manifests: 18 модулей имеют статус `integrated`, а два (`anonsms` и `instagram-bruter`) остаются `legacy`. Статус `integrated` означает, что модуль подключён через manifest-driven runtime либо является самостоятельной frontend workspace-страницей. Это не означает, что все vendor-файлы и общие ресурсы уже физически перенесены.
 
 ## Module Manager в интерфейсе
 
@@ -116,9 +116,12 @@ python backend/module_cli.py runtime-check
 
 ## Примеры текущей миграции
 
-- `tools/ip-rdap/` — первый полностью интегрированный модуль с собственными frontend, backend, README и тестами. Старый адрес и API сохранены через совместимость.
-- `tools/domain-workspace/` — перенесённая интерфейсная рабочая область доменных инструментов. Она использует существующие backend-модули через стабильные API.
-- Из 15 исходных backend-инструментов 13 уже имеют статус `integrated` (включая IP/RDAP, Domain Search, DNS-инструменты, username-инструменты, Shodan, theHarvester, Google OSINT, Photo Search и GrabCam). Два модуля остаются `legacy`: ANONSMS и Instagram Bruter; их перенос не выполняется автоматически из-за необходимости отдельной оценки рисков и поведения. Дополнительно перенесены frontend-модули Domain Workspace, Photo Workspace, Username Workspace, AI Agent и History; страница Google OSINT также находится в каталоге своего backend-модуля. Старые адреса страниц сохранены через redirects.
+- `tools/ip-rdap/` — самостоятельный frontend/backend-модуль с README и тестами; старый адрес и API сохранены через compatibility layer.
+- `tools/domain-workspace/` — frontend workspace доменного анализа; собственные CSS/JS и HTML обслуживаются из каталога модуля, backend-инструменты вызываются через прежние API.
+- В репозитории 20 manifests: 18 `integrated` и 2 `legacy`. Среди интегрированных backend-инструментов — Domain Search, DNS-инструменты, username-инструменты, Shodan, theHarvester, Google OSINT, Photo Search, GrabCam и IP/RDAP.
+- Самостоятельные frontend workspaces: Domain Workspace, Photo Workspace, Username Workspace, AI Agent и History; Google OSINT также имеет собственную страницу в каталоге модуля.
+- `anonsms` и `instagram-bruter` оставлены в `legacy` и ручной регистрации до отдельной проверки их назначения, сетевого поведения и рисков. Не переводить их в `integrated` только ради формального завершения миграции.
+- Общие CSS, JavaScript и часть API пока остаются в `static/` и `backend/`. Перенос shared-кода в отдельный `core/` — отдельная работа; сначала нужны публичные контракты и регрессионные тесты.
 
 ## Правила независимости
 
@@ -150,12 +153,12 @@ python backend/module_cli.py runtime-check
 
 ## Текущее состояние репозитория
 
-Сейчас проект ещё не является полностью модульным:
+Проект находится в переходном, но уже manifest-driven состоянии:
 
-- backend-инструменты зарегистрированы вручную в `backend/tools/registry.py`;
-- часть страниц находится в `static/p/`, а отдельные страницы — в `static/domain/`, `static/username/` и `static/photo/`;
-- CSS и JavaScript отдельных инструментов частично находятся в общих каталогах `static/`;
-- `tools/` содержит исходники сторонних CLI-проектов и некоторые собственные инструменты;
+- 18 интегрированных backend-инструментов загружаются через `backend/module_runtime.py` из канонических `tools/<id>/backend/tool.py`; два legacy-инструмента остаются в совместимом списке;
+- основные страницы перенесены в `tools/<id>/frontend/`, а старые URL направляются на канонические маршруты;
+- общие CSS/JS, настройки, история, updater и часть API остаются в `static/` и `backend/` и пока не вынесены в отдельный `core/`;
+- `tools/` содержит и код интеграции OSINT Panel, и vendor-проекты, которые нельзя механически перемещать без аудита импортов и обновления;
 - корневой `modules/` — существующий Python-пакет, поэтому его нельзя переименовывать или использовать для новой структуры без отдельной миграции.
 
 Поэтому перенос выполняется постепенно. До завершения миграции manifest может ссылаться на legacy-файлы. Это временный compatibility layer, а не конечная структура.
