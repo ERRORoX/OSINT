@@ -39,6 +39,9 @@
         ["Manifest", m.manifest || "—"],
         ["Состояние", m.enabled ? "enabled" : "disabled"]
       ];
+      if (typeof m.runtime_ok === "boolean") {
+        meta.push(["Runtime", m.runtime_ok ? "loaded" : "error"]);
+      }
       const entryHtml = entrypoints.map(([key, value]) =>
         '<dt>' + esc(key) + '</dt><dd>' + esc(value) + '</dd>'
       ).join("");
