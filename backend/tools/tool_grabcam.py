@@ -445,6 +445,8 @@ def _worker_cloudflared():
         )
         with _lock:
             _state["proc"] = proc_php
+        if _abort_if_stop_requested(proc_php):
+            return
         if not _wait_for_local_server(port, proc_php):
             _terminate_process(proc_php)
             with _lock:
