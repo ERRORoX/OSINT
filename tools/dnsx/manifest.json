@@ -8,7 +8,8 @@
   "status": "integrated",
   "enabled": true,
   "entrypoints": {
-    "backend_adapter": "tools/dnsx/backend/tool.py"
+    "backend_adapter": "tools/dnsx/backend/tool.py",
+    "tool_class": "ToolDnsx"
   },
   "dependencies": {
     "python": [],
