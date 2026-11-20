@@ -4,9 +4,9 @@
   var KEY = "osint-panel-workspace-v1", MAX_ITEMS = 40, MAX_TEXT = 12000;
   var css = "#osint-workspace-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}" +
     ".osint-ws-action{font:inherit;font-size:12px;color:#dce8f5;background:#0a1623;border:1px solid #294056;border-radius:8px;padding:7px 10px;cursor:pointer}" +
-    ".osint-ws-action:hover{border-color:#55e6a5;color:#55e6a5}" +
+    ".osint-ws-action:hover{border-color:#59b8f5;color:#59b8f5}" +
     "#osint-ws-toggle{position:fixed;right:18px;bottom:18px;z-index:9998;box-shadow:0 8px 28px #0008}" +
-    "#osint-ws-count{display:inline-grid;place-items:center;min-width:18px;height:18px;margin-left:5px;border-radius:20px;background:#55e6a5;color:#061018;font-size:10px;font-weight:800}" +
+    "#osint-ws-count{display:inline-grid;place-items:center;min-width:18px;height:18px;margin-left:5px;border-radius:20px;background:#59b8f5;color:#07111b;font-size:10px;font-weight:800}" +
     "#osint-ws-panel{position:fixed;z-index:9999;right:18px;bottom:64px;width:min(440px,calc(100vw - 28px));max-height:min(70vh,680px);display:none;flex-direction:column;background:#0b1420;border:1px solid #294056;border-radius:14px;box-shadow:0 18px 60px #000b;color:#e7eef7;overflow:hidden}" +
     "#osint-ws-panel.open{display:flex}.osint-ws-head{display:flex;align-items:center;gap:8px;padding:13px 14px;border-bottom:1px solid #26384a}" +
     ".osint-ws-head strong{font-size:14px;flex:1}.osint-ws-note{padding:8px 14px;color:#9db0c3;font-size:11px;border-bottom:1px solid #1d3041}" +
@@ -92,13 +92,13 @@
   var NAV_ITEMS = [
     ["Домены", "/domain/"], ["Username", "/username/"], ["Фото", "/photo/"],
     ["IP / RDAP", "/p/ip-rdap/"], ["GrabCam", "/p/grabcam/"], ["ИИ", "/p/ai-agent/"],
-    ["Email OSINT", "/p/google-osint/"], ["ANONSMS", "/p/anonsms/"],
-    ["Instagram", "/p/instagram-bruter/"], ["История", "/p/history/"], ["Настройки", "/p/settings/"]
+    ["Email OSINT", "/modules/google-osint/"], ["История", "/modules/history/"], ["Настройки", "/p/settings/"]
   ];
   function ensureUnifiedNav() {
     var header = document.querySelector(".app-header");
     if (!header) return;
     var nav = document.getElementById("nav-tools");
+    if (nav && nav.querySelectorAll("[data-tool-id]").length) return;
     if (!nav) {
       var tabs = document.createElement("div"); tabs.className = "osint-tabs";
       nav = document.createElement("nav"); nav.id = "nav-tools"; nav.className = "tab-nav";
