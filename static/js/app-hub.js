@@ -206,13 +206,74 @@ function wireSavedMaterials(){
  const exportButton=document.getElementById("saved-materials-export");
   if(exportButton)exportButton.addEventListener("click",()=>{
    const items=readSavedMaterials();if(!items||!items.length)return;
-   const blob=new Blob([JSON.stringify({exportedAt:new Date().toISOString(),items},null,2)],{type:"application/json"});
+   const blob=new Blob([JSON.stringify({exportedAt:new Date().toISOString(),projects:readCaseProjects()||[],materials:items},null,2)],{type:"application/json"});
    const url=URL.createObjectURL(blob);const link=document.createElement("a");
    link.href=url;link.download="osint-panel-materials-"+new Date().toISOString().slice(0,10)+".json";
    document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url);
   });
   window.addEventListener("storage",event=>{if(event.key===WORKSPACE_KEY)renderSavedMaterials();});
  renderSavedMaterials();
+}
+const CASE_PROJECTS_KEY="osint-panel-cases-v1";
+function readCaseProjects(){
+ try{const value=JSON.parse(localStorage.getItem(CASE_PROJECTS_KEY)||"[]");return Array.isArray(value)?value.filter(x=>x&&typeof x==="object"&&typeof x.id==="string"):[];}
+ catch(_){return null;}
+}
+function writeCaseProjects(items){
+ try{localStorage.setItem(CASE_PROJECTS_KEY,JSON.stringify(items.slice(0,100)));return true;}catch(_){return false;}
+}
+function renderCaseProjects(){
+ const list=document.getElementById("case-project-list"),count=document.getElementById("case-project-count");
+ if(!list||!count)return;
+ const projects=readCaseProjects(),materials=readSavedMaterials()||[];
+ if(projects===null){count.textContent="Недоступно";list.innerHTML='<div class="saved-materials-empty">Нет доступа к локальному хранилищу.</div>';return;}
+ count.textContent=projects.length+" дел";
+ if(!projects.length){list.innerHTML='<div class="saved-materials-empty">Пока нет дел. Создайте первое расследование выше.</div>';return;}
+ list.innerHTML=projects.map(project=>{
+  const id=escapeHtml(project.id),name=escapeHtml(project.name||"Без названия");
+  const note=escapeHtml(project.note||"");
+  const attached=Array.isArray(project.materialIds)?project.materialIds:[];
+  const attachedItems=materials.filter(item=>attached.includes(String(item.id||"")));
+  const options=materials.map(item=>'<option value="'+escapeHtml(item.id||"")+'">'+escapeHtml(item.title||"Материал без названия")+'</option>').join("");
+  const materialList=attachedItems.length?'<ul class="case-attached-list">'+attachedItems.map(item=>'<li>'+escapeHtml(item.title||"Материал")+'</li>').join("")+'</ul>':'<div class="case-project-muted">Материалы пока не прикреплены.</div>';
+  return '<article class="case-project-card" data-case-id="'+id+'"><div class="case-project-card-head"><div><span class="case-project-id">CASE / '+id.slice(0,8).toUpperCase()+'</span><h3>'+name+'</h3></div><button type="button" class="case-project-delete" data-case-delete>Удалить дело</button></div><label class="case-project-field"><span>Рабочие заметки</span><textarea data-case-note rows="3" maxlength="3000">'+note+'</textarea></label><div class="case-project-actions"><button type="button" class="saved-material-export" data-case-save-note>Сохранить заметку</button><span class="case-project-muted">'+attachedItems.length+' материалов</span></div><div class="case-project-attach"><label class="case-project-field"><span>Прикрепить сохранённый материал</span><select data-case-material><option value="">Выберите материал…</option>'+options+'</select></label><button type="button" class="saved-material-export" data-case-attach '+(materials.length?'':'disabled')+'>Прикрепить</button></div>'+materialList+'</article>';
+ }).join("");
+}
+function wireCaseProjects(){
+ const form=document.getElementById("case-project-form"),list=document.getElementById("case-project-list");
+ if(!form||!list)return;
+ form.addEventListener("submit",event=>{
+  event.preventDefault();
+  const name=document.getElementById("case-project-name").value.trim();
+  const note=document.getElementById("case-project-note").value.trim();
+  if(!name)return;
+  const projects=readCaseProjects();if(projects===null)return;
+  const id=window.crypto&&crypto.randomUUID?crypto.randomUUID():String(Date.now())+"-"+Math.random().toString(36).slice(2,9);
+  if(!writeCaseProjects([{id,name,note,materialIds:[],createdAt:new Date().toISOString()},...projects])){alert("Не удалось создать дело: локальное хранилище недоступно или заполнено.");return;}
+  form.reset();renderCaseProjects();
+ });
+ list.addEventListener("click",event=>{
+  const card=event.target.closest("[data-case-id]");if(!card)return;
+  const id=card.dataset.caseId,projects=readCaseProjects();if(projects===null)return;
+  const project=projects.find(item=>item.id===id);if(!project)return;
+  if(event.target.closest("[data-case-delete]")){
+   if(!confirm("Удалить это дело? Сохранённые материалы останутся в общем архиве."))return;
+   writeCaseProjects(projects.filter(item=>item.id!==id));renderCaseProjects();return;
+  }
+  if(event.target.closest("[data-case-save-note]")){
+   project.note=card.querySelector("[data-case-note]").value;
+   if(writeCaseProjects(projects)){event.target.textContent="Сохранено ✓";setTimeout(()=>{if(event.target.isConnected)event.target.textContent="Сохранить заметку";},1400);}
+   return;
+  }
+  if(event.target.closest("[data-case-attach]")){
+   const selected=card.querySelector("[data-case-material]").value;if(!selected)return;
+   project.materialIds=Array.isArray(project.materialIds)?project.materialIds:[];
+   if(!project.materialIds.includes(selected))project.materialIds.push(selected);
+   if(writeCaseProjects(projects))renderCaseProjects();
+  }
+ });
+ window.addEventListener("storage",event=>{if(event.key===CASE_PROJECTS_KEY||event.key===WORKSPACE_KEY)renderCaseProjects();});
+ renderCaseProjects();
 }
 function wireShowAllTools(){
  const link=document.getElementById("show-all-tools");if(!link)return;
@@ -340,6 +401,7 @@ async function init(){
  wireActivity();
  wireShowAllTools();
  wireSavedMaterials();
+ wireCaseProjects();
  const [toolsResult,navigationResult]=await Promise.allSettled([loadTools(),loadNavigation()]);
  const toolsAvailable=toolsResult.status==="fulfilled"&&Array.isArray(toolsResult.value);
  loadedTools=toolsAvailable?toolsResult.value:[];
