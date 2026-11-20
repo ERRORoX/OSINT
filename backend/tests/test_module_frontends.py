@@ -63,6 +63,11 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn("applyNavigationModules(loadedNavigation)", hub_source)
         self.assertIn('pageById.get("domain-workspace")', hub_source)
 
+    def test_module_manager_explains_read_only_manifest_controls(self):
+        page = (ROOT / "static" / "p" / "modules" / "index.html").read_text(encoding="utf-8")
+        self.assertIn("Поле enabled в manifest управляет загрузкой", page)
+        self.assertIn("через веб-интерфейс пока не поддерживается", page)
+
     def test_module_manager_uses_registry_api(self):
         page = (ROOT / "static" / "p" / "modules" / "index.html").read_text(encoding="utf-8")
         script = (ROOT / "static" / "p" / "modules" / "page.js").read_text(encoding="utf-8")
