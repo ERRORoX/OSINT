@@ -14,6 +14,16 @@
     ".osint-ws-item-head{display:flex;gap:8px;align-items:center;margin-bottom:7px}.osint-ws-item-head strong{font-size:12px;flex:1;overflow-wrap:anywhere}" +
     ".osint-ws-meta{font-size:10px;color:#8fa4b8}.osint-ws-preview{font:11px/1.5 ui-monospace,monospace;color:#c5d2df;white-space:pre-wrap;overflow-wrap:anywhere;max-height:115px;overflow:auto;margin:0}" +
     ".osint-ws-controls{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}.osint-ws-save{margin:6px 0 0 6px!important;font-size:11px!important;padding:5px 8px!important}" +
+    "#osint-workspace-actions #osint-ws-toggle{position:static;box-shadow:none}" +
+    ".osint-header{font-family:Inter,ui-sans-serif,system-ui,sans-serif!important;background:rgba(7,13,21,.96)!important;border-bottom:1px solid #26384a!important}" +
+    ".osint-header-inner{min-height:62px;padding:10px clamp(12px,2vw,26px)!important;gap:14px!important;align-items:center!important}" +
+    ".osint-title h1,.osint-header h1{font-family:Inter,ui-sans-serif,system-ui,sans-serif!important;font-size:clamp(17px,2vw,21px)!important;line-height:1.2!important;letter-spacing:.02em!important;margin:0!important}" +
+    ".osint-title p{font-size:11px!important;line-height:1.35!important;margin:3px 0 0!important;color:#91a5b9!important}" +
+    ".osint-tabs{padding:0 clamp(10px,2vw,24px)!important;background:#0a1420!important;border-top:1px solid #182a3b!important}" +
+    ".tab-nav{display:flex!important;align-items:center!important;gap:5px!important;overflow-x:auto!important;scrollbar-width:thin!important}" +
+    ".tab-nav .tool-link{display:inline-flex!important;align-items:center!important;gap:7px!important;min-height:38px!important;padding:8px 11px!important;border-radius:8px 8px 0 0!important;font:500 12px/1.2 Inter,ui-sans-serif,system-ui,sans-serif!important;white-space:nowrap!important;text-decoration:none!important}" +
+    ".tab-nav .tool-link .tab-icon,.tab-nav .tool-link svg{width:15px!important;height:15px!important;flex:0 0 15px!important}" +
+    ".app-header-right{gap:8px!important;align-items:center!important}" +
     "@media(max-width:640px){#osint-ws-toggle{right:10px;bottom:10px}#osint-ws-panel{right:8px;bottom:58px;width:calc(100vw - 16px)}}";
   var style = document.createElement("style"); style.textContent = css; document.head.appendChild(style);
 
