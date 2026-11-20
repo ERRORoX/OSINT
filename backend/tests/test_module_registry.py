@@ -57,6 +57,26 @@ class ModuleRegistryTests(unittest.TestCase):
         self.assertFalse(result["modules"][0]["valid"])
         self.assertIn("unsafe_entrypoint", {i["code"] for i in result["modules"][0]["issues"]})
 
+    def test_rejects_windows_style_path_traversal(self):
+        temp, root = self._project({
+            **self._manifest(),
+            "entrypoints": {"frontend": r"..\\outside.js"},
+        })
+        self.addCleanup(temp.cleanup)
+        result = discover_modules(root)
+        self.assertFalse(result["modules"][0]["valid"])
+        self.assertIn("unsafe_entrypoint", {i["code"] for i in result["modules"][0]["issues"]})
+
+    def test_rejects_windows_absolute_path(self):
+        temp, root = self._project({
+            **self._manifest(),
+            "legacy_paths": [r"C:\\outside\\module.py"],
+        })
+        self.addCleanup(temp.cleanup)
+        result = discover_modules(root)
+        self.assertFalse(result["modules"][0]["valid"])
+        self.assertIn("unsafe_legacy_path", {i["code"] for i in result["modules"][0]["issues"]})
+
     def test_rejects_symlinked_module_directory_outside_tools(self):
         temp, root = self._project(self._manifest())
         self.addCleanup(temp.cleanup)
