@@ -512,6 +512,7 @@ async function init(){
  wireShowAllTools();
  wireSavedMaterials();
  wireCaseProjects();
+ graphWire();
  const [toolsResult,navigationResult]=await Promise.allSettled([loadTools(),loadNavigation()]);
  const toolsAvailable=toolsResult.status==="fulfilled"&&Array.isArray(toolsResult.value);
  loadedTools=toolsAvailable?toolsResult.value:[];
