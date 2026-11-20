@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080b10"><title>IP / RDAP — OSINT Panel</title>
+<link rel="stylesheet" href="/css/tool-bundle/hub.css">
+<link rel="stylesheet" href="/css/panel-41.css?v=4.2.0">
+<link rel="stylesheet" href="/css/unified-workstation.css?v=4.4.0">
+<style>
+.iprdap-wrap{max-width:900px;margin:32px auto;padding:clamp(18px,4vw,34px);border:1px solid rgba(85,230,165,.2);border-radius:18px;background:linear-gradient(145deg,#111c27,#0b1119)}
+.iprdap-wrap h2{margin:0 0 8px;font-size:clamp(1.5rem,4vw,2.2rem)}.iprdap-wrap p{color:#a9b7c8;line-height:1.6}
+.iprdap-form{display:flex;gap:10px;flex-wrap:wrap;margin:22px 0}.iprdap-form input{flex:1;min-width:220px;padding:13px 15px;border:1px solid #304153;border-radius:10px;background:#080e16;color:#e7eef7;font:inherit}
+.iprdap-form button{padding:12px 20px;border:1px solid rgba(85,230,165,.4);border-radius:10px;background:rgba(85,230,165,.12);color:#8af0bd;font-weight:700;cursor:pointer}
+.iprdap-result{white-space:pre-wrap;overflow-wrap:anywhere;padding:18px;border:1px solid #253747;border-radius:12px;background:#070c12;color:#dbe7f2;min-height:90px;font: .9rem/1.7 ui-monospace,monospace}
+.iprdap-note{font-size:.8rem!important;color:#7f91a5!important}
+</style>
+</head>
+<body>
+<header class="osint-header app-header"><div class="osint-header-inner scan-line">
+<div class="osint-logo"><a href="/" style="color:inherit;text-decoration:none">◎</a></div>
+<div class="osint-title"><h1><a href="/" style="text-decoration:none;color:inherit"><span class="accent">OSINT</span><span class="dim">Panel</span></a></h1><p>Пассивная разведка по открытым источникам</p></div>
+</div></header>
+<main class="main osint-main"><section class="iprdap-wrap">
+<span class="hub-kicker">NETWORK INTELLIGENCE / RDAP</span>
+<h2>IP <span style="color:#55e6a5">Registry Lookup</span></h2>
+<p>Получение регистрационных сведений о публичном IPv4/IPv6 адресе через RDAP. Инструмент не сканирует порты и не отправляет запросы к самому адресу.</p>
+<form class="iprdap-form" id="iprdap-form"><input id="ip-address" name="ip" type="text" inputmode="url" autocomplete="off" placeholder="Например: 8.8.8.8" required aria-label="Публичный IP-адрес"><button id="ip-submit" type="submit">Проверить IP ↗</button></form>
+<pre class="iprdap-result" id="ip-result" role="status" aria-live="polite">Ожидание IP-адреса…</pre>
+<p class="iprdap-note">Данные предоставляет публичный RDAP-сервис. Сведения могут быть неполными или устаревшими. Используйте только в законных целях.</p>
+</section></main>
+<footer class="app-footer"><span><a href="/" style="color:inherit;text-decoration:none">OSINT Panel</a></span><span class="footer-hint">IP / RDAP · 4.2</span></footer>
+<script src="/modules/ip-rdap/page.js" defer></script>
+  <script defer src="/js/workspace.js?v=4.3.1"></script>
+</body></html>
