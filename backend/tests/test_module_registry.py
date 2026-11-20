@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from module_registry import discover_modules
+from module_registry import discover_modules, get_navigation_modules
 
 
 class ModuleRegistryTests(unittest.TestCase):
@@ -116,6 +116,68 @@ class ModuleRegistryTests(unittest.TestCase):
         result = discover_modules(root)
         self.assertEqual(result["summary"]["invalid"], 1)
         self.assertIn("manifest_read_error", {i["code"] for i in result["modules"][0]["issues"]})
+
+
+    def test_navigation_contains_only_enabled_integrated_modules_with_safe_pages(self):
+        temp, root = self._project({
+            **self._manifest(),
+            "status": "integrated",
+            "entrypoints": {
+                "frontend": "tools/sample/frontend/index.html",
+                "page_url": "/modules/sample/",
+            },
+        })
+        self.addCleanup(temp.cleanup)
+        frontend = root / "tools" / "sample" / "frontend"
+        frontend.mkdir()
+        (frontend / "index.html").write_text("<h1>Sample</h1>", encoding="utf-8")
+
+        navigation = get_navigation_modules(root)
+        self.assertEqual(len(navigation), 1)
+        self.assertEqual(navigation[0]["id"], "sample")
+        self.assertEqual(navigation[0]["href"], "/modules/sample/")
+
+    def test_navigation_excludes_legacy_modules(self):
+        temp, root = self._project({
+            **self._manifest(),
+            "status": "legacy",
+            "entrypoints": {
+                "frontend": "tools/sample/frontend/index.html",
+                "page_url": "/modules/sample/",
+            },
+        })
+        self.addCleanup(temp.cleanup)
+        frontend = root / "tools" / "sample" / "frontend"
+        frontend.mkdir()
+        (frontend / "index.html").write_text("<h1>Sample</h1>", encoding="utf-8")
+        self.assertEqual(get_navigation_modules(root), [])
+
+    def test_navigation_rejects_noncanonical_page_url(self):
+        temp, root = self._project({
+            **self._manifest(),
+            "status": "integrated",
+            "entrypoints": {
+                "frontend": "tools/sample/frontend/index.html",
+                "page_url": "javascript:alert(1)",
+            },
+        })
+        self.addCleanup(temp.cleanup)
+        frontend = root / "tools" / "sample" / "frontend"
+        frontend.mkdir()
+        (frontend / "index.html").write_text("<h1>Sample</h1>", encoding="utf-8")
+        self.assertEqual(get_navigation_modules(root), [])
+
+    def test_navigation_requires_existing_frontend(self):
+        temp, root = self._project({
+            **self._manifest(),
+            "status": "integrated",
+            "entrypoints": {
+                "frontend": "tools/sample/frontend/index.html",
+                "page_url": "/modules/sample/",
+            },
+        })
+        self.addCleanup(temp.cleanup)
+        self.assertEqual(get_navigation_modules(root), [])
 
     def test_disabled_module_is_not_counted_as_enabled(self):
         temp, root = self._project({**self._manifest(), "enabled": False})
