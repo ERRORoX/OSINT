@@ -121,7 +121,26 @@ function wireFilters(){
   renderHubCards();
  }));
 }
-function updateHubStatus(tools){const toolCount=document.getElementById("metric-tools");const sectionCount=document.getElementById("metric-sections");const categoryCount=document.getElementById("metric-categories");const railTools=document.getElementById("rail-tools");const railModules=document.getElementById("rail-modules");if(toolCount)toolCount.textContent=String(tools.length);if(sectionCount)sectionCount.textContent=String(HUB_CARDS.length);if(categoryCount)categoryCount.textContent=String(new Set(HUB_CARDS.map(card=>card.category)).size);if(railTools)railTools.textContent=String(tools.length);if(railModules)railModules.textContent=loadedNavigation.length?String(loadedNavigation.length):"Нет данных";}
+function updateHubStatus(tools,backendAvailable=true){
+ const toolCount=document.getElementById("metric-tools");
+ const sectionCount=document.getElementById("metric-sections");
+ const categoryCount=document.getElementById("metric-categories");
+ const railTools=document.getElementById("rail-tools");
+ const railModules=document.getElementById("rail-modules");
+ const backend=document.getElementById("backend-state");
+ const state=document.getElementById("system-state");
+ const stateLabel=document.getElementById("system-state-label");
+ const foot=document.getElementById("system-foot-label");
+ if(toolCount)toolCount.textContent=String(tools.length);
+ if(sectionCount)sectionCount.textContent=String(HUB_CARDS.length);
+ if(categoryCount)categoryCount.textContent=String(new Set(HUB_CARDS.map(card=>card.category)).size);
+ if(railTools)railTools.textContent=String(tools.length);
+ if(railModules)railModules.textContent=loadedNavigation.length?String(loadedNavigation.length):"Нет данных";
+ if(backend)backend.textContent=backendAvailable?"Работает":"Недоступен";
+ if(state)state.textContent=backendAvailable?"OK":"OFF";
+ if(stateLabel)stateLabel.textContent=backendAvailable?"Онлайн":"Нет связи";
+ if(foot)foot.textContent=backendAvailable?"Сервер отвечает · каталог загружен":"Сервер недоступен · показан локальный каталог";
+}
 function formatEta(seconds){
  const safe=Math.max(0,Math.ceil(seconds));
  const minutes=Math.floor(safe/60);
@@ -143,8 +162,9 @@ function wireUpdater(){
  const fill=panel.querySelector("#update-progress-fill");
  const eta=panel.querySelector("#update-eta");
  let pollHandle=null;
+ let finished=false;
  const stopPolling=()=>{if(pollHandle){clearInterval(pollHandle);pollHandle=null;}};
- const showError=message=>{stopPolling();panel.style.display="none";panel.hidden=true;status.textContent=message;button.disabled=false;};
+ const showError=message=>{finished=true;stopPolling();panel.style.display="none";panel.hidden=true;status.textContent=message;button.disabled=false;};
  button.addEventListener("click",async()=>{
   if(button.disabled)return;
   button.disabled=true;status.textContent="Проверка обновлений…";
@@ -167,7 +187,7 @@ function wireUpdater(){
      const response=await fetch("/api/system/update/status?job_id="+encodeURIComponent(jobId),{cache:"no-store",headers:{Accept:"application/json"}});
      const job=await response.json();
      if(!response.ok)throw new Error(job.error||"Не удалось получить состояние обновления");
-     latestProgress=Math.max(latestProgress,Number(job.progress)||0);
+     latestProgress=Math.max(latestProgress,Math.min(100,Number(job.progress)||0));
      stage.textContent=job.stage||"Обновление…";
      percent.textContent=latestProgress+"%";
      fill.style.width=latestProgress+"%";
@@ -177,7 +197,7 @@ function wireUpdater(){
      else eta.textContent="Осталось примерно: рассчитываем…";
      if(job.state==="error"){showError(job.error||"Ошибка обновления");return;}
      if(job.state==="completed"){
-      stopPolling();status.textContent="Обновлено. Сервер автоматически перезапускается…";
+      finished=true;stopPolling();status.textContent="Обновлено. Сервер автоматически перезапускается…";
       eta.textContent="Готово · время выполнения: "+formatEta(elapsed);
       button.disabled=true;
       return;
@@ -185,8 +205,7 @@ function wireUpdater(){
     }catch(error){showError(error.message||"Не удалось получить состояние обновления");}
    };
    await poll();
-   if(button.disabled===false)return;
-   if(panel.style.display==="block"&&latestProgress<100)pollHandle=setInterval(poll,1000);
+   if(!finished)pollHandle=setInterval(poll,1000);
   }catch(error){showError(error.message||"Ошибка обновления");}
  });
 }
@@ -196,17 +215,27 @@ function wireHeader(){
  const btn=document.getElementById("btn-user-menu"),menu=document.getElementById("user-menu");
  if(btn&&menu){btn.addEventListener("click",()=>{const open=btn.getAttribute("aria-expanded")==="true";btn.setAttribute("aria-expanded",String(!open));menu.hidden=open;});document.addEventListener("click",event=>{if(!btn.contains(event.target)&&!menu.contains(event.target)){btn.setAttribute("aria-expanded","false");menu.hidden=true;}});}
 }
+function showInitNotice(message){
+ const main=document.getElementById("main-content");
+ if(!main)return;
+ let notice=main.querySelector(".init-error");
+ if(!notice){notice=document.createElement("div");notice.className="init-error";notice.setAttribute("role","alert");main.insertBefore(notice,main.firstChild);}
+ notice.textContent=message;
+}
 async function init(){
- const results=await Promise.all([loadTools(),loadNavigation()]);
- loadedTools=results[0];
- loadedNavigation=results[1];
+ // Keep the header and updater usable if a catalogue endpoint is temporarily unavailable.
+ wireHeader();
+ wireUpdater();
+ document.getElementById("hub-search")?.addEventListener("input",renderHubCards);
+ wireFilters();
+ const [toolsResult,navigationResult]=await Promise.allSettled([loadTools(),loadNavigation()]);
+ const toolsAvailable=toolsResult.status==="fulfilled"&&Array.isArray(toolsResult.value);
+ loadedTools=toolsAvailable?toolsResult.value:[];
+ loadedNavigation=navigationResult.status==="fulfilled"&&Array.isArray(navigationResult.value)?navigationResult.value:[];
  applyNavigationModules(loadedNavigation);
  renderNav(loadedTools);
  renderHubCards();
- updateHubStatus(loadedTools);
- document.getElementById("hub-search")?.addEventListener("input",renderHubCards);
- wireFilters();
- wireHeader();
- wireUpdater();
+ updateHubStatus(loadedTools,toolsAvailable);
+ if(!toolsAvailable)showInitNotice("Не удалось загрузить данные сервера. Локальный каталог остаётся доступен; проверьте подключение и попробуйте обновить страницу.");
 }
-init().catch(error=>{const message=error?.message||"Нет связи с сервером";const main=document.getElementById("main-content");if(main)main.insertAdjacentHTML("afterbegin",'<div class="init-error" role="alert"><strong>Ошибка загрузки:</strong> '+escapeHtml(message)+'<p>Проверьте сервер и обновите страницу.</p></div>');});
+init().catch(error=>showInitNotice("Ошибка главной страницы: "+(error?.message||"неизвестная ошибка")));
