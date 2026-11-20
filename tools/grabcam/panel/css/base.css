@@ -19,8 +19,8 @@
   --gc-border: rgba(145, 170, 198, 0.14);
   --gc-text: #e7eef7;
   --gc-muted: #91a2b6;
-  --gc-accent: #55e6a5;
-  --gc-accent-hover: #78f0bb;
+  --gc-accent: #59b8f5;
+  --gc-accent-hover: #82ccff;
   --gc-danger: #f05b68;
   --gc-radius: 15px;
   --gc-radius-sm: 10px;
@@ -325,9 +325,9 @@
 #panel-grabcam .gc-page-name { font-size: 1.15rem; letter-spacing: -.025em; }
 #panel-grabcam .gc-page-mark {
   width: 34px; height: 34px; border-radius: 11px;
-  background: rgba(85, 230, 165, .09);
-  border-color: rgba(85, 230, 165, .22);
-  color: #70eab3;
+  background: rgba(89, 184, 245, .09);
+  border-color: rgba(89, 184, 245, .22);
+  color: #76c7fa;
 }
 #panel-grabcam .gc-grid-widgets { gap: 16px; align-items: stretch; }
 #panel-grabcam .gc-widget,
@@ -340,7 +340,7 @@
 }
 #panel-grabcam .gc-widget:hover,
 #panel-grabcam .gc-widget-control:hover {
-  border-color: rgba(85, 230, 165, .26);
+  border-color: rgba(89, 184, 245, .26);
   box-shadow: 0 16px 38px rgba(0, 0, 0, .25);
 }
 #panel-grabcam .gc-widget-title,
@@ -367,16 +367,16 @@
 #panel-grabcam a:focus-visible,
 #panel-grabcam input:focus-visible,
 #panel-grabcam select:focus-visible {
-  outline: 2px solid rgba(85, 230, 165, .78);
+  outline: 2px solid rgba(89, 184, 245, .78);
   outline-offset: 2px;
 }
 #panel-grabcam .gc-widget-control .gc-control-btn-start {
-  background: rgba(85, 230, 165, .10);
-  color: #75edb7;
-  border-color: rgba(85, 230, 165, .28);
+  background: rgba(89, 184, 245, .10);
+  color: #76c7fa;
+  border-color: rgba(89, 184, 245, .28);
 }
 #panel-grabcam .gc-widget-control .gc-control-btn-start:hover:not(:disabled) {
-  background: rgba(85, 230, 165, .16);
+  background: rgba(89, 184, 245, .16);
 }
 #panel-grabcam .gc-widget-control .gc-control-select { border-color: var(--gc-border); }
 @media (max-width: 900px) {
