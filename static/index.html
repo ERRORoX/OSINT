@@ -34,6 +34,7 @@
         <p>◆ Разведка по открытым источникам | домены, username, email, утечки | Python + UI</p>
       </div>
       <div class="app-header-right">
+        <button type="button" class="sidebar-toggle" id="sidebar-toggle" aria-controls="app-sidebar" aria-expanded="false" aria-label="Открыть навигацию"><span aria-hidden="true">☰</span><span class="sidebar-toggle-label">Меню</span></button>
         <span class="app-header-system" id="header-system">ОС: —</span>
         <div class="app-update-control"><button type="button" class="app-update-btn" id="btn-check-updates">↻ Обновить</button><span class="app-update-status" id="update-status" role="status" aria-live="polite"></span></div>
         <div class="app-header-user" id="header-user">
@@ -48,11 +49,14 @@
         </div>
       </div>
     </div>
-    <div class="osint-tabs">
-      <nav id="nav-tools" class="tab-nav" aria-label="Разделы"></nav>
-    </div>
   </header>
-  <div class="app-body osint-body">
+  <div class="app-body osint-body" id="app-shell">
+    <aside class="app-sidebar" id="app-sidebar" aria-label="Основная навигация">
+      <div class="sidebar-heading"><span>РАБОЧЕЕ ПРОСТРАНСТВО</span><button type="button" id="sidebar-collapse" class="sidebar-collapse" aria-label="Свернуть меню" aria-pressed="false">‹</button></div>
+      <nav id="nav-tools" class="tab-nav" aria-label="Разделы"></nav>
+      <div class="sidebar-foot"><span class="sidebar-foot-dot"></span><span class="sidebar-foot-copy">Локальная среда · OSINT Panel</span></div>
+    </aside>
+    <button type="button" class="sidebar-backdrop" id="sidebar-backdrop" aria-label="Закрыть навигацию" tabindex="-1"></button>
     <main class="main osint-main osint-scrollbar" id="main-content">
       <section class="dashboard-intro" aria-labelledby="hub-title">
         <div>
