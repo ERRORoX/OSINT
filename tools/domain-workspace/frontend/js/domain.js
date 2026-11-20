@@ -79,6 +79,7 @@ let results = {};
 let selectedTools = new Set(TOOLS.map((t) => t.id));
 let filterText = "";
 let lastReport = null;
+let graphSyncStatus = "";
 
 function esc(s) {
   const d = document.createElement("div");
@@ -302,6 +303,106 @@ async function apiRun(toolId, params) {
   }
   return data;
 }
+
+function graphStableId(type, value) {
+  let hash = 2166136261;
+  const source = String(value || "").trim().toLowerCase();
+  for (let i = 0; i < source.length; i += 1) {
+    hash ^= source.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return type + ":" + (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+function buildDomainGraphPayload(rep) {
+  const nodes = [];
+  const edges = [];
+  const nodeIds = new Map();
+  const edgeKeys = new Set();
+  const addNode = (type, label, details) => {
+    const clean = String(label || "").trim();
+    if (!clean) return null;
+    const id = graphStableId(type, clean);
+    if (!nodeIds.has(id)) {
+      nodeIds.set(id, id);
+      nodes.push({ id, type, label: clean.slice(0, 180), details: String(details || "").slice(0, 1200) });
+    }
+    return id;
+  };
+  const addEdge = (source, target, label) => {
+    if (!source || !target || source === target) return;
+    const key = source + "|" + target + "|" + label;
+    if (edgeKeys.has(key)) return;
+    edgeKeys.add(key);
+    edges.push({ source, target, label });
+  };
+
+  const rootDomain = String(rep?.domain || "").trim().toLowerCase();
+  if (!rootDomain) return { nodes, edges };
+  const successfulTools = (rep.tools || []).filter((tool) => tool && tool.success);
+  const sourceNames = successfulTools.map((tool) => tool.name || tool.id).filter(Boolean);
+  const provenance = sourceNames.length ? "Источники: " + sourceNames.join(", ") : "Результат анализа домена";
+  const rootId = addNode("domain", rootDomain, provenance);
+
+  const indicators = { subdomains: new Set(), ips: new Set(), emails: new Set() };
+  successfulTools.forEach((tool) => {
+    const parsed = extractIndicators(rootDomain, tool.output || "");
+    parsed.subs.forEach((value) => indicators.subdomains.add(String(value).toLowerCase()));
+    parsed.ips.forEach((value) => indicators.ips.add(String(value)));
+    parsed.emails.forEach((value) => indicators.emails.add(String(value).toLowerCase()));
+  });
+
+  const subdomainIds = new Map();
+  indicators.subdomains.forEach((subdomain) => {
+    if (subdomain === rootDomain || !subdomain.endsWith("." + rootDomain)) return;
+    const id = addNode("domain", subdomain, "Поддомен обнаружен при анализе " + rootDomain + ". " + provenance);
+    if (id) {
+      subdomainIds.set(subdomain, id);
+      addEdge(rootId, id, "поддомен");
+    }
+  });
+
+  const ipIds = new Map();
+  indicators.ips.forEach((ip) => {
+    const id = addNode("ip", ip, "IP обнаружен в результатах анализа " + rootDomain + ". " + provenance);
+    if (id) ipIds.set(ip, id);
+  });
+
+  const dnsTool = successfulTools.find((tool) => tool.id === "dnsx");
+  if (dnsTool) {
+    parseDnsxOutput(dnsTool.output || "").forEach((record) => {
+      const host = String(record.host || "").toLowerCase().replace(/^\*\./, "");
+      const ip = String(record.value || "").trim();
+      if (record.type !== "A" || !ipIds.has(ip)) return;
+      const hostId = host === rootDomain ? rootId : subdomainIds.get(host);
+      if (hostId) addEdge(hostId, ipIds.get(ip), "DNS A");
+    });
+  }
+  ipIds.forEach((id, ip) => {
+    if (!edges.some((edge) => edge.target === id)) addEdge(rootId, id, "IP из результатов");
+  });
+
+  indicators.emails.forEach((email) => {
+    const id = addNode("email", email, "Email найден в результатах анализа " + rootDomain + ". " + provenance);
+    addEdge(rootId, id, "email найден");
+  });
+
+  return { nodes, edges };
+}
+
+async function persistReportToGraph(rep) {
+  const graph = buildDomainGraphPayload(rep);
+  if (!graph.nodes.length) return { nodes: 0, edges: 0 };
+  const response = await fetch(API + "/graph/merge", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(graph),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || "Не удалось сохранить связи на сервере.");
+  return { nodes: graph.nodes.length, edges: graph.edges.length, totalNodes: (data.nodes || []).length };
+}
+
 
 /** Парсинг вывода dnsx (типичный формат projectdiscovery: host [TYPE] value) */
 function parseDnsxOutput(text) {
@@ -545,7 +646,7 @@ function renderDomainSummary({ domain: dmn, indicatorsByTool, wallSeconds }) {
         <button type="button" class="dt-ind-btn" id="btnExportJSON">Экспорт JSON</button>
         <button type="button" class="dt-ind-btn" id="btnExportTXT">Экспорт TXT</button>
       </div>
-      <div class="dt-summary__hint">Сводка считается из реального вывода инструментов (регексы по URL/email/IP/поддоменам).${esc(flagText)}</div>
+      <div class="dt-summary__hint">Сводка считается из реального вывода инструментов (регексы по URL/email/IP/поддоменам).${esc(flagText)}${graphSyncStatus ? `<br><strong>${esc(graphSyncStatus)}</strong>` : ""}</div>
     </div>
   `;
 }
@@ -692,6 +793,13 @@ async function runAll() {
   lastWallSeconds = secs;
   lastReport = buildReportData();
   saveHistoryItem(lastReport);
+  graphSyncStatus = "Сохранение найденных связей в постоянную карту…";
+  try {
+    const synced = await persistReportToGraph(lastReport);
+    graphSyncStatus = "Карта связей обновлена: +" + synced.nodes + " узлов, +" + synced.edges + " связей. Всего узлов: " + synced.totalNodes + ".";
+  } catch (error) {
+    graphSyncStatus = "Не удалось сохранить карту связей: " + (error.message || "ошибка сервера");
+  }
   render();
 }
 
@@ -702,6 +810,15 @@ async function rerunTool(id) {
   delete results[id];
   render();
   await runTool(id);
+  lastReport = buildReportData();
+  saveHistoryItem(lastReport);
+  try {
+    const synced = await persistReportToGraph(lastReport);
+    graphSyncStatus = "Карта связей обновлена: +" + synced.nodes + " узлов, +" + synced.edges + " связей.";
+  } catch (error) {
+    graphSyncStatus = "Не удалось сохранить карту связей: " + (error.message || "ошибка сервера");
+  }
+  render();
 }
 
 function clearAll() {
