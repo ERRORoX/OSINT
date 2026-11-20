@@ -32,11 +32,13 @@ class ModuleFrontendTests(unittest.TestCase):
             "domain-workspace": 'redirect("/modules/domain-workspace/"',
             "photo-workspace": 'redirect("/modules/photo-workspace/"',
             "username-workspace": 'redirect("/modules/username-workspace/"',
-            "grabcam": 'redirect("/modules/grabcam/"',
         }
         for module_id, snippet in expected.items():
             with self.subTest(module=module_id):
                 self.assertIn(snippet, app_source)
+
+        grabcam_legacy = (ROOT / "static" / "p" / "grabcam" / "index.html").read_text(encoding="utf-8")
+        self.assertIn('/modules/grabcam/', grabcam_legacy)
 
     def test_username_frontend_uses_only_canonical_asset_paths(self):
         js = (ROOT / "tools" / "username-workspace" / "frontend" / "js" / "username.js").read_text(encoding="utf-8")
