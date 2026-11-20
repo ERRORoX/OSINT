@@ -20,11 +20,77 @@ export function initPanel(container) {
       <button type="submit" class="btn btn-primary btn-save">Сохранить</button>
     </form>
     <div id="settings-message" class="settings-message" role="status"></div>
+    <section class="settings-key-row" id="system-update-panel" style="margin-top:24px">
+      <h3>Обновление системы</h3>
+      <p class="description">Проверка обновлений из официальной ветки GitHub. Перед установкой создаётся локальная резервная ветка.</p>
+      <div id="update-status" class="settings-message" role="status">Проверяем версию…</div>
+      <div class="key-input-wrap" style="gap:10px;flex-wrap:wrap">
+        <button type="button" class="btn btn-help" id="btn-check-update">Проверить обновления</button>
+        <button type="button" class="btn btn-primary" id="btn-install-update" disabled>Установить обновление</button>
+      </div>
+    </section>
   `;
 
   const listEl = container.querySelector("#settings-keys-list");
   const form = container.querySelector("#form-settings-keys");
   const messageEl = container.querySelector("#settings-message");
+  const updateStatus = container.querySelector("#update-status");
+  const checkUpdateBtn = container.querySelector("#btn-check-update");
+  const installUpdateBtn = container.querySelector("#btn-install-update");
+  let updateAvailable = false;
+
+  function updateMessage(text, isError = false) {
+    updateStatus.textContent = text;
+    updateStatus.className = "settings-message " + (isError ? "error" : "success");
+    updateStatus.style.display = "block";
+  }
+
+  async function checkForUpdates() {
+    checkUpdateBtn.disabled = true;
+    installUpdateBtn.disabled = true;
+    updateMessage("Проверяем GitHub…");
+    try {
+      const res = await fetch(`${API}/system/update`, { cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Не удалось проверить обновления");
+      updateAvailable = Boolean(data.available);
+      updateMessage(updateAvailable
+        ? `Доступно обновление: ${data.commits_behind} новых коммит(ов). Текущая версия: ${data.current}.`
+        : `Установлена последняя версия (${data.current}).`);
+      installUpdateBtn.disabled = !updateAvailable;
+    } catch (err) {
+      updateAvailable = false;
+      updateMessage("Проверка не выполнена: " + err.message, true);
+    } finally {
+      checkUpdateBtn.disabled = false;
+    }
+  }
+
+  checkUpdateBtn.addEventListener("click", checkForUpdates);
+  installUpdateBtn.addEventListener("click", async () => {
+    if (!updateAvailable || !confirm("Установить обновление из GitHub? Перед обновлением будет создана резервная ветка.")) return;
+    installUpdateBtn.disabled = true;
+    checkUpdateBtn.disabled = true;
+    updateMessage("Устанавливаем обновление. Не закрывайте панель…");
+    try {
+      const res = await fetch(`${API}/system/update`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Requested-With": "OSINT-Panel" },
+        body: "{}",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Ошибка установки");
+      updateAvailable = false;
+      updateMessage(data.updated
+        ? `${data.message} Резервная ветка: ${data.backup_branch}. Остановите сервер (Ctrl+C) и запустите снова: python3 run.py.`
+        : data.message);
+    } catch (err) {
+      updateMessage("Обновление не установлено: " + err.message, true);
+      installUpdateBtn.disabled = false;
+    } finally {
+      checkUpdateBtn.disabled = false;
+    }
+  });
 
   function showMessage(text, isError = false) {
     messageEl.textContent = text;
@@ -87,4 +153,5 @@ export function initPanel(container) {
   });
 
   loadKeys().catch((err) => showMessage("Ошибка загрузки: " + err.message, true));
+  checkForUpdates();
 }

@@ -45,14 +45,9 @@ def main():
     port = 5000
     print("Панель запущена.")
     print("  На этом ПК:      http://127.0.0.1:{}".format(port))
-    lan = get_lan_ip()
-    if lan:
-        print("  В локальной сети: http://{}:{}  (откройте с другого устройства)".format(lan, port))
-    else:
-        print("  В локальной сети: http://<IP этого ПК>:{}  (узнайте IP: ip addr или ifconfig)".format(port))
-    print("  Если с другого устройства не открывается — разрешите порт {} в фаерволе.".format(port))
+    print("  Режим доступа: только этот компьютер (127.0.0.1).")
     from app import app
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host="127.0.0.1", port=port, debug=False)
 
 
 if __name__ == "__main__":
