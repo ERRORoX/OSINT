@@ -325,3 +325,11 @@ body.dashboard-page{margin:0!important;min-height:100vh;background:radial-gradie
 .saved-material-actions button{padding:5px 8px;border:1px solid rgba(77,137,204,.2);border-radius:6px;background:rgba(15,48,83,.3);color:#9dbce1;font-size:9px;cursor:pointer}
 .saved-material-actions button:hover{border-color:#438bd0;color:#dceaff}
 .saved-materials-more{padding:4px 2px;color:#7188a9;font-size:9px}
+
+/* Saved-material archive controls */
+.saved-materials-toolbar{display:flex;align-items:center;justify-content:flex-end;gap:9px;flex-wrap:wrap}
+.saved-material-export{padding:6px 9px;border:1px solid rgba(77,137,204,.28);border-radius:7px;background:rgba(15,48,83,.34);color:#a9c8ed;font-size:9px;cursor:pointer}
+.saved-material-export:hover:not(:disabled){border-color:#438bd0;color:#e1efff}
+.saved-material-export:disabled{opacity:.4;cursor:not-allowed}
+.saved-material-source-link{display:inline-block;margin-top:4px;color:#79aee9;font-size:9px;text-decoration:none;overflow-wrap:anywhere}
+.saved-material-source-link:hover{text-decoration:underline;color:#c4e0ff}
