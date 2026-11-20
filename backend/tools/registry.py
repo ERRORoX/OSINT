@@ -50,6 +50,7 @@ from .tool_dnsx import ToolDnsx
 from .tool_social_analyzer import ToolSocialAnalyzer
 from .tool_blackbird import ToolBlackbird
 from .tool_shodan import ToolShodan
+from .tool_ip_rdap import ToolIPRDAP
 from .tool_photo_search import ToolPhotoSearch
 from .tool_photo_ai import ToolPhotoAI
 from .tool_photo_ocr import ToolPhotoOCR
@@ -74,6 +75,7 @@ TOOLS: list[ToolBase] = [
     ToolSocialAnalyzer(),
     ToolBlackbird(),
     ToolShodan(),
+    ToolIPRDAP(),
 ]
 
 
