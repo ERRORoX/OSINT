@@ -193,6 +193,16 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertNotIn('unified-workstation.css?v=4.5.0\\n', page)
         self.assertIn('src="./js/domain.js?v=4.2.19"', page)
 
+    def test_domain_workspace_ignores_stale_requests_after_reset(self):
+        script = (ROOT / "tools" / "domain-workspace" / "frontend" / "js" / "domain.js").read_text(encoding="utf-8")
+        self.assertIn("let runSession = 0;", script)
+        self.assertIn("if (session !== runSession) return;", script)
+        self.assertIn("runSession += 1;", script)
+        self.assertIn("const totalSelected = Math.max(1, selectedTools.size);", script)
+        self.assertIn('doneSet.size + "/" + totalSelected + " завершено"', script)
+        self.assertIn('(progress / totalSelected) * 100', script)
+
+
 if __name__ == "__main__":
     unittest.main()
 
