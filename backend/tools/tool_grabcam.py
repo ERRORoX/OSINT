@@ -141,6 +141,22 @@ def _terminate_process(proc: subprocess.Popen | None) -> None:
             pass
 
 
+def _monitor_tunnel_processes(proc_php: subprocess.Popen, proc_tunnel: subprocess.Popen, tunnel_key: str) -> None:
+    """Keep the UI state in sync and stop the companion process if a tunnel dies."""
+    while proc_php.poll() is None and proc_tunnel.poll() is None:
+        time.sleep(1)
+    _terminate_process(proc_tunnel)
+    _terminate_process(proc_php)
+    with _lock:
+        if _state.get("proc") is proc_php and _state.get(tunnel_key) is proc_tunnel:
+            _state["running"] = False
+            _state["proc"] = None
+            _state[tunnel_key] = None
+            _state["link"] = None
+            _state["local_url"] = None
+            _state["error"] = "Соединение с туннелем или локальным сервером завершилось. Запустите его повторно."
+
+
 def _php_command(port: int, host: str = '127.0.0.1') -> list[str]:
     """Serve only the isolated training demo, never legacy GrabCam PHP endpoints."""
     return ["php", "-S", f"{host}:{port}", "-t", _DEMO_DIR]
@@ -232,7 +248,7 @@ def _worker_serveo(port: int):
             if link:
                 with _lock:
                     _state["link"] = link
-
+                threading.Thread(target=_monitor_tunnel_processes, args=(proc_php, proc_ssh, "proc_ssh"), daemon=True).start()
                 return
             # SSH завершился без ссылки или таймаут — пробуем порт 443
             try:
@@ -338,7 +354,7 @@ def _worker_localhost_run():
         if link:
             with _lock:
                 _state["link"] = link
-
+            threading.Thread(target=_monitor_tunnel_processes, args=(proc_php, proc_ssh, "proc_ssh"), daemon=True).start()
             return
         with _lock:
             _state["error"] = "Не удалось получить ссылку localhost.run. Проверьте интернет и доступность localhost.run."
@@ -421,7 +437,7 @@ def _worker_cloudflared():
         if link:
             with _lock:
                 _state["link"] = link
-
+            threading.Thread(target=_monitor_tunnel_processes, args=(proc_php, proc_cf, "proc_cloudflared"), daemon=True).start()
             return
         with _lock:
             _state["error"] = "Не удалось получить ссылку Cloudflare. Проверьте интернет."
@@ -477,6 +493,7 @@ def _worker_php_only(port: int = _PHP_PORT):
         with _lock:
             _state["running"] = False
             _state["proc"] = None
+            _state["local_url"] = None
 
 
 class ToolGrabcam(ToolBase):
