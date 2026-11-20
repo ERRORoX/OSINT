@@ -215,6 +215,7 @@ body.dashboard-page{margin:0!important;min-height:100vh;background:radial-gradie
   .sidebar-group{display:flex;align-items:center;gap:6px;flex:0 0 auto}
   .sidebar-group-label{display:none}
   .sidebar-nav .tool-link{white-space:nowrap;flex:0 0 auto}
-  .sidebar-scroll>.sidebar-link,.sidebar-scroll>.sidebar-action{display:none}
+  .sidebar-scroll>.sidebar-link{display:none}
+  .sidebar-scroll>.sidebar-action{display:inline-flex!important;white-space:nowrap;flex:0 0 auto}
   .sidebar-scroll>.update-status{display:block}
 }
