@@ -185,6 +185,14 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn('.graph-node.is-selected', styles)
         self.assertIn('touch-action:none', styles)
 
+
+    def test_domain_workspace_stylesheets_and_assets_are_well_formed(self):
+        page = (ROOT / "tools" / "domain-workspace" / "frontend" / "index.html").read_text(encoding="utf-8")
+        self.assertIn('<link rel="stylesheet" href="/css/unified-workstation.css?v=4.5.0">', page)
+        self.assertIn('<link rel="stylesheet" href="/css/panel-42-dashboard.css?v=4.2.1">', page)
+        self.assertNotIn('unified-workstation.css?v=4.5.0\\n', page)
+        self.assertIn('src="./js/domain.js?v=4.2.19"', page)
+
 if __name__ == "__main__":
     unittest.main()
 
