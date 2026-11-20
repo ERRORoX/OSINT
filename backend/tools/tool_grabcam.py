@@ -125,6 +125,22 @@ def _wait_for_tunnel_link(proc: subprocess.Popen, pattern: re.Pattern, timeout: 
     match = pattern.search("".join(collected))
     return match.group(0) if match else None
 
+def _terminate_process(proc: subprocess.Popen | None) -> None:
+    """Stop a child process cleanly when tunnel startup fails."""
+    if proc is None or proc.poll() is not None:
+        return
+    try:
+        proc.terminate()
+        proc.wait(timeout=2)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+    except Exception:
+        try:
+            proc.kill()
+        except Exception:
+            pass
+
+
 def _php_command(port: int, host: str = '127.0.0.1') -> list[str]:
     """Serve only the isolated training demo, never legacy GrabCam PHP endpoints."""
     return ["php", "-S", f"{host}:{port}", "-t", _DEMO_DIR]
@@ -198,6 +214,7 @@ def _worker_serveo(port: int):
                     start_new_session=True,
                 )
             except FileNotFoundError:
+                _terminate_process(proc_php)
                 with _lock:
                     _state["running"] = False
                     _state["proc"] = None
@@ -309,6 +326,7 @@ def _worker_localhost_run():
                 start_new_session=True,
             )
         except FileNotFoundError:
+            _terminate_process(proc_php)
             with _lock:
                 _state["running"] = False
                 _state["proc"] = None
@@ -391,6 +409,7 @@ def _worker_cloudflared():
                 start_new_session=True,
             )
         except FileNotFoundError:
+            _terminate_process(proc_php)
             with _lock:
                 _state["running"] = False
                 _state["proc"] = None
