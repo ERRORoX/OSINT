@@ -118,7 +118,7 @@ python backend/module_cli.py runtime-check
 
 - `tools/ip-rdap/` — первый полностью интегрированный модуль с собственными frontend, backend, README и тестами. Старый адрес и API сохранены через совместимость.
 - `tools/domain-workspace/` — перенесённая интерфейсная рабочая область доменных инструментов. Она использует существующие backend-модули через стабильные API.
-- Из 15 исходных backend-инструментов 13 уже имеют статус `integrated` (включая IP/RDAP, Domain Search, DNS-инструменты, username-инструменты, Shodan, theHarvester, Google OSINT, Photo Search и GrabCam). Два модуля остаются `legacy`: ANONSMS и Instagram Bruter; их перенос не выполняется автоматически из-за необходимости отдельной оценки рисков и поведения. Domain Workspace — отдельный интегрированный frontend-модуль, который оркестрирует связанные backend-инструменты.
+- Из 15 исходных backend-инструментов 13 уже имеют статус `integrated` (включая IP/RDAP, Domain Search, DNS-инструменты, username-инструменты, Shodan, theHarvester, Google OSINT, Photo Search и GrabCam). Два модуля остаются `legacy`: ANONSMS и Instagram Bruter; их перенос не выполняется автоматически из-за необходимости отдельной оценки рисков и поведения. Дополнительно перенесены три интегрированные frontend-workspace: Domain Workspace, Photo Workspace и Username Workspace. Старые адреса страниц сохранены через redirects.
 
 ## Правила независимости
 
