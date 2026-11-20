@@ -2,27 +2,35 @@
   "schema_version": 1,
   "id": "photo-search",
   "name": "Поиск по фотографии",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "category": "photo",
   "description": "Обработка изображения, метаданные и хэши; вспомогательные photo API пока остаются в общем backend.",
-  "status": "legacy",
+  "status": "integrated",
   "enabled": true,
   "entrypoints": {
-    "backend_adapter": "backend/tools/tool_photo_search.py"
+    "backend_adapter": "tools/photo-search/backend/tool.py",
+    "tool_class": "ToolPhotoSearch"
   },
   "dependencies": {
-    "python": [],
+    "python": [
+      "Pillow"
+    ],
     "system": [],
-    "optional": []
+    "optional": [
+      "ExifTool"
+    ]
   },
   "capabilities": [
-    "legacy-backend-adapter"
+    "user-uploaded-image-analysis",
+    "exif-metadata",
+    "image-hashes"
   ],
   "legacy_paths": [
     "backend/tools/tool_photo_search.py"
   ],
   "notes": [
-    "Manifest описывает существующий инструмент; код ещё не перенесён в каноническую структуру модуля.",
-    "Не удалять и не перемещать legacy-файлы до отдельной проверки импортов, маршрутов и тестов."
+    "Каноническая реализация находится в backend/tool.py внутри каталога модуля.",
+    "Старый backend/tools import path сохранён как compatibility adapter.",
+    "Изображение обрабатывается только после явной загрузки пользователем; автоматической отправки изображения во внешние сервисы нет."
   ]
 }
