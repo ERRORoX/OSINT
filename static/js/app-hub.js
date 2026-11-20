@@ -16,7 +16,7 @@ const USERNAME_TOOLS_IDS=["sherlock","maigret","social-analyzer","blackbird"];
 const TAB_ONLY_TOOL_IDS=["photo-search"];
 const HUB_CARDS=[
  {id:"domain-tools",href:"/domain/",title:"Анализ доменов",desc:"WHOIS, DNS, поддомены и открытая инфраструктура.",category:"recon",icon:"◎"},
- {id:"ip-rdap",href:"/p/ip-rdap/",title:"IP / RDAP",desc:"Пассивная информация о публичном IP: сеть, ASN-организация, страна и даты регистрации.",category:"recon",icon:"⌁"},
+ {id:"ip-rdap",href:"/p/ip-rdap/",title:"IP / RDAP",desc:"Пассивная информация о публичном IP: сеть, организация-владелец и страна и даты регистрации.",category:"recon",icon:"⌁"},
  {id:"username-tools",href:"/username/",title:"Поиск username",desc:"Проверка публичных профилей по имени пользователя.",category:"recon",icon:"＠"},
  {id:"google-osint",href:"/p/google-osint/",title:"Email OSINT",desc:"Публичные сигналы и проверка доступных источников по email.",category:"identity",icon:"✉"},
  {id:"photo-search",href:"/photo/",title:"Анализ изображений",desc:"Метаданные, EXIF, хеши и инструменты проверки изображений.",category:"media",icon:"▧"},
