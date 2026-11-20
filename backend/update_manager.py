@@ -1,7 +1,8 @@
 """Git updater для development-ветки OSINT Panel 4.2.
 
-Установка сохраняет пользовательские файлы: выполняется только fast-forward merge,
-без reset/clean. Перед изменением HEAD создаётся локальная резервная ветка.
+Локальные tracked/untracked изменения автоматически убираются во временный stash,
+обновление выполняется fast-forward, затем изменения восстанавливаются. Stash
+не удаляется, если восстановление завершилось конфликтом.
 """
 from __future__ import annotations
 
@@ -29,6 +30,21 @@ def _git(*args: str) -> str:
         detail = getattr(exc, "stderr", "") or str(exc)
         raise UpdateError("Ошибка Git: {}".format(str(detail).strip())) from exc
     return result.stdout.strip()
+
+
+def _restore_stash(stash_ref: str | None) -> None:
+    if not stash_ref:
+        return
+    try:
+        _git("stash", "apply", "--index", stash_ref)
+    except UpdateError as exc:
+        raise UpdateError(
+            "Код обновлён, но автоматическое восстановление ваших локальных файлов "
+            "обнаружило конфликт. Ваши изменения сохранены в Git stash ({}) и не удалены. "
+            "Нужна ручная проверка конфликтующих файлов. Подробности: {}".format(stash_ref, exc)
+        ) from exc
+    # Удаляем сохранённую копию только после успешного восстановления.
+    _git("stash", "drop", "stash@{0}")
 
 
 def check_update() -> dict:
@@ -60,54 +76,68 @@ def install_update() -> dict:
             )
         )
 
-    status = _git("status", "--porcelain")
-    if status:
-        raise UpdateError(
-            "Есть локальные изменения. Обновление остановлено, чтобы не перезаписать ваши файлы. "
-            "Сначала сохраните изменения."
-        )
+    # Автоматически сохраняем изменённые и новые (untracked) файлы.
+    # Игнорируемые каталоги, включая виртуальное окружение, не затрагиваются.
+    stash_ref = None
+    if _git("status", "--porcelain"):
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S-%f")
+        _git("stash", "push", "--include-untracked", "-m", "OSINT Panel auto-update {}".format(stamp))
+        stash_ref = _git("rev-parse", "stash@{0}")
 
-    check = check_update()
-    if not check["available"]:
-        return {"updated": False, "message": "Установлена последняя версия.", **check}
-
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S-%f")
-    backup_branch = "backup/before-update-{}".format(stamp)
-    _git("branch", backup_branch, "HEAD")
     try:
-        _git("merge", "--ff-only", "{}/{}".format(REMOTE, BRANCH))
-    except UpdateError as exc:
-        raise UpdateError(
-            "Обновление не применено. Исходная версия сохранена в резервной ветке {}. {}".format(
-                backup_branch, str(exc)
-            )
-        ) from exc
+        check = check_update()
+        if not check["available"]:
+            _restore_stash(stash_ref)
+            return {"updated": False, "message": "Установлена последняя версия.", **check}
 
-    # Устанавливаем изменившиеся Python-зависимости до перезапуска приложения.
-    try:
-        subprocess.run(
-            [sys.executable, "-m", "pip", "install", "-r", str(ROOT / "requirements.txt")],
-            check=True, capture_output=True, text=True, timeout=600,
-        )
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
-        detail = getattr(exc, "stderr", "") or str(exc)
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S-%f")
+        backup_branch = "backup/before-update-{}".format(stamp)
+        _git("branch", backup_branch, "HEAD")
         try:
-            _git("reset", "--hard", backup_branch)
-        except UpdateError as rollback_exc:
+            _git("merge", "--ff-only", "{}/{}".format(REMOTE, BRANCH))
+        except UpdateError as exc:
             raise UpdateError(
-                "Не удалось установить зависимости и выполнить автоматический откат. "
-                "Резервная ветка: {}. Ошибка отката: {}".format(backup_branch, rollback_exc)
+                "Обновление не применено. Исходная версия сохранена в резервной ветке {}. {}".format(
+                    backup_branch, str(exc)
+                )
             ) from exc
-        raise UpdateError(
-            "Установка зависимостей завершилась ошибкой; код автоматически возвращён к предыдущей версии. "
-            "Резервная ветка: {}. {}".format(backup_branch, str(detail).strip())
-        ) from exc
 
-    after = check_update()
-    return {
-        "updated": True,
-        "backup_branch": backup_branch,
-        "message": "Обновление установлено. Сервер будет автоматически перезапущен.",
-        "restart_required": True,
-        **after,
-    }
+        # Устанавливаем изменившиеся Python-зависимости до перезапуска приложения.
+        try:
+            subprocess.run(
+                [sys.executable, "-m", "pip", "install", "-r", str(ROOT / "requirements.txt")],
+                check=True, capture_output=True, text=True, timeout=600,
+            )
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+            detail = getattr(exc, "stderr", "") or str(exc)
+            try:
+                _git("reset", "--hard", backup_branch)
+            except UpdateError as rollback_exc:
+                raise UpdateError(
+                    "Не удалось установить зависимости и выполнить автоматический откат. "
+                    "Резервная ветка: {}. Ошибка отката: {}".format(backup_branch, rollback_exc)
+                ) from exc
+            raise UpdateError(
+                "Установка зависимостей завершилась ошибкой; код автоматически возвращён к предыдущей версии. "
+                "Резервная ветка: {}. {}".format(backup_branch, str(detail).strip())
+            ) from exc
+
+        # Возвращаем пользовательские файлы только после успешного обновления кода и зависимостей.
+        _restore_stash(stash_ref)
+        after = check_update()
+        return {
+            "updated": True,
+            "backup_branch": backup_branch,
+            "message": "Обновление установлено. Локальные файлы автоматически сохранены и восстановлены. Сервер будет перезапущен.",
+            "restart_required": True,
+            **after,
+        }
+    except UpdateError as exc:
+        # Если установка не дошла до восстановления stash, возвращаем файлы на место.
+        if stash_ref:
+            try:
+                if _git("stash", "list", "--format=%H") and stash_ref in _git("stash", "list", "--format=%H").splitlines():
+                    _restore_stash(stash_ref)
+            except UpdateError as restore_exc:
+                raise UpdateError("{} Дополнительно: {}".format(exc, restore_exc)) from exc
+        raise
