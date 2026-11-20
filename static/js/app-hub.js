@@ -445,6 +445,7 @@ function graphValidate(value){
  return {nodes,edges};
 }
 function graphSvg(tag,attrs,parent){const el=document.createElementNS("http://www.w3.org/2000/svg",tag);Object.entries(attrs||{}).forEach(([key,value])=>el.setAttribute(key,String(value)));if(parent)parent.appendChild(el);return el;}
+function graphPointerPosition(svg,event){const point=svg.createSVGPoint();point.x=event.clientX;point.y=event.clientY;const matrix=svg.getScreenCTM();if(!matrix)return{x:event.clientX,y:event.clientY};const local=point.matrixTransform(matrix.inverse());return{x:local.x,y:local.y};}
 function graphApplyTransform(){const viewport=document.getElementById("graph-viewport");if(viewport)viewport.setAttribute("transform","translate("+graphPan.x+" "+graphPan.y+") scale("+graphScale+")");const reset=document.getElementById("graph-zoom-reset");if(reset)reset.textContent=Math.round(graphScale*100)+"%";}
 function graphVisibleNodes(){const enabled=new Set([...document.querySelectorAll("[data-graph-filter]:checked")].map(input=>input.dataset.graphFilter));return graphData.nodes.filter(node=>enabled.has(node.type));}
 function graphRender(){
@@ -463,7 +464,7 @@ function graphRender(){
   const label=graphSvg("text",{x:0,y:49,class:"graph-node-label","text-anchor":"middle"},group);label.textContent=node.label.length>23?node.label.slice(0,21)+"…":node.label;
   group.addEventListener("click",()=>graphSelect(node.id));
   group.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();graphSelect(node.id);}});
-  group.addEventListener("pointerdown",event=>{if(event.button!==0)return;event.preventDefault();graphDrag={kind:"node",id:node.id,x:event.clientX,y:event.clientY};svg.setPointerCapture(event.pointerId);});
+  group.addEventListener("pointerdown",event=>{if(event.button!==0)return;event.preventDefault();event.stopPropagation();const point=graphPointerPosition(svg,event);graphDrag={kind:"node",id:node.id,x:point.x,y:point.y,moved:false};svg.setPointerCapture(event.pointerId);});
  });
  const empty=document.getElementById("graph-empty-state");if(empty)empty.hidden=visible.length>0;
  const summary=document.getElementById("graph-summary");if(summary)summary.textContent=visible.length+" узлов · "+graphData.edges.filter(edge=>visibleIds.has(edge.source)&&visibleIds.has(edge.target)).length+" связей";
@@ -558,9 +559,9 @@ async function graphWire(){
  document.getElementById("graph-zoom-reset")?.addEventListener("click",graphResetView);
  document.getElementById("graph-fit")?.addEventListener("click",graphFitView);
  svg.addEventListener("wheel",event=>{event.preventDefault();graphScale=Math.max(.035,Math.min(2.5,graphScale*(event.deltaY<0?1.1:.9)));graphApplyTransform();},{passive:false});
- svg.addEventListener("pointerdown",event=>{if(event.target===svg||event.target.id==="graph-viewport"||event.target.id==="graph-edges"){graphDrag={kind:"pan",x:event.clientX,y:event.clientY};svg.setPointerCapture(event.pointerId);}});
- svg.addEventListener("pointermove",event=>{if(!graphDrag)return;const dx=(event.clientX-graphDrag.x)/graphScale,dy=(event.clientY-graphDrag.y)/graphScale;graphDrag.x=event.clientX;graphDrag.y=event.clientY;if(graphDrag.kind==="pan"){graphPan.x+=dx;graphPan.y+=dy;graphApplyTransform();}else{const node=graphData.nodes.find(item=>item.id===graphDrag.id);if(node){node.x=Math.max(25,Math.min(735,node.x+dx));node.y=Math.max(25,Math.min(12000,node.y+dy));graphRender();}}});
- const stop=async()=>{const wasNodeDrag=graphDrag?.kind==="node";graphDrag=null;if(wasNodeDrag&&mode?.value==="local"){try{await persistCurrent();}catch(error){if(status)status.textContent="Не удалось сохранить расположение узлов: "+(error.message||"ошибка");}}};
+ svg.addEventListener("pointerdown",event=>{if(event.button!==0)return;if(event.target===svg||event.target.id==="graph-viewport"||event.target.id==="graph-edges"){event.preventDefault();const point=graphPointerPosition(svg,event);graphDrag={kind:"pan",x:point.x,y:point.y,moved:false};svg.setPointerCapture(event.pointerId);}});
+ svg.addEventListener("pointermove",event=>{if(!graphDrag)return;const point=graphPointerPosition(svg,event),dx=point.x-graphDrag.x,dy=point.y-graphDrag.y;graphDrag.x=point.x;graphDrag.y=point.y;if(Math.abs(dx)+Math.abs(dy)>.5)graphDrag.moved=true;if(graphDrag.kind==="pan"){graphPan.x+=dx;graphPan.y+=dy;graphApplyTransform();}else{const node=graphData.nodes.find(item=>item.id===graphDrag.id);if(node){node.x=Math.max(-100000,Math.min(100000,node.x+dx/graphScale));node.y=Math.max(-100000,Math.min(100000,node.y+dy/graphScale));graphRender();}}});
+ const stop=async()=>{const wasNodeDrag=graphDrag?.kind==="node"&&graphDrag?.moved;graphDrag=null;if(wasNodeDrag&&mode?.value==="local"){try{await persistCurrent();}catch(error){if(status)status.textContent="Не удалось сохранить расположение узлов: "+(error.message||"ошибка");}}};
  svg.addEventListener("pointerup",stop);svg.addEventListener("pointercancel",stop);svg.addEventListener("lostpointercapture",()=>{graphDrag=null;});
  document.getElementById("graph-import-button")?.addEventListener("click",async()=>{
   try{
