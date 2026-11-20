@@ -152,6 +152,24 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn(".case-project-card", styles)
 
 
+    def test_domain_analysis_persists_real_results_to_graph(self):
+        domain_script = (ROOT / "tools" / "domain-workspace" / "frontend" / "js" / "domain.js").read_text(encoding="utf-8")
+        self.assertIn("function buildDomainGraphPayload(rep)", domain_script)
+        self.assertIn('fetch(API + "/graph/merge"', domain_script)
+        self.assertIn("await persistReportToGraph(lastReport)", domain_script)
+        self.assertIn("Карта связей обновлена", domain_script)
+
+    def test_relationship_graph_uses_server_sqlite_api(self):
+        app_source = (ROOT / "backend" / "app.py").read_text(encoding="utf-8")
+        store_source = (ROOT / "backend" / "db" / "graph_store.py").read_text(encoding="utf-8")
+        hub_source = (ROOT / "static" / "js" / "app-hub.js").read_text(encoding="utf-8")
+        self.assertIn('@app.route("/api/graph", methods=["GET", "PUT", "DELETE"])', app_source)
+        self.assertIn('@app.route("/api/graph/merge", methods=["POST"])', app_source)
+        self.assertIn("CREATE TABLE IF NOT EXISTS relationship_graph", store_source)
+        self.assertIn('fetch(API+"/graph"', hub_source)
+        self.assertIn('requestGraph("PUT",graphData)', hub_source)
+        self.assertIn('requestGraph("DELETE")', hub_source)
+
     def test_homepage_interactive_relationship_graph(self):
         page = (ROOT / "static" / "index.html").read_text(encoding="utf-8")
         script = (ROOT / "static" / "js" / "app-hub.js").read_text(encoding="utf-8")
