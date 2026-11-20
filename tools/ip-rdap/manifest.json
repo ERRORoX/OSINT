@@ -11,7 +11,8 @@
     "page_url": "/modules/ip-rdap/",
     "frontend": "tools/ip-rdap/frontend/index.html",
     "backend_adapter": "backend/tools/tool_ip_rdap.py",
-    "manifest_readme": "tools/ip-rdap/README.md"
+    "manifest_readme": "tools/ip-rdap/README.md",
+    "tool_class": "ToolIPRDAP"
   },
   "dependencies": {
     "python": [],
