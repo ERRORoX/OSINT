@@ -40,3 +40,11 @@ body{background:radial-gradient(ellipse at 12% 0%,rgba(24,88,73,.16),transparent
 .app-footer{border-top:1px solid var(--p41-line);color:var(--p41-muted)}
 @media(max-width:640px){.hub-hero{padding:25px 20px}.hub-hero-mark{opacity:.3}.hub-section-head{gap:13px}.hub-search-wrap{width:100%}.hub-card{min-height:170px}}
 @media(prefers-reduced-motion:reduce){.hub-card,.hub-card:hover{transition:none;transform:none}}
+
+/* Header updater control */
+.app-update-control{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.app-update-btn{border:1px solid rgba(85,230,165,.34);border-radius:9px;padding:9px 13px;background:rgba(85,230,165,.09);color:#65e8ac;font:600 .78rem var(--font-sans);cursor:pointer;white-space:nowrap;transition:background .18s,border-color .18s}
+.app-update-btn:hover:not(:disabled){background:rgba(85,230,165,.16);border-color:rgba(85,230,165,.6)}
+.app-update-btn:disabled{opacity:.55;cursor:wait}
+.app-update-status{max-width:230px;color:#9eb0c2;font-size:.7rem;line-height:1.35}
+@media(max-width:760px){.app-update-control{width:100%;justify-content:flex-end}.app-update-status{max-width:100%}}
