@@ -2,13 +2,13 @@
   "schema_version": 1,
   "id": "dnsx",
   "name": "dnsx",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "category": "network",
   "description": "DNS-запросы через legacy backend-адаптер.",
-  "status": "legacy",
+  "status": "integrated",
   "enabled": true,
   "entrypoints": {
-    "backend_adapter": "backend/tools/tool_dnsx.py"
+    "backend_adapter": "tools/dnsx/backend/tool.py"
   },
   "dependencies": {
     "python": [],
@@ -22,7 +22,8 @@
     "backend/tools/tool_dnsx.py"
   ],
   "notes": [
-    "Manifest описывает существующий инструмент; код ещё не перенесён в каноническую структуру модуля.",
-    "Не удалять и не перемещать legacy-файлы до отдельной проверки импортов, маршрутов и тестов."
+    "Каноническая backend-реализация находится в каталоге этого модуля.",
+    "Старый импорт backend/tools/tool_dnsx.py сохранён как compatibility adapter.",
+    "Модуль используется в составе Domain Workspace; отдельная страница ему не требуется."
   ]
 }
