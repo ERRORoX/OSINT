@@ -191,3 +191,52 @@ def discover_modules(project_root: str | os.PathLike[str] | None = None) -> dict
         },
         "issues": global_issues,
     }
+
+def get_navigation_modules(project_root: str | os.PathLike[str] | None = None) -> list[dict[str, str]]:
+    """Return safe, enabled, integrated modules that own a canonical page.
+
+    Navigation URLs are never accepted as arbitrary manifest URLs: each one
+    must exactly match /modules/<module-id>/ and its frontend must exist
+    inside the project tree.
+    """
+    root = Path(project_root or Path(__file__).resolve().parents[1]).resolve()
+    result = discover_modules(root)
+    navigation: list[dict[str, str]] = []
+
+    for item in result["modules"]:
+        if not item.get("valid") or not item.get("enabled") or item.get("status") != "integrated":
+            continue
+        module_id = item.get("id")
+        entrypoints = item.get("entrypoints") or {}
+        expected_url = f"/modules/{module_id}/"
+        page_url = entrypoints.get("page_url")
+        frontend = entrypoints.get("frontend")
+
+        if not isinstance(module_id, str) or page_url != expected_url:
+            continue
+        if not isinstance(frontend, str) or not frontend.strip():
+            continue
+
+        relative = Path(frontend)
+        if (
+            "\\" in frontend
+            or "\x00" in frontend
+            or relative.is_absolute()
+            or ".." in relative.parts
+        ):
+            continue
+
+        frontend_path = root / relative
+        if not _inside(root, frontend_path) or not frontend_path.is_file():
+            continue
+
+        navigation.append({
+            "id": module_id,
+            "name": str(item.get("name") or module_id),
+            "description": str(item.get("description") or ""),
+            "category": str(item.get("category") or "other"),
+            "href": expected_url,
+        })
+
+    return sorted(navigation, key=lambda item: (item["category"], item["name"].casefold(), item["id"]))
+
