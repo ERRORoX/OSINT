@@ -90,6 +90,26 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn('.username-graph-status[data-state="success"]', styles)
         self.assertIn('username.js?v=4.2.3', page)
 
+    def test_maigret_uses_managed_install_instead_of_broken_local_checkout(self):
+        source = (ROOT / "tools" / "maigret" / "backend" / "tool.py").read_text(encoding="utf-8")
+        self.assertIn("def _ensure_maigret", source)
+        self.assertIn('"pip", "install"', source)
+        self.assertIn('cwd=_ROOT', source)
+        self.assertNotIn('cwd=run_cwd', source)
+
+    def test_blackbird_installs_requirements_before_launch(self):
+        source = (ROOT / "tools" / "blackbird" / "backend" / "tool.py").read_text(encoding="utf-8")
+        self.assertIn("def _ensure_blackbird_dependencies", source)
+        self.assertIn('"requirements.txt"', source)
+        self.assertIn("ready, install_error = _ensure_blackbird_dependencies()", source)
+
+    def test_username_page_has_compact_search_pipeline(self):
+        page = (ROOT / "tools" / "username-workspace" / "frontend" / "index.html").read_text(encoding="utf-8")
+        styles = (ROOT / "tools" / "username-workspace" / "frontend" / "css" / "username.css").read_text(encoding="utf-8")
+        self.assertIn('class="username-overview"', page)
+        self.assertIn(".username-overview__steps", styles)
+        self.assertIn("username.js?v=4.2.4", page)
+
     def test_username_frontend_uses_only_canonical_asset_paths(self):
         js = (ROOT / "tools" / "username-workspace" / "frontend" / "js" / "username.js").read_text(encoding="utf-8")
         self.assertNotIn("/username/js/", js)
