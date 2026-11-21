@@ -439,6 +439,11 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn('id="ph-public-links"', page)
         self.assertIn("renderPublicChecks", script)
         self.assertIn("duckduckgo.com/?q=", script)
+        self.assertIn("site:instagram.com", script)
+        self.assertIn("site:vk.com", script)
+        self.assertIn("site:t.me", script)
+        self.assertIn("public-social-media-mentions-search", manifest["capabilities"])
+        self.assertIn("page.js?v=2.2.0", page)
         self.assertIn("json-report-export", manifest["capabilities"])
         self.assertIn("Не устанавливает личность владельца", (ROOT / "tools" / "phone-lookup" / "README.md").read_text(encoding="utf-8"))
 
