@@ -1187,3 +1187,9 @@ body {
   .username-v2 .blackbird-confidence{ display: none; }
   .username-v2 .tabs-nav{ overflow-x: auto; }
 }
+
+.username-graph-status{margin:12px 0 18px;padding:12px 14px;border:1px solid rgba(0,212,255,.18);border-radius:10px;background:rgba(0,212,255,.045);color:var(--text-muted);font-size:.78rem;line-height:1.55}
+.username-graph-status[data-state="running"]{border-color:rgba(0,212,255,.35);color:var(--cyan)}
+.username-graph-status[data-state="success"]{border-color:rgba(0,255,136,.3);color:var(--success)}
+.username-graph-status[data-state="warning"]{border-color:rgba(255,170,0,.3);color:var(--warn)}
+.username-graph-status[data-state="error"]{border-color:rgba(255,68,102,.35);color:var(--error)}
