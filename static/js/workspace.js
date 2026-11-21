@@ -193,7 +193,7 @@
   }
   function mount() {
     ensureUnifiedNav();
-    ensureSidebarLayout();
+    // Keep the compact top navigation. Do not create a sidebar on module pages.
     var header = document.querySelector(".app-header-right") || document.querySelector(".osint-header-inner");
     if (header && !document.getElementById("osint-workspace-actions")) {
       var actions = document.createElement("div"); actions.id = "osint-workspace-actions";
