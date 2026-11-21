@@ -4,6 +4,7 @@
 """
 import json
 import os
+import importlib.util
 import re
 import subprocess
 import sys
@@ -19,6 +20,31 @@ def _strip_ansi(text: str) -> str:
     return _ANSI.sub("", text)
 
 
+def _ensure_social_analyzer(timeout_sec: int = 900) -> tuple[bool, str]:
+    """Install Social Analyzer's Python requirements into the panel interpreter."""
+    tool_dir = os.path.join(_ROOT, "tools", "social-analyzer")
+    requirements = os.path.join(tool_dir, "requirements.txt")
+    if not os.path.isfile(requirements):
+        return False, "Не найден tools/social-analyzer/requirements.txt."
+    modules = ("bs4", "tld", "termcolor", "langdetect", "requests", "lxml", "galeodes")
+    missing = [name for name in modules if importlib.util.find_spec(name) is None]
+    if not missing:
+        return True, ""
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-m", "pip", "install", "--disable-pip-version-check", "-r", requirements],
+            cwd=tool_dir, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=timeout_sec,
+        )
+        if proc.returncode != 0:
+            return False, (proc.stderr or proc.stdout or "Не удалось установить зависимости Social Analyzer")[-5000:]
+        return True, ""
+    except subprocess.TimeoutExpired:
+        return False, "Установка Social Analyzer превысила 15 минут."
+    except Exception as exc:
+        return False, str(exc)
+
+
 def _run_social_analyzer(username: str, timeout_sec: int = 300) -> tuple[str, str, int]:
     username = (username or "").strip()
     if not username or " " in username:
@@ -29,36 +55,28 @@ def _run_social_analyzer(username: str, timeout_sec: int = 300) -> tuple[str, st
     if not os.path.isfile(app_py):
         return "", "Social Analyzer не найден. Ожидается tools/social-analyzer/app.py", -1
 
-    # Режим fast, вывод JSON (без --silent, иначе JSON не печатается)
-    cmd = [
-        sys.executable,
-        app_py,
-        "--username", username,
-        "--websites", "all",
-        "--mode", "fast",
-        "--output", "json",
-        "--filter", "good",
-        "--profiles", "detected",
-    ]
+    ready, install_error = _ensure_social_analyzer()
+    if not ready:
+        return "", "Не удалось автоматически установить зависимости Social Analyzer:\\n" + install_error, -1
 
+    cmd = [
+        sys.executable, app_py, "--username", username,
+        "--websites", "all", "--mode", "fast", "--output", "json",
+        "--filter", "good", "--profiles", "detected",
+    ]
     try:
         proc = subprocess.run(
-            cmd,
-            cwd=tool_dir,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=timeout_sec,
-            env={**os.environ, "PYTHONPATH": tool_dir},
+            cmd, cwd=tool_dir, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=timeout_sec,
+            env={key: value for key, value in os.environ.items() if key != "PYTHONPATH"},
         )
         out = _strip_ansi(proc.stdout or "").strip()
         err = _strip_ansi(proc.stderr or "").strip()
         return out, err, proc.returncode
     except subprocess.TimeoutExpired:
         return "", "Превышено время ожидания ({} сек). Уменьшите число сайтов или увеличьте таймаут.".format(timeout_sec), -1
-    except Exception as e:
-        return "", str(e), -1
+    except Exception as exc:
+        return "", str(exc), -1
 
 
 def _format_result(json_str: str, err: str) -> str:
