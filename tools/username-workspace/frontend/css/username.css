@@ -1309,3 +1309,9 @@ body > .app-body.osint-body > main#main-content.osint-main {
 .username-profile-dialog__fields dt{color:var(--text-muted);font-size:.68rem}
 .username-profile-dialog__fields dd{margin:0;color:var(--text);font-size:.7rem;overflow-wrap:anywhere}
 @media(max-width:520px){.username-profile-dialog{padding:10px}.username-profile-dialog__panel{padding:15px}.username-profile-dialog__fields{grid-template-columns:1fr;gap:4px}.username-profile-dialog__fields dd{margin-bottom:8px}}
+
+
+/* Honest URL and verification states */
+.u-url-kind{display:block;margin-top:5px;color:var(--text-muted);font-size:.62rem;line-height:1.4}
+.u-verify.is-warn{border-color:rgba(255,190,70,.35);color:#ffd27a;background:rgba(255,190,70,.08)}
+.u-verify.is-bad{border-color:rgba(255,90,110,.35);color:#ff8794;background:rgba(255,70,90,.08)}
