@@ -22,6 +22,7 @@ _GRABCAM_PANEL_DIR = os.path.join(_PROJECT_ROOT, "tools", "grabcam", "panel")
 _GRABCAM_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "grabcam", "frontend")
 _IP_RDAP_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "ip-rdap", "frontend")
 _PHONE_LOOKUP_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "phone-lookup", "frontend")
+_PERSON_INTELLIGENCE_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "person-intelligence", "frontend")
 _DOMAIN_WORKSPACE_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "domain-workspace", "frontend")
 _PHOTO_WORKSPACE_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "photo-workspace", "frontend")
 _USERNAME_WORKSPACE_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "username-workspace", "frontend")
@@ -942,7 +943,7 @@ def ip_rdap_module_assets(filename):
     return response
 
 
-@app.route("/modules/phone-lookup/", methods=["GET"])
+@app.route("/modules/person-intelligence/", methods=["GET"])\ndef person_intelligence_module_page():\n    response = send_from_directory(_PERSON_INTELLIGENCE_FRONTEND_DIR, "index.html")\n    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"\n    return response\n\n\n@app.route("/modules/person-intelligence/<path:filename>", methods=["GET"])\ndef person_intelligence_module_assets(filename):\n    response = send_from_directory(_PERSON_INTELLIGENCE_FRONTEND_DIR, filename)\n    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"\n    return response\n\n\n@app.route("/modules/phone-lookup/", methods=["GET"])
 def phone_lookup_module_page():
     response = send_from_directory(_PHONE_LOOKUP_FRONTEND_DIR, "index.html")
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
