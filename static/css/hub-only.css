@@ -492,3 +492,19 @@ body.dashboard-page{margin:0!important;min-height:100vh;background:radial-gradie
 .graph-edge-line{stroke:rgba(66,151,242,.28);stroke-width:1.15;stroke-dasharray:3 5}
 .graph-edge-line.is-related{stroke:rgba(92,205,255,.95);stroke-width:2.2;stroke-dasharray:none;filter:drop-shadow(0 0 4px rgba(65,177,255,.55))}
 .graph-edge-label{paint-order:stroke;stroke:#071321;stroke-width:3px;stroke-linejoin:round}
+
+
+/* Relationship graph multi-selection and per-node actions */
+.graph-node.is-group-selected .graph-node-halo{
+ stroke:#f2c66d!important;stroke-width:3.5!important;
+ filter:drop-shadow(0 0 8px rgba(242,198,109,.72));
+}
+.graph-node.is-group-selected .graph-node-core{stroke:#fff0c2!important;stroke-width:2.5!important}
+.graph-delete-node{
+ display:inline-flex;align-items:center;justify-content:center;margin:12px 10px 0 0;
+ padding:8px 13px;border:1px solid rgba(255,100,110,.4);border-radius:8px;
+ background:rgba(150,35,48,.18);color:#ff9da5;font:inherit;font-size:12px;
+ cursor:pointer;transition:background .16s ease,border-color .16s ease;
+}
+.graph-delete-node:hover{background:rgba(180,38,52,.3);border-color:rgba(255,120,130,.75)}
+.graph-group-hint{display:block;margin-top:10px;color:rgba(165,194,220,.78);font-size:11px;line-height:1.5}
