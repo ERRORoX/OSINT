@@ -37,6 +37,27 @@
       output.textContent = lastOutput || "Метаданные не получены.";
       copy.disabled = !lastOutput;
       setStatus("Метаданные получены", "success");
+      try {
+        const metadata = data.metadata || {};
+        const source = String(phone).trim();
+        const idHash = Array.from(source.toLowerCase()).reduce((hash, char) => Math.imul(hash ^ char.charCodeAt(0), 16777619) >>> 0, 2166136261);
+        const node = {
+          id: "phone:" + idHash.toString(16),
+          type: "phone",
+          label: String(metadata.e164 || source).slice(0, 180),
+          details: ["Источник: Phone Number Intelligence / libphonenumber", "Регион: " + (metadata.region || "—"), "Тип: " + (metadata.number_type || "—"), "Оператор исходного диапазона: " + (metadata.carrier || "—"), "Владелец и местоположение абонента не определяются."].join("\\n")
+        };
+        const saved = await fetch("/api/graph/merge", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify({ nodes: [node], edges: [] })
+        });
+        const graphResult = await saved.json().catch(() => ({}));
+        if (!saved.ok) throw new Error(graphResult.error || "Не удалось сохранить телефонный узел.");
+        setStatus("Метаданные получены · телефон добавлен в граф расследований", "success");
+      } catch (graphError) {
+        setStatus("Метаданные получены, но не удалось добавить номер в граф: " + (graphError.message || "ошибка"), "error");
+      }
     } catch (error) {
       if (current !== requestId) return;
       output.textContent = error.message || "Ошибка проверки.";
