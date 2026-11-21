@@ -23,6 +23,7 @@ _GRABCAM_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "grabcam", "fronten
 _IP_RDAP_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "ip-rdap", "frontend")
 _PHONE_LOOKUP_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "phone-lookup", "frontend")
 _PERSON_INTELLIGENCE_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "person-intelligence", "frontend")
+_EVIDENCE_CENTER_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "evidence-center", "frontend")
 _DOMAIN_WORKSPACE_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "domain-workspace", "frontend")
 _PHOTO_WORKSPACE_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "photo-workspace", "frontend")
 _USERNAME_WORKSPACE_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "username-workspace", "frontend")
@@ -39,6 +40,7 @@ from datetime import datetime, timezone, timedelta
 
 from db import init_db, save_run, get_run_history, get_last_successful_run, delete_run, clear_runs
 from db.graph_store import (get_graph_data, merge_graph_data, replace_graph_data, clear_graph_data, list_investigations, create_investigation, activate_investigation, rename_investigation, delete_investigation, list_investigation_notes, create_investigation_note, delete_investigation_note)
+from db.evidence_store import list_evidence, create_evidence, update_evidence, delete_evidence
 from tools import get_all_tools, get_tool, run_tool
 from tools.tool_formgrab import add_capture, get_captures, get_grab_page_html, get_or_create_token
 from settings_keys import get_keys_for_api, save_keys_from_api, load_env_into_os
@@ -945,6 +947,38 @@ def ip_rdap_module_assets(filename):
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
     return response
+
+
+@app.route("/modules/evidence-center/", methods=["GET"])
+def evidence_center_module_page():
+    response = send_from_directory(_EVIDENCE_CENTER_FRONTEND_DIR, "index.html")
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return response
+
+
+@app.route("/modules/evidence-center/<path:filename>", methods=["GET"])
+def evidence_center_module_assets(filename):
+    return send_from_directory(_EVIDENCE_CENTER_FRONTEND_DIR, filename)
+
+
+@app.route("/api/evidence", methods=["GET", "POST"])
+def api_evidence():
+    try:
+        if request.method == "GET":
+            return jsonify(list_evidence(request.args.get("investigation_id")))
+        return jsonify(create_evidence(request.get_json(silent=True) or {})), 201
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
+@app.route("/api/evidence/<item_id>", methods=["PATCH", "DELETE"])
+def api_evidence_item(item_id):
+    try:
+        if request.method == "PATCH":
+            return jsonify(update_evidence(item_id, request.get_json(silent=True) or {}))
+        return jsonify(delete_evidence(item_id))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 404
 
 
 @app.route("/modules/person-intelligence/", methods=["GET"])
