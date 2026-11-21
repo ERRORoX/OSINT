@@ -88,7 +88,7 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn('id="usernameGraphStatus"', page)
         self.assertIn("searchInProgress", script)
         self.assertIn('.username-graph-status[data-state="success"]', styles)
-        self.assertIn('username.js?v=4.2.3', page)
+        self.assertIn('username.js?v=4.2.4', page)
 
     def test_maigret_uses_managed_install_instead_of_broken_local_checkout(self):
         source = (ROOT / "tools" / "maigret" / "backend" / "tool.py").read_text(encoding="utf-8")
