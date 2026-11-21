@@ -18,6 +18,7 @@ EXTRA = {
     "maigret": ["maigret"],
     "sherlock": ["sherlock-project"],
     "blackbird": ["aiohttp", "python-dotenv", "rich", "reportlab"],
+    "social-analyzer": ["beautifulsoup4", "tld", "termcolor", "langdetect", "requests", "lxml", "galeodes"],
 }
 # Binary name -> package name for common Linux distributions.
 SYSTEM = {
