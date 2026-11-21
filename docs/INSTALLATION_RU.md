@@ -24,7 +24,7 @@ sudo apt install -y git python3 python3-venv python3-pip
 Для новой установки:
 
 ```bash
-git clone https://github.com/ERRORoX/OSINT.git
+git clone -b feature/panel-4.2-osint-expansion https://github.com/ERRORoX/OSINT.git
 cd OSINT
 ```
 
