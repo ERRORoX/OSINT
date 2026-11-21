@@ -567,8 +567,7 @@ def api_photo_exif_exiftool_txt():
             except Exception:
                 vv = v
             lines.append(f"{k}: {vv}")
-        txt = "
-".join(lines) or "Метаданные не найдены."
+        txt = "\n".join(lines) or "Метаданные не найдены."
 
     fname = "exiftool.txt"
     if safe_filename:
