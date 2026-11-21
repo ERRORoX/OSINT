@@ -234,10 +234,10 @@ function downloadUsernameExport(format) {
   } else {
     const columns = ['tool', 'platform', 'url', 'category', 'verification'];
     const safe = (value) => { let v = String(value ?? ''); if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; return '"' + v.replace(/"/g, '""') + '"'; };
-    content = [columns, ...rows.map((row) => columns.map((key) => row[key]))].map((line) => line.map(safe).join(',')).join('\\r\\n');
+    content = [columns, ...rows.map((row) => columns.map((key) => row[key]))].map((line) => line.map(safe).join(',')).join('\r\n');
     mime = 'text/csv;charset=utf-8'; extension = 'csv';
   }
-  const blob = new Blob(['\\uFEFF', content], { type: mime });
+  const blob = new Blob(['\uFEFF', content], { type: mime });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url; link.download = `username-results-${new Date().toISOString().slice(0, 10)}.${extension}`;
