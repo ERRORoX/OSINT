@@ -372,8 +372,8 @@ body.dashboard-page{margin:0!important;min-height:100vh;background:radial-gradie
 .graph-mode-select{display:flex;align-items:center;gap:8px;color:#8099b8;font-size:9px}
 .graph-mode-select select{max-width:150px;padding:6px 8px;border:1px solid rgba(88,132,183,.3);border-radius:6px;background:#0a1a2e;color:#cfe1f8;font-size:9px}
 .graph-zoom-controls{display:flex;gap:4px}
-.graph-zoom-controls button,.graph-import button{min-height:27px;padding:4px 8px;border:1px solid rgba(77,137,204,.25);border-radius:6px;background:rgba(15,48,83,.38);color:#a9c8ed;font-size:9px;cursor:pointer}
-.graph-zoom-controls button:hover,.graph-import button:hover{border-color:#438bd0;color:#e1efff}
+.graph-zoom-controls button{min-height:27px;padding:4px 8px;border:1px solid rgba(77,137,204,.25);border-radius:6px;background:rgba(15,48,83,.38);color:#a9c8ed;font-size:9px;cursor:pointer}
+.graph-zoom-controls button:hover{border-color:#438bd0;color:#e1efff}
 .graph-filter-row{display:flex;gap:10px;flex-wrap:wrap}
 .graph-filter-row label{display:flex;align-items:center;gap:4px;color:#8ca7c9;font-size:8px}
 .graph-filter-row input{accent-color:#3989e8}
@@ -403,12 +403,6 @@ body.dashboard-page{margin:0!important;min-height:100vh;background:radial-gradie
 .graph-detail strong{color:#d8e8fa;font-size:11px;overflow-wrap:anywhere}
 .graph-detail p{margin:0;color:#91a8c5;font-size:9px;line-height:1.5}
 .graph-detail small{color:#6e88a8;font-size:8px}
-.graph-import{padding-top:8px;border-top:1px solid rgba(78,122,174,.17)}
-.graph-import summary{color:#8eb5e3;font-size:9px;cursor:pointer}
-.graph-import p{color:#728cac;font-size:8px;line-height:1.5}
-.graph-import textarea{display:block;width:100%;box-sizing:border-box;padding:9px;border:1px solid rgba(88,132,183,.25);border-radius:7px;background:#06111f;color:#b9d2ef;font:9px/1.5 ui-monospace,monospace;resize:vertical}
-.graph-import>div{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
-.graph-import [role=status]{display:block;margin-top:6px;color:#8bb6e5;font-size:8px;overflow-wrap:anywhere}
 @media(max-width:760px){.graph-workspace{padding:12px}.interactive-relationship-graph{height:245px}.graph-toolbar{align-items:flex-start}.graph-filter-row{gap:7px}}
 
 
@@ -481,7 +475,6 @@ body.dashboard-page{margin:0!important;min-height:100vh;background:radial-gradie
 .graph-workspace.graph-fullscreen .graph-node-label{font-size:11px}
 .graph-workspace.graph-fullscreen .graph-detail{grid-template-columns:auto minmax(0,1fr);align-items:center;column-gap:14px}
 .graph-workspace.graph-fullscreen .graph-detail p{grid-column:2}
-.graph-workspace.graph-fullscreen .graph-import{flex:0 0 auto}
 @media(max-width:760px){
  .graph-workspace.graph-fullscreen{inset:5px!important;padding:10px!important}
  .graph-workspace.graph-fullscreen .graph-toolbar{align-items:flex-start}
