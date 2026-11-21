@@ -433,6 +433,8 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn("is_possible_number_with_reason", backend)
         self.assertIn("national_significant_number", backend)
         self.assertIn("country_code_source", backend)
+        self.assertIn("keep_raw_input=True", backend)
+        self.assertNotIn("PhoneNumber.CountryCodeSource", backend)
         self.assertIn("public-spam-reputation-search-links", manifest["capabilities"])
         self.assertIn('id="ph-public-links"', page)
         self.assertIn("renderPublicChecks", script)
