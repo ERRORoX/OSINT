@@ -189,6 +189,18 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn('investigationDelete?.addEventListener', script)
         self.assertIn('.graph-node.is-selected', styles)
         self.assertIn('touch-action:none', styles)
+        self.assertIn('id="graph-context-menu"', page)
+        self.assertIn('id="graph-layout-mode"', page)
+        self.assertIn('group.addEventListener("contextmenu"', script)
+        self.assertIn('action==="neighbors"', script)
+        self.assertIn('function graphFocusNode(id)', script)
+        self.assertIn('mode==="organic"', script)
+        self.assertIn('mode==="circular"', script)
+        self.assertIn('mode==="grid"', script)
+        self.assertIn('"/modules/domain-search/"', script)
+        self.assertIn('"/modules/ip-rdap/"', script)
+        self.assertIn(".graph-context-menu", styles)
+        self.assertIn(".graph-neighbor-list", styles)
 
 
     def test_domain_workspace_stylesheets_and_assets_are_well_formed(self):
