@@ -77,6 +77,7 @@ export function initPanel(container) {
   toolCheckBtn.addEventListener("click", async () => {
     toolCheckBtn.disabled = true;
     toolCheckBtn.textContent = "Проверяем и устанавливаем…";
+    toolCheckStatus.style.display = "block";
     toolCheckStatus.textContent = "Проверяем наличие инструментов. Установка отсутствующих Python-пакетов может занять несколько минут.";
     toolCheckStatus.className = "settings-message";
     toolCheckResults.innerHTML = "";
