@@ -168,7 +168,8 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn('@app.route("/api/graph/merge", methods=["POST"])', app_source)
         self.assertIn("CREATE TABLE IF NOT EXISTS relationship_graph", store_source)
         self.assertIn('fetch(API+path', hub_source)
-        self.assertIn('requestGraph("POST",graphData,"/graph/merge")', hub_source)
+        self.assertIn('requestGraph("PUT",graphData)', hub_source)
+        self.assertIn('requestGraph("POST",{name},"/investigations")', hub_source)
         self.assertIn('requestGraph("DELETE")', hub_source)
 
     def test_homepage_interactive_relationship_graph(self):
@@ -176,12 +177,16 @@ class ModuleFrontendTests(unittest.TestCase):
         script = (ROOT / "static" / "js" / "app-hub.js").read_text(encoding="utf-8")
         styles = (ROOT / "static" / "css" / "hub-only.css").read_text(encoding="utf-8")
         self.assertIn('id="investigation-graph"', page)
-        self.assertIn('id="graph-dataset-mode"', page)
+        self.assertIn('id="graph-investigation-select"', page)
+        self.assertIn('id="graph-save-investigation"', page)
+        self.assertIn('id="graph-investigation-new"', page)
         self.assertIn('id="graph-import-button"', page)
         self.assertIn('function graphValidate(value)', script)
         self.assertIn('function graphWire()', script)
         self.assertIn('GRAPH_STORAGE_KEY="osint-panel-graph-data-v1"', script)
-        self.assertIn('ДЕМО-ДАННЫЕ', script)
+        self.assertNotIn('ДЕМО-ДАННЫЕ', page)
+        self.assertNotIn('GRAPH_DEMO', script)
+        self.assertIn('investigationDelete?.addEventListener', script)
         self.assertIn('.graph-node.is-selected', styles)
         self.assertIn('touch-action:none', styles)
 
@@ -191,7 +196,7 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn('<link rel="stylesheet" href="/css/unified-workstation.css?v=4.5.0">', page)
         self.assertIn('<link rel="stylesheet" href="/css/panel-42-dashboard.css?v=4.2.1">', page)
         self.assertNotIn('unified-workstation.css?v=4.5.0\\n', page)
-        self.assertIn('src="./js/domain.js?v=4.2.19"', page)
+        self.assertIn('src="./js/domain.js?v=4.2.20"', page)
 
     def test_domain_workspace_ignores_stale_requests_after_reset(self):
         script = (ROOT / "tools" / "domain-workspace" / "frontend" / "js" / "domain.js").read_text(encoding="utf-8")
@@ -208,7 +213,7 @@ class ModuleFrontendTests(unittest.TestCase):
         page = (ROOT / "tools" / "ip-rdap" / "frontend" / "index.html").read_text(encoding="utf-8")
         script = (ROOT / "tools" / "ip-rdap" / "frontend" / "page.js").read_text(encoding="utf-8")
         self.assertIn('id="ip-graph-status"', page)
-        self.assertIn('page.js?v=4.2.1', page)
+        self.assertIn('page.js?v=4.2.3', page)
         self.assertIn('fetch("/api/graph/merge"', script)
         self.assertIn('type: "ip"', script)
         self.assertIn('type: "organization"', script)
