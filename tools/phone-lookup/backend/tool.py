@@ -78,8 +78,25 @@ class ToolPhoneLookup(ToolBase):
         geographic_description = geocoder.description_for_number(number, "ru") or geocoder.description_for_number(number, "en") or ""
         time_zones = list(timezone.time_zones_for_number(number))
         extension = getattr(number, "extension", "") or ""
+        country_code_sources = {
+            phonenumbers.PhoneNumber.CountryCodeSource.FROM_NUMBER_WITH_PLUS_SIGN: "Международный номер с +",
+            phonenumbers.PhoneNumber.CountryCodeSource.FROM_NUMBER_WITH_IDD: "Международный префикс выхода",
+            phonenumbers.PhoneNumber.CountryCodeSource.FROM_NUMBER_WITHOUT_PLUS_SIGN: "Код страны без +",
+            phonenumbers.PhoneNumber.CountryCodeSource.FROM_DEFAULT_COUNTRY: "Регион по умолчанию",
+        }
+        country_code_source = country_code_sources.get(
+            getattr(number, "country_code_source", None), "Не определён"
+        )
+        number_type_code = getattr(kind, "name", "UNKNOWN")
         metadata = {
             "e164": e164,
+            "national_significant_number": str(number.national_number),
+            "country_code_source": country_code_source,
+            "number_type_code": number_type_code,
+            "is_possible": True,
+            "is_valid": True,
+            "carrier_note": "Справка по исходному диапазону; перенос номера может изменить фактического оператора.",
+            "geographic_note": "Справочная зона плана нумерации, не местоположение абонента.",
             "international": international,
             "national": national,
             "country_calling_code": number.country_code,
@@ -103,12 +120,15 @@ class ToolPhoneLookup(ToolBase):
             f"Код страны: +{number.country_code}",
             f"Регион плана нумерации: {region}",
             f"Географическое описание: {geographic_description or 'Нет справочных данных'}",
-            f"Тип номера: {metadata['number_type']}",
+            f"Тип номера: {metadata['number_type']} ({number_type_code})",
+            f"Значащая часть национального номера: {number.national_number}",
+            f"Источник кода страны: {country_code_source}",
             f"Оператор исходного диапазона: {carrier_name}",
             f"Часовые пояса: {', '.join(time_zones) or 'Нет сведений'}",
             "Валидность: соответствует известному плану нумерации",
             "",
             "Важно: это не проверка активности SIM-карты и не подтверждение владельца. Оператор может не учитывать перенос номера. Географическое описание — справочное, не текущее местоположение.",
+            "Данные оператора и географии относятся к плану нумерации и не доказывают фактическое использование номера.",
             "Источник: локальная база метаданных libphonenumber.",
         ]
         return {"success": True, "output": "\n".join(lines), "metadata": metadata}
