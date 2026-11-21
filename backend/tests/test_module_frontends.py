@@ -288,7 +288,16 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn('<link rel="stylesheet" href="/css/unified-workstation.css?v=4.5.0">', page)
         self.assertIn('<link rel="stylesheet" href="/css/panel-42-dashboard.css?v=4.2.1">', page)
         self.assertNotIn('unified-workstation.css?v=4.5.0\\n', page)
-        self.assertIn('src="./js/domain.js?v=4.2.20"', page)
+        self.assertIn('src="./js/domain.js?v=4.2.21"', page)
+
+    def test_domain_workspace_validates_and_normalizes_domain_input(self):
+        script = (ROOT / "tools" / "domain-workspace" / "frontend" / "js" / "domain.js").read_text(encoding="utf-8")
+        backend = (ROOT / "tools" / "domain-search" / "backend" / "domain_search.py").read_text(encoding="utf-8")
+        self.assertIn("function isValidDomain(value)", script)
+        self.assertIn('parsed.hostname.toLowerCase()', script)
+        self.assertIn('setCustomValidity("Введите корректный домен', script)
+        self.assertIn("def _validate_domain(domain: str)", backend)
+        self.assertIn("ipaddress.ip_address(normalized)", backend)
 
     def test_domain_workspace_ignores_stale_requests_after_reset(self):
         script = (ROOT / "tools" / "domain-workspace" / "frontend" / "js" / "domain.js").read_text(encoding="utf-8")
