@@ -73,6 +73,13 @@
             <div class="graph-bottomline"><span id="graph-summary" role="status">Загрузка графа…</span><span>Shift + щелчок — выбрать группу · перетаскивание — переместить узел или группу · колесо — масштаб</span></div>
             <div class="graph-context-menu" id="graph-context-menu" role="menu" aria-label="Действия с объектом" hidden></div>
              <div class="graph-detail" id="graph-node-details"><span class="graph-detail-type">ОБЪЕКТ НЕ ВЫБРАН</span><strong>Выберите узел на карте</strong><p>Здесь появятся тип сущности, описание и связанные объекты.</p></div>
+            <section class="graph-notes-panel" aria-labelledby="graph-notes-title">
+              <div class="graph-notes-heading"><div><span class="graph-eyebrow">CASE NOTES</span><h3 id="graph-notes-title">Заметки расследования</h3></div><span id="graph-notes-count">0 заметок</span></div>
+              <label class="graph-notes-label" for="graph-note-input">Зафиксировать наблюдение, гипотезу или следующий шаг</label>
+              <textarea id="graph-note-input" rows="3" maxlength="5000" placeholder="Напишите заметку к текущему расследованию…"></textarea>
+              <div class="graph-notes-actions"><span id="graph-notes-status" role="status">Заметки сохраняются отдельно от графа.</span><button type="button" id="graph-note-save">Сохранить заметку</button></div>
+              <div id="graph-notes-list" class="graph-notes-list"><p class="graph-notes-empty">Заметок пока нет.</p></div>
+            </section>
             <details class="graph-import"><summary>Импортировать собственный граф (JSON)</summary><p>Формат JSON: массивы <code>nodes</code> и <code>edges</code>. Импортированные и найденные связи сохраняются в SQLite на сервере панели.</p><textarea id="graph-json-input" rows="5" spellcheck="false" placeholder='{"nodes":[{"id":"n1","type":"domain","label":"example.org"}],"edges":[]}'></textarea><div><button type="button" id="graph-import-button">Загрузить граф</button><button type="button" id="graph-export-button">Экспортировать JSON</button><button type="button" id="graph-clear-button">Очистить постоянный граф</button></div><span id="graph-import-status" role="status"></span></details>
           </section>
 
