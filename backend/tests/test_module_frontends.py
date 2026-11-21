@@ -466,7 +466,7 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn("site:wa.me", backend)
         self.assertIn("site:imo.im", backend)
         self.assertIn("automatic-public-web-search", manifest["capabilities"])
-        self.assertIn("page.js?v=2.6.0", page)
+        self.assertIn("page.js?v=2.6.1", page)
         self.assertIn("json-report-export", manifest["capabilities"])
         self.assertIn("Не устанавливает личность владельца", (ROOT / "tools" / "phone-lookup" / "README.md").read_text(encoding="utf-8"))
 
