@@ -44,6 +44,7 @@ from css_bundle import BUNDLE_TOOL_IDS, build_tool_css_bundle
 from module_registry import discover_modules, get_navigation_modules
 from module_runtime import get_runtime_module_issues
 from update_manager import check_update, install_update, UpdateError
+from tool_manager import inspect_tools, install_missing_tools
 
 # Background update job state for the local UI.
 _UPDATE_JOB_LOCK = threading.Lock()
@@ -1457,6 +1458,20 @@ def _local_update_request():
         if parsed.netloc != request.host:
             return False
     return True
+
+
+@app.route("/api/tools/dependencies", methods=["GET", "POST"])
+def api_tools_dependencies():
+    """Проверка и установка Python-зависимостей инструментов; только локальный интерфейс."""
+    if not _local_update_request():
+        return jsonify({"error": "Доступ разрешён только с этого компьютера."}), 403
+    try:
+        if request.method == "POST":
+            return jsonify({"success": True, "tools": install_missing_tools()})
+        return jsonify({"success": True, "tools": inspect_tools()})
+    except Exception as exc:
+        app.logger.exception("Tool dependency manager failed")
+        return jsonify({"success": False, "error": str(exc)}), 500
 
 
 @app.route("/api/system/update", methods=["GET"])
