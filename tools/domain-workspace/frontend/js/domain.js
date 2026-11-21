@@ -285,7 +285,7 @@ function normalizeDomain(value) {
   try {
     const parsed = new URL(raw.includes("://") ? raw : "https://" + raw);
     if (!["http:", "https:"].includes(parsed.protocol) || parsed.username || parsed.password) return "";
-    return parsed.hostname.toLowerCase().replace(/\\.$/, "").replace(/^www\\./, "");
+    return parsed.hostname.toLowerCase().replace(/\.$/, "").replace(/^www\./, "");
   } catch (_) {
     return "";
   }
