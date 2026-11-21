@@ -547,7 +547,7 @@ async function graphRunTransform(node,toolId){
    const meta=result.metadata;
    extracted.push({
     id:node.id,type:"phone",label:node.label,
-    details:["Источник: Phone Number Intelligence / libphonenumber","Регион: "+(meta.region||"—"),"Тип: "+(meta.number_type||"—"),"Оператор исходного диапазона: "+(meta.carrier||"—"),"Владелец и местоположение абонента не определяются."].join("\\n"),
+    details:["Источник: Phone Number Intelligence / libphonenumber","Регион: "+(meta.region||"—"),"Тип: "+(meta.number_type||"—"),"Оператор исходного диапазона: "+(meta.carrier||"—"),"Владелец и местоположение абонента не определяются."].join("\n"),
     relation:"метаданные номера"
    });
   }
