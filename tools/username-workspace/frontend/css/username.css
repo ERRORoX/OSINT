@@ -1193,3 +1193,12 @@ body {
 .username-graph-status[data-state="success"]{border-color:rgba(0,255,136,.3);color:var(--success)}
 .username-graph-status[data-state="warning"]{border-color:rgba(255,170,0,.3);color:var(--warn)}
 .username-graph-status[data-state="error"]{border-color:rgba(255,68,102,.35);color:var(--error)}
+
+/* Username workflow refinement */
+.username-overview{margin:0 0 18px;padding:13px 16px;border:1px solid rgba(0,212,255,.14);border-radius:10px;background:linear-gradient(110deg,rgba(0,212,255,.045),rgba(0,255,136,.025));}
+.username-overview__title{display:flex;justify-content:space-between;gap:12px;color:var(--text-muted);font-size:.65rem;letter-spacing:.14em;font-weight:700}
+.username-overview__steps{display:flex;align-items:center;gap:10px;margin-top:12px}
+.username-overview__steps>div{display:flex;align-items:center;gap:8px;min-width:0;color:var(--text);font-size:.72rem}
+.username-overview__steps b{display:grid;place-items:center;flex:0 0 25px;height:25px;border:1px solid rgba(0,212,255,.3);border-radius:6px;color:var(--cyan);font:600 .68rem var(--font-mono)}
+.username-overview__steps i{height:1px;flex:1;min-width:10px;background:linear-gradient(90deg,rgba(0,212,255,.4),rgba(0,255,136,.12))}
+@media(max-width:760px){.username-overview__steps{align-items:flex-start;flex-direction:column;gap:8px}.username-overview__steps i{width:1px;height:8px;margin-left:12px;flex:none}.username-overview__steps>div{font-size:.68rem}}
