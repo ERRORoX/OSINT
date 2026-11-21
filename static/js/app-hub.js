@@ -436,7 +436,7 @@ function graphValidate(value){
   if(!GRAPH_TYPES.includes(type))throw new Error("Неизвестный тип узла: "+type);
   if(!label||label.length>180)throw new Error("Название узла обязательно (до 180 символов).");
   ids.add(id);
-  return {id,type,label,details:String(node.details||"").slice(0,1200),x:Number.isFinite(Number(node.x))?Math.max(30,Math.min(730,Number(node.x))):100+(index%4)*180,y:Number.isFinite(Number(node.y))?Math.max(25,Math.min(12000,Number(node.y))):55+Math.floor(index/8)*95};
+  return {id,type,label,details:String(node.details||"").slice(0,1200),x:Number.isFinite(Number(node.x))?Math.max(-100000,Math.min(100000,Number(node.x))):100+(index%4)*180,y:Number.isFinite(Number(node.y))?Math.max(-100000,Math.min(100000,Number(node.y))):55+Math.floor(index/8)*95};
  });
  const edges=value.edges.map((edge,index)=>{
   if(!edge||!ids.has(String(edge.source))||!ids.has(String(edge.target)))throw new Error("Связь №"+(index+1)+" ссылается на неизвестный узел.");
@@ -546,46 +546,63 @@ async function graphWire(){
  const autoLayout=()=>{
   const nodes=graphData.nodes,edges=graphData.edges,count=nodes.length;
   if(!count)return;
-  const width=Math.max(1100,Math.ceil(Math.sqrt(count))*210);
-  const height=Math.max(760,Math.ceil(count/Math.max(1,Math.floor(width/210)))*190);
-  const indexById=new Map(nodes.map((node,index)=>[node.id,index]));
-  const linked=edges.map(edge=>[indexById.get(edge.source),indexById.get(edge.target)]).filter(pair=>pair[0]!==undefined&&pair[1]!==undefined);
-  const columns=Math.max(1,Math.floor(width/210));
-  nodes.forEach((node,index)=>{
-   const col=index%columns,row=Math.floor(index/columns);
-   node.x=150+col*200+(Math.sin(index*12.9898)*18);
-   node.y=130+row*180+(Math.cos(index*7.233)*18);
+  const byId=new Map(nodes.map(node=>[node.id,node]));
+  const adjacency=new Map(nodes.map(node=>[node.id,new Set()]));
+  edges.forEach(edge=>{
+   if(!adjacency.has(edge.source)||!adjacency.has(edge.target))return;
+   adjacency.get(edge.source).add(edge.target);
+   adjacency.get(edge.target).add(edge.source);
   });
-  if(count<=350){
-   const area=Math.sqrt(width*height/count),ideal=Math.max(105,Math.min(175,area*.78));
-   const positions=nodes.map(node=>({x:node.x,y:node.y,vx:0,vy:0}));
-   const iterations=count<=100?150:90;
-   for(let step=0;step<iterations;step++){
-    const cooling=1-step/iterations,fx=positions.map(()=>0),fy=positions.map(()=>0);
-    for(let a=0;a<count;a++)for(let b=a+1;b<count;b++){
-     let dx=positions[a].x-positions[b].x,dy=positions[a].y-positions[b].y;
-     let d2=dx*dx+dy*dy+1,dist=Math.sqrt(d2);
-     const force=(ideal*ideal)/d2*.72,rx=dx/dist*force,ry=dy/dist*force;
-     fx[a]+=rx;fy[a]+=ry;fx[b]-=rx;fy[b]-=ry;
-    }
-    linked.forEach(([a,b])=>{
-     const dx=positions[b].x-positions[a].x,dy=positions[b].y-positions[a].y,dist=Math.hypot(dx,dy)||1;
-     const force=(dist-ideal*1.35)*.018, sx=dx/dist*force,sy=dy/dist*force;
-     fx[a]+=sx;fy[a]+=sy;fx[b]-=sx;fy[b]-=sy;
-    });
-    for(let k=0;k<count;k++){
-     const p=positions[k],cx=width/2-p.x,cy=height/2-p.y;
-     p.vx=(p.vx+fx[k]+cx*.0009)*.72;p.vy=(p.vy+fy[k]+cy*.0009)*.72;
-     const speed=Math.hypot(p.vx,p.vy),limit=10*cooling+1;
-     if(speed>limit){p.vx=p.vx/speed*limit;p.vy=p.vy/speed*limit;}
-     p.x=Math.max(75,Math.min(width-75,p.x+p.vx));p.y=Math.max(75,Math.min(height-75,p.y+p.vy));
-    }
+  const unseen=new Set(nodes.map(node=>node.id)),components=[];
+  while(unseen.size){
+   const seed=unseen.values().next().value,queue=[seed],ids=[];
+   unseen.delete(seed);
+   while(queue.length){
+    const id=queue.shift();ids.push(id);
+    adjacency.get(id).forEach(next=>{if(unseen.has(next)){unseen.delete(next);queue.push(next);}});
    }
-   positions.forEach((p,index)=>{nodes[index].x=p.x;nodes[index].y=p.y;});
+   components.push(ids);
   }
+  components.sort((a,b)=>b.length-a.length);
+  const gap=360,componentColumns=Math.max(1,Math.ceil(Math.sqrt(components.length)));
+  let cursorX=0,cursorY=0,rowHeight=0;
+  components.forEach((ids,componentIndex)=>{
+   const root=ids.slice().sort((a,b)=>adjacency.get(b).size-adjacency.get(a).size)[0];
+   const levels=new Map([[root,0]]),queue=[root];
+   for(let q=0;q<queue.length;q++){
+    const id=queue[q];
+    adjacency.get(id).forEach(next=>{if(!levels.has(next)){levels.set(next,levels.get(id)+1);queue.push(next);}});
+   }
+   const groups=new Map();
+   ids.forEach(id=>{const level=levels.get(id)||0;if(!groups.has(level))groups.set(level,[]);groups.get(level).push(id);});
+   const maxLevel=Math.max(...groups.keys());
+   const radiusByLevel=new Map();
+   let maxRadius=0;
+   for(let level=1;level<=maxLevel;level++){
+    const members=groups.get(level)||[];
+    const radius=Math.max(190,Math.ceil(members.length*142/(Math.PI*2)));
+    radiusByLevel.set(level,radius);maxRadius=Math.max(maxRadius,radius);
+   }
+   const componentWidth=Math.max(420,maxRadius*2+300),componentHeight=Math.max(420,maxRadius*2+300);
+   const col=componentIndex%componentColumns,row=Math.floor(componentIndex/componentColumns);
+   const centerX=col*(Math.max(900,componentWidth)+gap)+componentWidth/2;
+   const centerY=row*(Math.max(900,componentHeight)+gap)+componentHeight/2;
+   const rootNode=byId.get(root);rootNode.x=centerX;rootNode.y=centerY;
+   for(let level=1;level<=maxLevel;level++){
+    const members=groups.get(level)||[],radius=radiusByLevel.get(level)||190;
+    members.sort((a,b)=>byId.get(a).type.localeCompare(byId.get(b).type)||byId.get(a).label.localeCompare(byId.get(b).label,"ru"));
+    members.forEach((id,index)=>{
+     const angle=(Math.PI*2*index/Math.max(1,members.length))-Math.PI/2;
+     const node=byId.get(id);
+     node.x=centerX+Math.cos(angle)*radius;
+     node.y=centerY+Math.sin(angle)*radius;
+    });
+   }
+  });
+  const minX=Math.min(...nodes.map(node=>node.x)),minY=Math.min(...nodes.map(node=>node.y));
+  nodes.forEach(node=>{node.x=node.x-minX+180;node.y=node.y-minY+180;});
   const maxX=Math.max(...nodes.map(node=>node.x)),maxY=Math.max(...nodes.map(node=>node.y));
-  const viewWidth=Math.max(760,Math.ceil(maxX+180)),viewHeight=Math.max(420,Math.ceil(maxY+180));
-  svg.setAttribute("viewBox","0 0 "+viewWidth+" "+viewHeight);
+  svg.setAttribute("viewBox","0 0 "+Math.max(760,maxX+180)+" "+Math.max(420,maxY+180));
   graphPan={x:0,y:0};graphScale=1;
   graphRender();graphFitView();
  };
