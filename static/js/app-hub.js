@@ -711,6 +711,28 @@ function graphSelect(id){
    }
   }catch(_){}
  }
+ if(graphSelectedIds.size>1){
+  const createLink=document.createElement("button");createLink.type="button";createLink.className="graph-create-link";
+  createLink.textContent="Создать связь между выбранными ("+graphSelectedIds.size+")";
+  createLink.addEventListener("click",async()=>{
+   const ids=[...graphSelectedIds].filter(value=>graphData.nodes.some(item=>item.id===value));
+   if(ids.length<2)return;
+   const label=window.prompt("Укажите тип связи:", "связан с");
+   if(label===null)return;
+   const cleanLabel=String(label).trim().slice(0,100);
+   if(!cleanLabel){window.alert("Название связи не может быть пустым.");return;}
+   const edges=ids.slice(1).map(target=>({source:ids[0],target,label:cleanLabel}));
+   try{
+    const response=await fetch(API+"/graph/merge",{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify({nodes:[],edges})});
+    const saved=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(saved.error||"Не удалось сохранить связь.");
+    graphData=graphValidate(saved);graphSelected=ids[0];graphRender();graphSelect(ids[0]);
+    const status=document.getElementById("graph-import-status");
+    if(status)status.textContent="Создано связей: "+edges.length+" · "+cleanLabel;
+   }catch(error){window.alert(error.message||"Ошибка создания связи.");}
+  });
+  panel.append(createLink);
+ }
  const actions=document.createElement("div");actions.className="graph-detail-actions";
  const copy=document.createElement("button");copy.type="button";copy.textContent="Копировать";copy.addEventListener("click",()=>navigator.clipboard?.writeText(node.label));
  const remove=document.createElement("button");remove.type="button";remove.className="graph-delete-node";remove.textContent="Удалить объект";
