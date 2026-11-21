@@ -79,7 +79,7 @@
         <section class="investigation-visual graph-workspace" id="investigation-graph-panel" aria-label="Интерактивная карта связей">
             <div class="graph-heading"><div><span class="graph-eyebrow">RELATIONSHIP ANALYSIS</span><h2>Карта связей</h2></div><span class="graph-mode-badge" id="graph-data-mode">ЗАГРУЗКА</span></div>
             <div class="graph-toolbar">
-              <span class="graph-mode-select">Мои расследования</span>
+              <div class="graph-investigation-controls"><label class="graph-mode-select" for="graph-investigation-select">Набор данных<select id="graph-investigation-select" aria-label="Выбрать расследование"><option value="">Загрузка…</option></select></label><button type="button" id="graph-investigation-new">+ Новое расследование</button><button type="button" id="graph-investigation-rename">Переименовать</button><button type="button" id="graph-investigation-delete">Удалить расследование</button></div>
               <div class="graph-zoom-controls" aria-label="Управление масштабом"><button type="button" id="graph-zoom-out" aria-label="Уменьшить">−</button><button type="button" id="graph-zoom-reset" aria-label="Сбросить масштаб">100%</button><button type="button" id="graph-zoom-in" aria-label="Увеличить">+</button><button type="button" id="graph-fit" aria-label="Вписать граф">Вписать</button><button type="button" id="graph-auto-layout" aria-label="Автоматически расположить узлы">Автораскладка</button><button type="button" id="graph-fullscreen" aria-label="Развернуть граф на весь экран" aria-pressed="false">На весь экран</button></div>
             </div>
             <div class="graph-filter-row" aria-label="Фильтр типов сущностей">
@@ -204,6 +204,6 @@
       });
     })();
   </script>
-  <script src="/js/app-hub.js?v=4.2.24" type="module"></script>
+  <script src="/js/app-hub.js?v=4.2.25" type="module"></script>
 </body>
 </html>
