@@ -179,6 +179,24 @@ class RelationshipGraphStoreTests(unittest.TestCase):
                 self.assertNotIn("confidence", edge["provenance"])
                 self.assertEqual(graph_store.get_graph_data()["nodes"][0]["provenance"]["tool_id"], "dnsx")
 
+    def test_investigation_notes_are_persistent_and_isolated(self):
+        with tempfile.TemporaryDirectory() as directory:
+            db_path = str(Path(directory) / "graph.sqlite3")
+            with patch.object(graph_store, "get_db", lambda: _temporary_connection(db_path)):
+                first = graph_store.list_investigations()["active_id"]
+                note = graph_store.create_investigation_note("Проверить DNS-историю", first)
+                self.assertEqual(note["content"], "Проверить DNS-историю")
+                self.assertEqual(graph_store.list_investigation_notes(first)["items"][0]["id"], note["id"])
+                second = graph_store.create_investigation("Второе дело")["id"]
+                self.assertEqual(graph_store.list_investigation_notes(second)["items"], [])
+                self.assertEqual(len(graph_store.list_investigation_notes(first)["items"]), 1)
+                graph_store.delete_investigation_note(note["id"], first)
+                self.assertEqual(graph_store.list_investigation_notes(first)["items"], [])
+                with self.assertRaises(ValueError):
+                    graph_store.create_investigation_note("   ", first)
+                with self.assertRaises(ValueError):
+                    graph_store.create_investigation_note("x" * 5001, first)
+
     def test_accepts_phone_entity_type(self):
         with tempfile.TemporaryDirectory() as directory:
             db_path = str(Path(directory) / "graph.sqlite3")
