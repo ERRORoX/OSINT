@@ -73,6 +73,24 @@ class RelationshipGraphStoreTests(unittest.TestCase):
                 self.assertEqual(moved_root["y"], 222)
                 self.assertEqual(len(moved["nodes"]), 3)
 
+    def test_preserves_wide_graph_coordinates(self):
+        with tempfile.TemporaryDirectory() as directory:
+            db_path = str(Path(directory) / "graph.sqlite3")
+            with patch.object(graph_store, "get_db", lambda: _temporary_connection(db_path)):
+                saved = graph_store.replace_graph_data({
+                    "nodes": [
+                        {"id": "domain:root", "type": "domain", "label": "root.example", "x": 1200, "y": 400},
+                        {"id": "ip:far", "type": "ip", "label": "203.0.113.20", "x": 2450, "y": 900},
+                    ],
+                    "edges": [{"source": "domain:root", "target": "ip:far", "label": "DNS"}],
+                })
+                positions = {node["id"]: (node["x"], node["y"]) for node in saved["nodes"]}
+                self.assertEqual(positions["domain:root"], (1200, 400))
+                self.assertEqual(positions["ip:far"], (2450, 900))
+                loaded = graph_store.get_graph_data()
+                loaded_positions = {node["id"]: (node["x"], node["y"]) for node in loaded["nodes"]}
+                self.assertEqual(loaded_positions, positions)
+
     def test_rejects_unknown_edge_endpoints(self):
         with tempfile.TemporaryDirectory() as directory:
             db_path = str(Path(directory) / "graph.sqlite3")
