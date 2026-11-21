@@ -153,6 +153,16 @@ class RelationshipGraphStoreTests(unittest.TestCase):
                 self.assertEqual(len(remaining["items"]), 1)
                 self.assertEqual(remaining["active_id"], first_id)
 
+    def test_accepts_phone_entity_type(self):
+        with tempfile.TemporaryDirectory() as directory:
+            db_path = str(Path(directory) / "graph.sqlite3")
+            with patch.object(graph_store, "get_db", lambda: _temporary_connection(db_path)):
+                saved = graph_store.merge_graph_data({
+                    "nodes": [{"id": "phone:1", "type": "phone", "label": "+12025550123"}],
+                    "edges": [],
+                })
+                self.assertEqual(saved["nodes"][0]["type"], "phone")
+
     def test_rejects_unknown_edge_endpoints(self):
         with tempfile.TemporaryDirectory() as directory:
             db_path = str(Path(directory) / "graph.sqlite3")
