@@ -300,6 +300,18 @@ class ModuleFrontendTests(unittest.TestCase):
 
 
 
+    def test_username_layout_and_graphical_dependency_authorization(self):
+        page = (ROOT / "tools" / "username-workspace" / "frontend" / "index.html").read_text(encoding="utf-8")
+        styles = (ROOT / "tools" / "username-workspace" / "frontend" / "css" / "username.css").read_text(encoding="utf-8")
+        manager = (ROOT / "backend" / "tool_manager.py").read_text(encoding="utf-8")
+        settings = (ROOT / "static" / "js" / "settings.js").read_text(encoding="utf-8")
+        self.assertIn("username.css?v=4.2.6", page)
+        self.assertIn("#nav-tools.tab-nav", styles)
+        self.assertIn("width: 100% !important", styles)
+        self.assertIn('attempts.append(("pkexec", [pkexec, *command]))', manager)
+        self.assertIn("системное окно подтверждения (Polkit)", settings)
+
+
 if __name__ == "__main__":
     unittest.main()
 
