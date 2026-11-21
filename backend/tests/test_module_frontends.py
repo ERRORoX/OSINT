@@ -12,7 +12,7 @@ class ModuleFrontendTests(unittest.TestCase):
         return json.loads(path.read_text(encoding="utf-8"))
 
     def test_workspace_entrypoints_exist(self):
-        module_ids = ("domain-workspace", "photo-workspace", "username-workspace", "grabcam", "ip-rdap", "google-osint", "ai-agent", "history")
+        module_ids = ("domain-workspace", "photo-workspace", "username-workspace", "grabcam", "ip-rdap", "phone-lookup", "google-osint", "ai-agent", "history")
         for module_id in module_ids:
             with self.subTest(module=module_id):
                 manifest = self._manifest(module_id)
@@ -64,6 +64,19 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn('fetch(API+"/navigation"', hub_source)
         self.assertIn("applyNavigationModules(loadedNavigation)", hub_source)
         self.assertIn('pageById.get("domain-workspace")', hub_source)
+
+    def test_phone_lookup_is_a_registered_privacy_preserving_module(self):
+        manifest = self._manifest("phone-lookup")
+        self.assertEqual(manifest["entrypoints"]["page_url"], "/modules/phone-lookup/")
+        self.assertIn("phonenumbers", manifest["dependencies"]["python"])
+        tool = (ROOT / "tools" / "phone-lookup" / "backend" / "tool.py").read_text(encoding="utf-8")
+        self.assertIn("is_valid_number", tool)
+        self.assertNotIn("geolocation", tool.lower())
+        self.assertNotIn("owner_lookup", tool.lower())
+        page = (ROOT / "tools" / "phone-lookup" / "frontend" / "index.html").read_text(encoding="utf-8")
+        self.assertIn('id="phone-form"', page)
+        app_source = (ROOT / "backend" / "app.py").read_text(encoding="utf-8")
+        self.assertIn('@app.route("/modules/phone-lookup/"', app_source)
 
     def test_module_manager_explains_read_only_manifest_controls(self):
         page = (ROOT / "static" / "p" / "modules" / "index.html").read_text(encoding="utf-8")
