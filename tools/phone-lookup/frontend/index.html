@@ -47,6 +47,19 @@
 <div class="ph-quick"><button class="ph-chip" type="button" data-example="+992">Таджикистан +992</button><button class="ph-chip" type="button" data-example="+7">Россия +7</button><button class="ph-chip" type="button" data-example="+1">США / Канада +1</button><button class="ph-chip" type="button" id="phone-clear">Очистить</button></div>
 <div class="ph-status" id="phone-status" role="status" aria-live="polite" data-state="idle">Ожидание номера · укажите международный код страны</div>
 </section>
+
+<section class="ph-card" style="margin:0 0 18px;padding:18px" aria-labelledby="person-search-title">
+  <div class="ph-eyebrow">PUBLIC PEOPLE SEARCH</div>
+  <h3 id="person-search-title" style="margin:5px 0 8px;color:#e6f0fb">Поиск по имени и фамилии</h3>
+  <p style="color:#8da2b8;font-size:.82rem;margin:0 0 12px">Поиск публичных страниц, в первую очередь Одноклассники. Город или страна помогают отсеять часть однофамильцев.</p>
+  <form id="person-search-form" class="ph-search" style="margin:0;grid-template-columns:1fr 1fr auto">
+    <input id="person-name" type="text" maxlength="120" required placeholder="Имя и фамилия" aria-label="Имя и фамилия">
+    <input id="person-location" type="text" maxlength="100" placeholder="Город или страна (необязательно)" aria-label="Город или страна">
+    <button class="ph-btn" id="person-search-submit" type="submit">Искать ↗</button>
+  </form>
+  <div id="person-search-status" class="ph-status" role="status" aria-live="polite" style="margin-top:10px">Ожидание запроса</div>
+  <div id="person-search-results" class="ph-auto-search-result" style="margin-top:12px"><span>Здесь появятся найденные публичные страницы.</span></div>
+</section>
 <div class="ph-grid">
 <section class="ph-card" aria-label="Результаты анализа">
 <div class="ph-card-head"><div><div class="ph-eyebrow">ANALYSIS OUTPUT</div><strong>РЕЗУЛЬТАТ АНАЛИЗА</strong></div><div class="ph-actions"><button class="ph-btn secondary" id="phone-copy" type="button" disabled>Копировать</button><button class="ph-btn secondary" id="phone-export" type="button" disabled>JSON ↓</button></div></div>
@@ -77,6 +90,6 @@
 </div>
 <section class="ph-section ph-note"><b>Методология и точность.</b> Результаты формируются локальной библиотекой libphonenumber и её справочными данными. Валидность означает соответствие известному плану нумерации, но не подтверждает, что номер активен или кому-либо принадлежит. Географическое описание может быть неполным для мобильных и неперсональных номеров. Результат сохраняется в граф расследований только как телефонный узел с техническими метаданными.</section>
 </main>
-<footer class="app-footer"><span><a href="/" style="color:inherit;text-decoration:none">OSINT Panel</a></span><span class="footer-hint">Phone Number Intelligence · 2.6.0</span></footer>
-<script src="/modules/phone-lookup/page.js?v=2.6.0" defer></script><script defer src="/js/workspace.js?v=4.3.2"></script>
+<footer class="app-footer"><span><a href="/" style="color:inherit;text-decoration:none">OSINT Panel</a></span><span class="footer-hint">Phone & Public People Intelligence · 2.6.1</span></footer>
+<script src="/modules/phone-lookup/page.js?v=2.6.1" defer></script><script defer src="/js/workspace.js?v=4.3.2"></script>
 </body></html>
