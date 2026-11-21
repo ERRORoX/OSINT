@@ -732,3 +732,56 @@ body.dashboard-page{margin:0!important;min-height:100vh;background:radial-gradie
   .saved-materials-content{padding:0 11px 11px}
   .saved-materials-toolbar{align-items:stretch;flex-direction:column}
 }
+
+/* Compact system status: all checks visible without an inner scrollbar. */
+.investigation-status{
+ min-height:0!important;
+ height:auto;
+ justify-content:flex-start!important;
+ gap:7px;
+ padding:11px 12px!important;
+}
+.investigation-status .panel-heading{margin:0;min-height:20px}
+.investigation-status .system-content{
+ display:grid!important;
+ grid-template-columns:46px minmax(0,1fr);
+ align-items:center;
+ gap:9px!important;
+ padding:5px 0!important;
+}
+.investigation-status .system-ring{width:44px!important;height:44px!important;min-width:44px}
+.investigation-status .system-ring:before{inset:3px!important}
+.investigation-status .system-ring strong{font-size:12px!important}
+.investigation-status .system-ring small{font-size:7px!important}
+.investigation-status .system-facts{display:grid;grid-template-columns:1fr;gap:3px!important}
+.investigation-status .system-facts div{
+ display:flex;align-items:center;justify-content:space-between;gap:6px;
+ padding:3px 6px;border:1px solid rgba(91,145,220,.12);border-radius:5px;
+ background:rgba(4,12,25,.28);font-size:8px!important;
+}
+.investigation-status .system-facts div span{font-size:8px}
+.investigation-status .system-facts div strong{font-size:8px}
+.investigation-status .system-foot{padding-top:2px!important;font-size:7px!important;line-height:1.25}
+.investigation-status .system-monitor-actions{display:flex;align-items:center;gap:7px;margin-top:2px!important}
+.investigation-status .system-monitor-actions button{padding:4px 7px;font-size:8px}
+.investigation-status .system-monitor-actions span{font-size:7px}
+.investigation-status .system-health-details{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;
+ max-height:none!important;height:auto;overflow:visible!important;margin-top:3px!important;
+}
+.investigation-status .system-health-row{min-width:0;padding:4px 6px;gap:4px;font-size:8px}
+.investigation-status .system-health-row span{font-size:8px}
+.investigation-status .system-health-row strong{font-size:8px;overflow-wrap:anywhere}
+.investigation-status .system-health-issue,
+.investigation-status .system-health-empty{grid-column:1/-1;padding:4px 6px;font-size:8px;line-height:1.25}
+.investigation-status .system-health-issue span{font-size:8px;line-height:1.25}
+@media(max-width:900px){
+ .investigation-status .system-health-details{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:560px){
+ .investigation-status .system-content{grid-template-columns:42px minmax(0,1fr)!important}
+ .investigation-status .system-ring{width:40px!important;height:40px!important;min-width:40px}
+ .investigation-status .system-facts{grid-template-columns:1fr!important}
+ .investigation-status .system-health-details{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
