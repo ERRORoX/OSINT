@@ -56,21 +56,25 @@ if [[ "$NO_APT" -eq 0 ]]; then
     *) fail "Поддерживаются Kali Linux, Debian и Ubuntu. Для другой ОС используй --no-apt." ;;
   esac
 
-  if [[ "$(id -u)" -eq 0 ]]; then
-    SUDO=()
-  elif command -v sudo >/dev/null 2>&1; then
-    SUDO=(sudo)
-  else
+  if [[ "$(id -u)" -ne 0 ]] && ! command -v sudo >/dev/null 2>&1; then
     fail "Для установки системных пакетов нужен sudo или запуск от root. Либо используй --no-apt."
   fi
 
+  apt_install() {
+    if [[ "$(id -u)" -eq 0 ]]; then
+      apt-get "$@"
+    else
+      sudo apt-get "$@"
+    fi
+  }
+
   log "Обновляю индекс apt и устанавливаю базовые пакеты."
-  "${SUDO[@]}" apt-get update
-  "${SUDO[@]}" apt-get install -y git python3 python3-venv python3-pip
+  apt_install update
+  apt_install install -y git python3 python3-venv python3-pip
 
   if [[ "$WITH_OPTIONAL" -eq 1 ]]; then
     log "Устанавливаю дополнительные системные утилиты."
-    "${SUDO[@]}" apt-get install -y \
+    apt_install install -y \
       tesseract-ocr tesseract-ocr-eng tesseract-ocr-rus \
       libimage-exiftool-perl libzbar0 php-cli openssh-client golang-go
   fi
