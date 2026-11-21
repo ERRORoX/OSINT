@@ -1182,13 +1182,17 @@ function renderContent(tool, d) {
 
   const out = String(d.output || "");
   const q = (filterText || "").trim().toLowerCase();
-  const out2 = q
+  const maxOutputChars = 120000;
+  let out2 = q
     ? out
         .split("\n")
         .filter((ln) => ln.toLowerCase().includes(q))
-        .slice(0, 4000)
+        .slice(0, 1200)
         .join("\n") || "(нет строк по фильтру)"
     : out;
+  if (out2.length > maxOutputChars) {
+    out2 = out2.slice(0, maxOutputChars) + "\n\n[Отображение сокращено, чтобы страница не зависала. Полный вывод сохранён для экспорта отчёта.]";
+  }
   h += `<div class="tool-output"><pre>${esc(out2)}</pre></div>`;
   h += "</div>";
   return h;
