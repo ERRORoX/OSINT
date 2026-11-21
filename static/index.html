@@ -147,16 +147,21 @@
                 </div>
               </div>
             </details>
-            <section class="content-panel case-projects-panel" id="case-projects-panel">
-              <div class="section-heading compact-heading"><div><span class="eyebrow">INVESTIGATION CASES</span><h2>Дела расследований</h2></div><span class="subtle-label" id="case-project-count">0 дел</span></div>
-              <p class="saved-materials-note">Создавайте отдельные дела, ведите заметки и прикрепляйте к ним сохранённые материалы. Данные хранятся локально в этом браузере.</p>
-              <form id="case-project-form" class="case-project-form">
-                <label class="case-project-field"><span>Название дела</span><input id="case-project-name" name="name" maxlength="100" required placeholder="Например: Проверка домена example.org"></label>
-                <label class="case-project-field"><span>Исходная заметка (необязательно)</span><textarea id="case-project-note" name="note" rows="2" maxlength="3000" placeholder="Цель, исходные данные, вопросы для проверки…"></textarea></label>
-                <button type="submit" class="saved-material-export">＋ Создать дело</button>
-              </form>
-              <div id="case-project-list" class="case-project-list"><div class="saved-materials-empty">Пока нет дел. Создайте первое расследование.</div></div>
-            </section>
+            <details class="content-panel case-projects-panel case-projects-collapsible" id="case-projects-panel">
+              <summary class="case-projects-summary">
+                <span class="saved-materials-summary-title"><span class="eyebrow">WORKSPACE / ARCHIVE</span><strong>Дела расследований</strong></span>
+                <span class="saved-materials-summary-meta"><span class="subtle-label" id="case-project-count">0 дел</span><span class="saved-materials-chevron" aria-hidden="true">⌄</span></span>
+              </summary>
+              <div class="case-projects-content">
+                <p class="saved-materials-note">Отдельные дела, рабочие заметки и прикреплённые материалы. Данные хранятся локально в этом браузере.</p>
+                <form id="case-project-form" class="case-project-form">
+                  <label class="case-project-field"><span>Название дела</span><input id="case-project-name" name="name" maxlength="100" required placeholder="Например: Проверка домена example.org"></label>
+                  <label class="case-project-field"><span>Исходная заметка (необязательно)</span><textarea id="case-project-note" name="note" rows="2" maxlength="3000" placeholder="Цель, исходные данные, вопросы для проверки…"></textarea></label>
+                  <button type="submit" class="saved-material-export">＋ Создать дело</button>
+                </form>
+                <div id="case-project-list" class="case-project-list"><div class="saved-materials-empty">Пока нет дел. Создайте первое расследование.</div></div>
+              </div>
+            </details>
         </div>
       </main>
 
