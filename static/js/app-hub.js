@@ -480,11 +480,16 @@ function graphFitView(){
  if(!nodes.length){graphResetView();return;}
  const xs=nodes.map(node=>Number(node.x)||0),ys=nodes.map(node=>Number(node.y)||0);
  const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
- const spanX=Math.max(120,maxX-minX+100),spanY=Math.max(120,maxY-minY+100);
- const scale=Math.min(1,700/spanX,360/spanY);
- graphScale=Math.max(.035,Math.min(2.5,scale));
- graphPan={x:380-((minX+maxX)/2)*graphScale,y:210-((minY+maxY)/2)*graphScale};
+ const box=svgViewSize(),rect=document.getElementById("investigation-graph")?.getBoundingClientRect();
+ const width=Math.max(320,rect?.width||box.width),height=Math.max(220,rect?.height||box.height);
+ const pad=90,spanX=Math.max(120,maxX-minX+pad*2),spanY=Math.max(120,maxY-minY+pad*2);
+ graphScale=Math.max(.025,Math.min(2.5,(width-36)/spanX,(height-36)/spanY));
+ graphPan={x:box.width/2-((minX+maxX)/2)*graphScale,y:box.height/2-((minY+maxY)/2)*graphScale};
  graphApplyTransform();
+}
+function svgViewSize(){
+ const view= document.getElementById("investigation-graph")?.viewBox?.baseVal;
+ return {width:view?.width||760,height:view?.height||420};
 }
 async function graphWire(){
  const svg=document.getElementById("investigation-graph");if(!svg)return;
@@ -542,11 +547,49 @@ async function graphWire(){
   }
  };
  const autoLayout=()=>{
-  const typeOrder=["person","organization","domain","ip","email"];
-  const sorted=[...graphData.nodes].sort((a,b)=>typeOrder.indexOf(a.type)-typeOrder.indexOf(b.type)||a.label.localeCompare(b.label,"ru"));
-  const columns=Math.max(1,Math.ceil(Math.sqrt(sorted.length*1.45)));
-  const gapX=142,gapY=108,startX=95,startY=78;
-  sorted.forEach((node,index)=>{const col=index%columns,row=Math.floor(index/columns);node.x=startX+col*gapX;node.y=startY+row*gapY;});
+  const nodes=graphData.nodes,edges=graphData.edges,count=nodes.length;
+  if(!count)return;
+  const width=Math.max(1100,Math.ceil(Math.sqrt(count))*210);
+  const height=Math.max(760,Math.ceil(count/Math.max(1,Math.floor(width/210)))*190);
+  const indexById=new Map(nodes.map((node,index)=>[node.id,index]));
+  const linked=edges.map(edge=>[indexById.get(edge.source),indexById.get(edge.target)]).filter(pair=>pair[0]!==undefined&&pair[1]!==undefined);
+  const columns=Math.max(1,Math.floor(width/210));
+  nodes.forEach((node,index)=>{
+   const col=index%columns,row=Math.floor(index/columns);
+   node.x=150+col*200+(Math.sin(index*12.9898)*18);
+   node.y=130+row*180+(Math.cos(index*7.233)*18);
+  });
+  if(count<=350){
+   const area=Math.sqrt(width*height/count),ideal=Math.max(105,Math.min(175,area*.78));
+   const positions=nodes.map(node=>({x:node.x,y:node.y,vx:0,vy:0}));
+   const iterations=count<=100?150:90;
+   for(let step=0;step<iterations;step++){
+    const cooling=1-step/iterations,fx=positions.map(()=>0),fy=positions.map(()=>0);
+    for(let a=0;a<count;a++)for(let b=a+1;b<count;b++){
+     let dx=positions[a].x-positions[b].x,dy=positions[a].y-positions[b].y;
+     let d2=dx*dx+dy*dy+1,dist=Math.sqrt(d2);
+     const force=(ideal*ideal)/d2*.72,rx=dx/dist*force,ry=dy/dist*force;
+     fx[a]+=rx;fy[a]+=ry;fx[b]-=rx;fy[b]-=ry;
+    }
+    linked.forEach(([a,b])=>{
+     const dx=positions[b].x-positions[a].x,dy=positions[b].y-positions[a].y,dist=Math.hypot(dx,dy)||1;
+     const force=(dist-ideal*1.35)*.018, sx=dx/dist*force,sy=dy/dist*force;
+     fx[a]+=sx;fy[a]+=sy;fx[b]-=sx;fy[b]-=sy;
+    });
+    for(let k=0;k<count;k++){
+     const p=positions[k],cx=width/2-p.x,cy=height/2-p.y;
+     p.vx=(p.vx+fx[k]+cx*.0009)*.72;p.vy=(p.vy+fy[k]+cy*.0009)*.72;
+     const speed=Math.hypot(p.vx,p.vy),limit=10*cooling+1;
+     if(speed>limit){p.vx=p.vx/speed*limit;p.vy=p.vy/speed*limit;}
+     p.x=Math.max(75,Math.min(width-75,p.x+p.vx));p.y=Math.max(75,Math.min(height-75,p.y+p.vy));
+    }
+   }
+   positions.forEach((p,index)=>{nodes[index].x=p.x;nodes[index].y=p.y;});
+  }
+  const maxX=Math.max(...nodes.map(node=>node.x)),maxY=Math.max(...nodes.map(node=>node.y));
+  const viewWidth=Math.max(760,Math.ceil(maxX+180)),viewHeight=Math.max(420,Math.ceil(maxY+180));
+  svg.setAttribute("viewBox","0 0 "+viewWidth+" "+viewHeight);
+  graphPan={x:0,y:0};graphScale=1;
   graphRender();graphFitView();
  };
  const persistCurrent=async()=>{
@@ -573,6 +616,18 @@ async function graphWire(){
  document.getElementById("graph-zoom-out")?.addEventListener("click",()=>{graphScale=Math.max(.035,graphScale/1.2);graphApplyTransform();});
  document.getElementById("graph-zoom-reset")?.addEventListener("click",graphResetView);
  document.getElementById("graph-fit")?.addEventListener("click",graphFitView);
+ const graphPanel=document.getElementById("investigation-graph-panel");
+ const fullButton=document.getElementById("graph-fullscreen");
+ const toggleFullscreen=()=>{
+  if(!graphPanel)return;
+  const active=graphPanel.classList.toggle("graph-fullscreen");
+  if(fullButton){fullButton.textContent=active?"Свернуть":"На весь экран";fullButton.setAttribute("aria-pressed",String(active));}
+  document.body.classList.toggle("graph-fullscreen-active",active);
+  requestAnimationFrame(()=>{graphFitView();graphRender();});
+ };
+ fullButton?.addEventListener("click",toggleFullscreen);
+ document.addEventListener("keydown",event=>{if(event.key==="Escape"&&graphPanel?.classList.contains("graph-fullscreen"))toggleFullscreen();});
+ window.addEventListener("resize",()=>{if(graphPanel?.classList.contains("graph-fullscreen"))graphFitView();});
  svg.addEventListener("wheel",event=>{event.preventDefault();graphScale=Math.max(.035,Math.min(2.5,graphScale*(event.deltaY<0?1.1:.9)));graphApplyTransform();},{passive:false});
  svg.addEventListener("pointerdown",event=>{if(event.button!==0)return;if(event.target===svg||event.target.id==="graph-viewport"||event.target.id==="graph-edges"){event.preventDefault();const point=graphPointerPosition(svg,event);graphDrag={kind:"pan",x:point.x,y:point.y,moved:false};svg.setPointerCapture(event.pointerId);}});
  svg.addEventListener("pointermove",event=>{if(!graphDrag)return;const point=graphPointerPosition(svg,event),dx=point.x-graphDrag.x,dy=point.y-graphDrag.y;graphDrag.x=point.x;graphDrag.y=point.y;if(Math.abs(dx)+Math.abs(dy)>.5)graphDrag.moved=true;if(graphDrag.kind==="pan"){graphPan.x+=dx;graphPan.y+=dy;graphApplyTransform();}else{const node=graphData.nodes.find(item=>item.id===graphDrag.id);if(node){node.x=Math.max(-100000,Math.min(100000,node.x+dx/graphScale));node.y=Math.max(-100000,Math.min(100000,node.y+dy/graphScale));graphRender();}}});
