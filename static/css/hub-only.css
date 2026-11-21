@@ -753,7 +753,7 @@ body.dashboard-page{margin:0!important;min-height:100vh;background:radial-gradie
 .investigation-status .system-ring:before{inset:3px!important}
 .investigation-status .system-ring strong{font-size:12px!important}
 .investigation-status .system-ring small{font-size:7px!important}
-.investigation-status .system-facts{display:grid;grid-template-columns:1fr;gap:3px!important}
+.investigation-status .system-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px!important}
 .investigation-status .system-facts div{
  display:flex;align-items:center;justify-content:space-between;gap:6px;
  padding:3px 6px;border:1px solid rgba(91,145,220,.12);border-radius:5px;
@@ -781,7 +781,7 @@ body.dashboard-page{margin:0!important;min-height:100vh;background:radial-gradie
 @media(max-width:560px){
  .investigation-status .system-content{grid-template-columns:42px minmax(0,1fr)!important}
  .investigation-status .system-ring{width:40px!important;height:40px!important;min-width:40px}
- .investigation-status .system-facts{grid-template-columns:1fr!important}
+ .investigation-status .system-facts{grid-template-columns:repeat(2,minmax(0,1fr))!important}
  .investigation-status .system-health-details{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 
