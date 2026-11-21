@@ -289,4 +289,43 @@
   document.querySelectorAll("[data-example]").forEach(btn=>btn.addEventListener("click",()=>{input.value=btn.dataset.example;input.focus();setStatus("Добавлен код страны. Дополните номер перед анализом.");}));
   $("phone-clear")?.addEventListener("click",()=>{requestId++;input.value="";lastReport=null;copy.disabled=true;exportBtn.disabled=true;submit.disabled=false;result.classList.remove("is-visible");empty.style.display="block";empty.textContent="После анализа здесь появятся доступные характеристики номера.";setStatus("Форма очищена");input.focus();});
   $("phone-history-clear")?.addEventListener("click",()=>{sessionHistory=[];renderHistory();setStatus("История текущей сессии очищена");});
+  const personForm=$("person-search-form");
+  if(personForm){
+    const personName=$("person-name"),personLocation=$("person-location"),personSubmit=$("person-search-submit");
+    const personStatus=$("person-search-status"),personResults=$("person-search-results");
+    personForm.addEventListener("submit",async event=>{
+      event.preventDefault();
+      const name=personName.value.trim(),location=personLocation.value.trim();
+      if(name.split(/\\s+/).length<2){personStatus.textContent="Укажи как минимум имя и фамилию.";personStatus.dataset.state="error";personName.focus();return;}
+      personSubmit.disabled=true;personStatus.textContent="Ищем публичные страницы в поисковом индексе…";personStatus.dataset.state="loading";
+      personResults.replaceChildren();
+      try{
+        const response=await fetch("/api/public-person-search",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({name,location})});
+        const data=await response.json().catch(()=>({}));
+        if(!response.ok||!data.success)throw new Error(data.error||"Поиск не выполнен.");
+        const report=data.person_search||{};
+        personStatus.textContent=report.message||"Поиск завершён";personStatus.dataset.state="success";
+        if(!report.configured){personResults.textContent=report.message||"Настройте Brave Search API в параметрах сервера.";return;}
+        (report.services||[]).forEach(service=>{
+          const line=document.createElement("div");line.className="ph-auto-status";
+          const title=document.createElement("strong");title.textContent=service.name;
+          const state=document.createElement("span");state.textContent=service.status==="found"?"Найдено страниц: "+service.count:service.status==="error"?"Ошибка поиска":"Совпадений нет";
+          line.append(title,state);personResults.append(line);
+        });
+        (report.results||[]).forEach(item=>{
+          const card=document.createElement("article");card.className="ph-auto-result";
+          const source=document.createElement("small");source.textContent=item.source||"Публичный веб";
+          const title=document.createElement("strong");title.textContent=item.title||"Публичная страница";
+          const snippet=document.createElement("p");snippet.textContent=item.snippet||"";
+          const note=document.createElement("small");note.textContent=item.match_type||"Не подтверждённое совпадение";
+          const link=document.createElement("a");link.href=item.url;link.target="_blank";link.rel="noopener noreferrer";link.textContent="Открыть профиль / источник ↗";
+          card.append(source,title,snippet,note,link);personResults.append(card);
+        });
+        if(!(report.results||[]).length){const note=document.createElement("p");note.textContent="Публичные совпадения не найдены. Это не означает, что у человека нет профиля.";personResults.append(note);}
+        const privacy=document.createElement("small");privacy.textContent=report.privacy_note||"Проверяются только публичные страницы.";personResults.append(privacy);
+      }catch(error){personStatus.textContent=error.message||"Ошибка поиска";personStatus.dataset.state="error";}
+      finally{personSubmit.disabled=false;}
+    });
+  }
+
 })();
