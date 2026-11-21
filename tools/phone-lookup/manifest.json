@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "id": "phone-lookup",
+  "name": "Phone Number Intelligence",
+  "version": "1.0.0",
+  "category": "identity",
+  "description": "Проверка международного номера: формат, страна, код вызова, тип линии и сведения о номерном диапазоне.",
+  "status": "integrated",
+  "enabled": true,
+  "entrypoints": {
+    "page_url": "/modules/phone-lookup/",
+    "frontend": "tools/phone-lookup/frontend/index.html",
+    "backend_adapter": "tools/phone-lookup/backend/tool.py",
+    "manifest_readme": "tools/phone-lookup/README.md",
+    "tool_class": "ToolPhoneLookup"
+  },
+  "dependencies": {
+    "python": ["phonenumbers"],
+    "system": [],
+    "optional": []
+  },
+  "capabilities": [
+    "international-phone-number-parse",
+    "phone-number-format-validation",
+    "country-calling-code",
+    "number-type-metadata"
+  ],
+  "notes": [
+    "Работает локально на библиотеке phonenumbers; внешний поиск владельца не выполняется.",
+    "Не определяет абонента, адрес, GPS-местоположение или текущую SIM-карту."
+  ]
+}
