@@ -395,6 +395,24 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn("Не найден", verify)
 
 
+    def test_phone_intelligence_has_structured_metadata_and_report_controls(self):
+        page = (ROOT / "tools" / "phone-lookup" / "frontend" / "index.html").read_text(encoding="utf-8")
+        script = (ROOT / "tools" / "phone-lookup" / "frontend" / "page.js").read_text(encoding="utf-8")
+        backend = (ROOT / "tools" / "phone-lookup" / "backend" / "tool.py").read_text(encoding="utf-8")
+        manifest = self._manifest("phone-lookup")
+        self.assertIn('id="phone-export"', page)
+        self.assertIn('id="phone-history"', page)
+        self.assertIn('id="ph-timezone"', page) if 'id="ph-timezone"' in page else self.assertIn('Часовые пояса', page)
+        self.assertIn("URL.createObjectURL", script)
+        self.assertIn("sessionHistory", script)
+        self.assertIn('fetch("/api/graph/merge"', script)
+        self.assertIn("country_name_for_number", backend)
+        self.assertIn("time_zones_for_number", backend)
+        self.assertIn("is_possible_number_with_reason", backend)
+        self.assertIn("json-report-export", manifest["capabilities"])
+        self.assertIn("Не устанавливает личность владельца", (ROOT / "tools" / "phone-lookup" / "README.md").read_text(encoding="utf-8"))
+
+
 if __name__ == "__main__":
     unittest.main()
 
