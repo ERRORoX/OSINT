@@ -745,6 +745,14 @@ function graphRender(){
  });
  const empty=document.getElementById("graph-empty-state");if(empty)empty.hidden=visible.length>0;
  const summary=document.getElementById("graph-summary");if(summary)summary.textContent=visible.length+" узлов · "+graphData.edges.filter(edge=>visibleIds.has(edge.source)&&visibleIds.has(edge.target)).length+" связей";
+  const typeCounts={person:0,domain:0,ip:0,email:0,organization:0,phone:0};
+  graphData.nodes.forEach(node=>{if(Object.prototype.hasOwnProperty.call(typeCounts,node.type))typeCounts[node.type]++;});
+  const setStat=(id,value)=>{const el=document.getElementById(id);if(el)el.textContent=String(value);};
+  setStat("graph-stat-total",graphData.nodes.length);
+  Object.entries(typeCounts).forEach(([type,count])=>setStat("graph-stat-"+type,count));
+  setStat("graph-stat-edges",graphData.edges.length);
+  const hint=document.getElementById("graph-composition-hint");
+  if(hint)hint.textContent=graphData.nodes.length?"Статистика всего набора данных · фильтры карты не влияют на эти показатели.":"Добавьте результаты анализа — здесь появится статистика сущностей и связей.";
  graphApplyTransform();
 }
 function graphSelect(id){
