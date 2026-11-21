@@ -488,3 +488,7 @@ body.dashboard-page{margin:0!important;min-height:100vh;background:radial-gradie
  .graph-workspace.graph-fullscreen .graph-canvas-wrap{min-height:260px!important}
  .graph-workspace.graph-fullscreen .interactive-relationship-graph{min-height:260px!important}
 }
+
+.graph-edge-line{stroke:rgba(66,151,242,.28);stroke-width:1.15;stroke-dasharray:3 5}
+.graph-edge-line.is-related{stroke:rgba(92,205,255,.95);stroke-width:2.2;stroke-dasharray:none;filter:drop-shadow(0 0 4px rgba(65,177,255,.55))}
+.graph-edge-label{paint-order:stroke;stroke:#071321;stroke-width:3px;stroke-linejoin:round}
