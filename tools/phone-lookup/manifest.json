@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "phone-lookup",
   "name": "Phone Number Intelligence",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "category": "identity",
   "description": "Пассивный анализ номера, технические метаданные и поиск публичных упоминаний в соцсетях, бизнес-страницах и жалобах.",
   "status": "integrated",
@@ -40,7 +40,13 @@
     "public-business-listing-search",
     "public-web-mention-search",
     "public-spam-reputation-search",
-    "manual-public-source-selection"
+    "manual-public-source-selection",
+    "public-search-engine-catalog",
+    "public-social-mention-search",
+    "caller-reputation-directory-search",
+    "business-directory-search",
+    "public-reverse-directory-search",
+    "telecom-numbering-reference-search"
   ],
   "notes": [
     "Технические данные получаются из локальной базы libphonenumber; пользователь вручную выбирает источники, формирует список и открывает ссылки по отдельности.",
