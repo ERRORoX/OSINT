@@ -3,11 +3,13 @@
 Без Flet — возвращает текст и структурированные данные для использования в панели проекта.
 Зависимости: только стандартная библиотека + dnspython, requests (уже в проекте).
 """
+import ipaddress
 import re
 import socket
 import ssl
 import subprocess
 from typing import Any
+from urllib.parse import urlsplit
 
 try:
     import dns.resolver
@@ -21,32 +23,45 @@ except ImportError:
 
 
 def _normalize_domain(domain: str) -> str:
-    """Приведение домена к виду example.com."""
-    s = (domain or "").strip().lower()
-    for prefix in ("https://", "http://"):
-        if s.startswith(prefix):
-            s = s[len(prefix) :]
-            break
-    if "/" in s:
-        s = s.split("/")[0]
-    if s.startswith("www."):
-        s = s[4:]
-    return s
+    """Extract and normalize a hostname from a domain or HTTP(S) URL."""
+    raw = str(domain or "").strip()
+    if not raw:
+        return ""
+    candidate = raw if "://" in raw else "//" + raw
+    try:
+        parsed = urlsplit(candidate)
+        host = parsed.hostname or ""
+    except ValueError:
+        return ""
+    host = host.rstrip(".").lower()
+    if host.startswith("www."):
+        host = host[4:]
+    try:
+        return host.encode("idna").decode("ascii")
+    except UnicodeError:
+        return ""
 
 
 def _validate_domain(domain: str) -> tuple[bool, str | None]:
-    """Валидация домена. Возвращает (ok, error_message)."""
-    if not domain or not domain.strip():
-        return False, "Домен не может быть пустым"
-    domain = _normalize_domain(domain)
-    if " " in domain:
-        return False, "Неверный формат домена"
-    if "." not in domain:
-        return False, "Неверный формат домена"
-    if not re.match(r"^[a-z0-9][a-z0-9.-]*\.[a-z0-9.-]+$", domain):
-        return False, "Неверный формат домена"
+    """Validate a public DNS hostname after normalization."""
+    normalized = _normalize_domain(domain)
+    if not normalized:
+        return False, "Введите домен или URL сайта."
+    if len(normalized) > 253 or "." not in normalized:
+        return False, "Неверный формат домена."
+    try:
+        ipaddress.ip_address(normalized)
+        return False, "Введите доменное имя, а не IP-адрес."
+    except ValueError:
+        pass
+    labels = normalized.split(".")
+    if any(
+        not label or len(label) > 63
+        or not re.fullmatch(r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?", label)
+        for label in labels
+    ) or len(labels[-1]) < 2:
+        return False, "Неверный формат домена."
     return True, None
-
 
 def _get_ip(domain: str) -> str | None:
     """Получение IP адреса домена через DNS или socket."""
