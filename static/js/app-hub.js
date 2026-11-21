@@ -430,6 +430,78 @@ function graphSvg(tag,attrs,parent){const el=document.createElementNS("http://ww
 function graphPointerPosition(svg,event){const point=svg.createSVGPoint();point.x=event.clientX;point.y=event.clientY;const matrix=svg.getScreenCTM();if(!matrix)return{x:event.clientX,y:event.clientY};const local=point.matrixTransform(matrix.inverse());return{x:local.x,y:local.y};}
 function graphApplyTransform(){const viewport=document.getElementById("graph-viewport");if(viewport)viewport.setAttribute("transform","translate("+graphPan.x+" "+graphPan.y+") scale("+graphScale+")");const reset=document.getElementById("graph-zoom-reset");if(reset)reset.textContent=Math.round(graphScale*100)+"%";}
 function graphVisibleNodes(){const enabled=new Set([...document.querySelectorAll("[data-graph-filter]:checked")].map(input=>input.dataset.graphFilter));return graphData.nodes.filter(node=>enabled.has(node.type));}
+const GRAPH_TRANSFORMS={
+ domain:[
+  {id:"domain-search",label:"Полный анализ домена",params:value=>({domain:value})},
+  {id:"subfinder",label:"Найти поддомены",params:value=>({domain:value})},
+  {id:"dnsx",label:"Проверить DNS-записи",params:value=>({domain:value})},
+  {id:"theharvester",label:"Найти email и хосты",params:value=>({domain:value})},
+  {id:"shodan",label:"Поиск в Shodan",params:value=>({domain:value})}
+ ],
+ ip:[
+  {id:"ip-rdap",label:"Проверить RDAP",params:value=>({ip:value})},
+  {id:"shodan",label:"Проверить Shodan / InternetDB",params:value=>({ip:value})}
+ ],
+ email:[{id:"google-osint",label:"Проверить email",params:value=>({email:value})}],
+ person:[
+  {id:"sherlock",label:"Поиск через Sherlock",params:value=>({username:value})},
+  {id:"maigret",label:"Поиск через Maigret",params:value=>({username:value})},
+  {id:"social-analyzer",label:"Поиск через Social Analyzer",params:value=>({username:value})},
+  {id:"blackbird",label:"Поиск через Blackbird",params:value=>({username:value})}
+ ],
+ organization:[]
+};
+function graphStableId(value){
+ let hash=2166136261;
+ for(let i=0;i<value.length;i++){hash^=value.charCodeAt(i);hash=Math.imul(hash,16777619);}
+ return "tr-"+(hash>>>0).toString(16);
+}
+function graphExtractEntities(output,seed){
+ const text=String(output||""),found=new Map(),seedValue=String(seed.label||"").toLowerCase();
+ const add=(type,label,relation,details="")=>{
+  const value=String(label||"").trim().replace(/[),.;]+$/,"");
+  if(!value||value.length>180||value.toLowerCase()===seedValue)return;
+  const key=type+":"+value.toLowerCase();
+  if(!found.has(key))found.set(key,{id:graphStableId(key),type,label:value,details:String(details||"").slice(0,1200),relation});
+ };
+ for(const match of text.matchAll(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi))add("email",match[0],"обнаружен в результате");
+ for(const match of text.matchAll(/(?<![\w.])(?:25[0-5]|2[0-4]\d|1?\d?\d)(?:\.(?:25[0-5]|2[0-4]\d|1?\d?\d)){3}(?![\w.])/g))add("ip",match[0],"IP-адрес в результате");
+ for(const match of text.matchAll(/https?:\/\/[^\s<>"'\])}]+/gi)){
+  try{const host=new URL(match[0]).hostname.toLowerCase().replace(/^www\./,"");if(host&&host.includes("."))add("domain",host,"публичный профиль или ссылка",match[0]);}catch(_){}
+ }
+ if(seed.type==="domain"){
+  const domain=seed.label.toLowerCase().replace(/^https?:\/\//,"").split("/")[0].replace(/^www\./,"");
+  for(const match of text.matchAll(/(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}/gi)){
+   const host=match[0].toLowerCase().replace(/[),.;]+$/,"");
+   if(host!==domain&&host.endsWith("."+domain))add("domain",host,"поддомен");
+  }
+ }
+ const organization=text.match(/(?:Организация|Organization|Org(?:anization)? name)\s*:\s*([^\r\n]{2,150})/i);
+ if(organization&&seed.type==="ip")add("organization",organization[1],"зарегистрирована для IP");
+ return [...found.values()].slice(0,120);
+}
+async function graphRunTransform(node,toolId){
+ const transform=(GRAPH_TRANSFORMS[node.type]||[]).find(item=>item.id===toolId);
+ if(!transform)return;
+ const menu=document.getElementById("graph-context-menu"),status=document.getElementById("graph-import-status"),badge=document.getElementById("graph-data-mode");
+ if(menu)menu.hidden=true;
+ if(status)status.textContent="Запуск "+transform.label+"…";
+ try{
+  const response=await fetch(API+"/tools/"+encodeURIComponent(toolId)+"/run",{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify(transform.params(node.label))});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok||!result.success)throw new Error(result.error||result.output||"Инструмент завершился с ошибкой.");
+  const extracted=graphExtractEntities(result.output||"",node);
+  const additions=extracted.map(item=>({id:item.id,type:item.type,label:item.label,details:item.details||("Получено: "+transform.label)}));
+  const edges=extracted.map(item=>({source:node.id,target:item.id,label:item.relation}));
+  const merged=await fetch(API+"/graph/merge",{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify({nodes:additions,edges})});
+  const saved=await merged.json().catch(()=>({}));
+  if(!merged.ok)throw new Error(saved.error||"Не удалось сохранить результаты в граф.");
+  graphData=graphValidate(saved);graphSelected=node.id;graphSelectedIds=new Set([node.id,...extracted.map(item=>item.id)]);
+  graphRender();graphSelect(node.id);graphFocusNode(node.id);
+  if(badge)badge.textContent="СОХРАНЕНО";
+  if(status)status.textContent=transform.label+": добавлено "+additions.length+" сущностей и "+edges.length+" связей в текущее расследование.";
+ }catch(error){if(status)status.textContent=transform.label+": "+(error.message||"неизвестная ошибка");}
+}
 const GRAPH_TOOL_LINKS={
  domain:{label:"Domain Search",href:"/modules/domain-search/"},
  ip:{label:"IP Registry",href:"/modules/ip-rdap/"},
@@ -449,6 +521,11 @@ function graphShowContextMenu(node,event){
  menu.replaceChildren();
  const title=document.createElement("div");title.className="graph-context-title";title.textContent=node.label;
  menu.append(title);
+ const transformList=GRAPH_TRANSFORMS[node.type]||[];
+ if(transformList.length){
+  const heading=document.createElement("div");heading.className="graph-context-section";heading.textContent="TRANSFORMS · OSINT";menu.append(heading);
+  transformList.forEach(item=>{const button=document.createElement("button");button.type="button";button.dataset.transform=item.id;button.textContent=item.label;menu.append(button);});
+ }
  const actions=[
   ["focus","Центрировать объект"],
   ["neighbors","Выбрать соседние объекты"],
@@ -492,6 +569,8 @@ function graphContextAction(action,id){
 document.addEventListener("click",event=>{
  const menu=document.getElementById("graph-context-menu");
  if(!menu||menu.hidden)return;
+ const transformButton=event.target.closest("[data-transform]");
+ if(transformButton&&menu.contains(transformButton)){const node=graphData.nodes.find(item=>item.id===graphSelected);if(node)graphRunTransform(node,transformButton.dataset.transform);return;}
  const button=event.target.closest("[data-action]");
  if(button&&menu.contains(button)){graphContextAction(button.dataset.action,graphSelected);return;}
  if(!menu.contains(event.target))graphHideContextMenu();
