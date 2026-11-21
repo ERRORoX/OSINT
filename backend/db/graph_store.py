@@ -417,7 +417,7 @@ def merge_graph_data(payload, investigation_id=None):
 
         # Remap old and incoming edges to canonical nodes and deduplicate them.
         edges = []
-        edge_keys = set()
+        edge_index = {}
         for edge in list(current["edges"]) + incoming["edges"]:
             source = id_map.get(edge["source"], edge["source"])
             target = id_map.get(edge["target"], edge["target"])
@@ -427,9 +427,12 @@ def merge_graph_data(payload, investigation_id=None):
                 raise ValueError("Связь ссылается на узел, которого нет в графе.")
             label = str(edge.get("label") or "Связь").strip() or "Связь"
             key = (source, target, label.casefold())
-            if key not in edge_keys:
+            if key not in edge_index:
+                edge_index[key] = len(edges)
                 edges.append({"source": source, "target": target, "label": label, "provenance": dict(edge.get("provenance") or {})})
-                edge_keys.add(key)
+            elif edge.get("provenance"):
+                existing_edge = edges[edge_index[key]]
+                existing_edge["provenance"] = {**existing_edge.get("provenance", {}), **edge["provenance"]}
 
         nodes = list(nodes_by_id.values())
         if len(nodes) > _MAX_NODES or len(edges) > _MAX_EDGES:
