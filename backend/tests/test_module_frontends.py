@@ -280,6 +280,25 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn('navigator.clipboard.writeText(lastOutput)', script)
 
 
+    def test_settings_page_preserves_saved_api_keys_and_has_dependency_controls(self):
+        script = (ROOT / "static" / "js" / "settings.js").read_text(encoding="utf-8")
+        page = (ROOT / "static" / "p" / "settings" / "index.html").read_text(encoding="utf-8")
+        styles = (ROOT / "static" / "css" / "tools" / "packs" / "settings" / "panel.css").read_text(encoding="utf-8")
+        self.assertIn("if (v) payload[input.name] = v", script)
+        self.assertIn("Пустое поле не должно стирать ранее сохранённый ключ", script)
+        self.assertIn('id="btn-check-tools"', script)
+        self.assertIn('id="btn-install-update"', script)
+        self.assertIn('src="/p/settings/page.js"', page)
+        self.assertIn(".settings-key-state.is-set", styles)
+
+    def test_workspace_does_not_inject_sidebar_into_settings_or_module_pages(self):
+        script = (ROOT / "static" / "js" / "workspace.js").read_text(encoding="utf-8")
+        self.assertIn("Keep the compact top navigation. Do not create a sidebar", script)
+        mount = script.split("function mount()", 1)[1]
+        self.assertNotIn("ensureSidebarLayout();", mount)
+
+
+
 if __name__ == "__main__":
     unittest.main()
 
