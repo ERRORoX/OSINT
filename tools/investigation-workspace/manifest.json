@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "id": "investigation-workspace",
+  "name": "Investigation Workspace",
+  "description": "Единое пространство: интерактивный граф, единый поиск и менеджер расследований.",
+  "version": "1.0.0",
+  "category": "workspace",
+  "status": "integrated",
+  "enabled": true,
+  "entrypoints": {
+    "frontend": "tools/investigation-workspace/frontend/index.html",
+    "page_url": "/modules/investigation-workspace/"
+  },
+  "dependencies": {
+    "python": [],
+    "system": [],
+    "optional": []
+  },
+  "capabilities": [
+    "interactive-relationship-graph",
+    "unified-public-search-routing",
+    "investigation-management",
+    "investigation-notes"
+  ]
+}

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#060608">
+  <title>Username — OSINT Panel</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect fill='%23060608' width='32' height='32' rx='4'/><text x='16' y='22' font-size='16' text-anchor='middle' fill='%2300ff88' font-family='monospace'>O</text></svg>">
+  <link rel="stylesheet" href="/modules/username-workspace/css/username.css?v=4.2.11">
+  <link rel="stylesheet" href="/css/unified-workstation.css?v=4.5.0">
+  <link rel="stylesheet" href="/css/panel-42-dashboard.css?v=4.2.20">
+</head>
+<body>
+<div class="osint-bg cyber-grid" aria-hidden="true">
+    <div class="particle" style="left:10%;bottom:-5px;--duration:9s;--delay:0s"></div>
+    <div class="particle" style="left:22%;bottom:-5px;--duration:12s;--delay:1.2s"></div>
+    <div class="particle" style="left:34%;bottom:-5px;--duration:10s;--delay:2.2s"></div>
+    <div class="particle" style="left:46%;bottom:-5px;--duration:14s;--delay:3.4s"></div>
+    <div class="particle" style="left:58%;bottom:-5px;--duration:11s;--delay:4.4s"></div>
+    <div class="particle" style="left:70%;bottom:-5px;--duration:13s;--delay:5.6s"></div>
+    <div class="particle" style="left:82%;bottom:-5px;--duration:10s;--delay:6.1s"></div>
+    <div class="particle" style="left:94%;bottom:-5px;--duration:15s;--delay:7.0s"></div>
+  </div>
+  <header class="osint-header app-header">
+    <div class="osint-header-inner scan-line">
+      <div class="osint-logo" aria-hidden="true">
+        <a href="/" style="color:inherit;display:flex" title="На главную">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          
+          <circle cx="12" cy="12" r="6"></circle>
+          <circle cx="12" cy="12" r="2"></circle>
+        </svg>
+        </a>
+      </div>
+      <div class="osint-title">
+        <h1><a href="/" style="text-decoration:none;color:inherit"><span class="accent">OSINT</span><span class="dim">Panel</span></a></h1>
+        <p>◆ Разведка по открытым источникам | домены, username, email, утечки | Python + UI</p>
+      </div>
+      <div class="app-header-right">
+        <span class="app-header-system" id="header-system">ОС: —</span>
+        <div class="app-header-user" id="header-user">
+          <button type="button" class="app-header-user-btn" aria-expanded="false" aria-haspopup="true" id="btn-user-menu">
+            <span class="app-header-user-icon" aria-hidden="true"></span>
+            <span class="app-header-user-name">Admin</span>
+            <span class="app-header-user-chevron" aria-hidden="true"></span>
+          </button>
+          <div class="app-header-user-menu" id="user-menu" hidden>
+            <a href="/p/settings/" class="app-header-user-menu-item" data-tool-id="settings">API ключи</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="osint-tabs">
+      <nav id="nav-tools" class="tab-nav" aria-label="Разделы">
+      <a href="/domain/" class="tool-link" data-tool-id="domain-tools"><span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span>Домен</a>
+      <a href="/username/" class="tool-link active" data-tool-id="username-tools"><span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>Username</a>
+      <a href="/photo/" class="tool-link" data-tool-id="photo-search"><span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></span>Фото</a>
+      <a href="/p/ai-agent/" class="tool-link" data-tool-id="ai-agent"><span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><line x1="12" y1="5" x2="12" y2="18"/></svg></span>ИИ</a>
+      <a href="/p/history/" class="tool-link" data-tool-id="history"><span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg></span>История</a>
+      <a href="/p/anonsms/" class="tool-link" data-tool-id="anonsms">ANONSMS</a>
+      <a href="/p/instagram-bruter/" class="tool-link" data-tool-id="instagram-bruter">Instagram</a>
+      <a href="/p/grabcam/" class="tool-link" data-tool-id="grabcam"><span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></span>Grabcam</a>
+      <a href="/p/google-osint/" class="tool-link" data-tool-id="google-osint">Google OSINT</a>
+      </nav>
+    </div>
+  </header>
+  <div class="app-body osint-body">
+    <main class="main osint-main osint-scrollbar" id="main-content">
+      <div class="username-v2 osint-scrollbar" id="username-app">
+<!-- ===== SEARCH BAR ===== -->
+    <div class="card osint-glow">
+      <div class="card-content">
+        <div class="search-bar">
+          <div class="search-input-wrap">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/>
+            </svg>
+            <input class="search-input" type="text" placeholder="Введите никнейм, имя или email для поиска..." id="searchInput">
+          </div>
+          <button type="button" class="search-btn" id="searchBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m16.24 7.76a6 6 0 0 1 0 8.49"/><path d="m7.76 16.24a6 6 0 0 1 0-8.49"/><circle cx="12" cy="12" r="2"/>
+            </svg>
+            ЗАПУСК ВЫБРАННЫХ
+          </button>
+        </div>
+
+        <section class="username-overview" aria-label="Этапы поиска">
+        <div class="username-overview__title"><span>SEARCH PIPELINE</span><span>OSINT / USERNAME</span></div>
+        <div class="username-overview__steps">
+          <div><b>01</b><span>Выбор модулей</span></div><i></i>
+          <div><b>02</b><span>Поиск профилей</span></div><i></i>
+          <div><b>03</b><span>Проверка результатов</span></div><i></i>
+          <div><b>04</b><span>Связи в расследовании</span></div>
+        </div>
+      </section>
+      <div class="username-tool-toggles" aria-label="Включение модулей">
+          <div class="username-tool-toggles__head">
+            <span class="username-tool-toggles__label">Модули</span>
+            <div class="username-tool-toggles__bulk">
+              <button type="button" class="username-tool-bulk" id="btnToolsAllOn">Включить все</button>
+              <button type="button" class="username-tool-bulk" id="btnToolsAllOff">Выключить все</button>
+            </div>
+          </div>
+          <div class="osint-tool-selector">
+            <label class="osint-tool-card active" for="toggle-sherlock">
+              <input type="checkbox" class="osint-tool-card__input js-tool-toggle" id="toggle-sherlock" data-tab="sherlock" checked>
+              <div class="osint-tool-card__header">
+                <span class="osint-tool-card__title">Sherlock</span>
+                <span class="osint-tool-card__status" aria-hidden="true"></span>
+              </div>
+              <p class="osint-tool-card__desc">Поиск username по сотням сайтов</p>
+            </label>
+            <label class="osint-tool-card active" for="toggle-maigret">
+              <input type="checkbox" class="osint-tool-card__input js-tool-toggle" id="toggle-maigret" data-tab="maigret" checked>
+              <div class="osint-tool-card__header">
+                <span class="osint-tool-card__title">Maigret</span>
+                <span class="osint-tool-card__status" aria-hidden="true"></span>
+              </div>
+              <p class="osint-tool-card__desc">Сбор профиля и метаданных</p>
+            </label>
+            <label class="osint-tool-card active" for="toggle-social">
+              <input type="checkbox" class="osint-tool-card__input js-tool-toggle" id="toggle-social" data-tab="social" checked>
+              <div class="osint-tool-card__header">
+                <span class="osint-tool-card__title">Social Analyzer</span>
+                <span class="osint-tool-card__status" aria-hidden="true"></span>
+              </div>
+              <p class="osint-tool-card__desc">Анализ соцсетей и цифрового следа</p>
+            </label>
+            <label class="osint-tool-card active" for="toggle-blackbird">
+              <input type="checkbox" class="osint-tool-card__input js-tool-toggle" id="toggle-blackbird" data-tab="blackbird" checked>
+              <div class="osint-tool-card__header">
+                <span class="osint-tool-card__title">Blackbird</span>
+                <span class="osint-tool-card__status" aria-hidden="true"></span>
+              </div>
+              <p class="osint-tool-card__desc">Поиск аккаунтов по базам</p>
+            </label>
+          </div>
+        </div>
+
+        <div class="username-progress-panel" id="usernameProgress" style="display: none" aria-live="polite">
+          <div class="username-progress-panel__head">
+            <span class="username-progress-panel__title">Прогресс</span>
+            <span class="username-progress-panel__hint">запросы к API параллельно; полоса при ожидании — индикатор работы, не процент готовности</span>
+          </div>
+          <div class="username-progress-grid">
+            <div class="username-progress-card username-progress-card--sherlock" data-progress-tool="sherlock">
+              <div class="username-progress-card__top">
+                <span class="username-progress-card__name">Sherlock</span>
+                <span class="username-progress-pct js-progress-pct">0%</span>
+              </div>
+              <div class="username-progress-track"><div class="username-progress-fill js-progress-fill"></div></div>
+              <div class="username-progress-status js-progress-status">—</div>
+            </div>
+            <div class="username-progress-card username-progress-card--maigret" data-progress-tool="maigret">
+              <div class="username-progress-card__top">
+                <span class="username-progress-card__name">Maigret</span>
+                <span class="username-progress-pct js-progress-pct">0%</span>
+              </div>
+              <div class="username-progress-track"><div class="username-progress-fill js-progress-fill"></div></div>
+              <div class="username-progress-status js-progress-status">—</div>
+            </div>
+            <div class="username-progress-card username-progress-card--social" data-progress-tool="social">
+              <div class="username-progress-card__top">
+                <span class="username-progress-card__name">Social Analyzer</span>
+                <span class="username-progress-pct js-progress-pct">0%</span>
+              </div>
+              <div class="username-progress-track"><div class="username-progress-fill js-progress-fill"></div></div>
+              <div class="username-progress-status js-progress-status">—</div>
+            </div>
+            <div class="username-progress-card username-progress-card--blackbird" data-progress-tool="blackbird">
+              <div class="username-progress-card__top">
+                <span class="username-progress-card__name">Blackbird</span>
+                <span class="username-progress-pct js-progress-pct">0%</span>
+              </div>
+              <div class="username-progress-track"><div class="username-progress-fill js-progress-fill"></div></div>
+              <div class="username-progress-status js-progress-status">—</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ===== EMPTY STATE ===== -->
+    <div class="card scan-line" id="emptyState">
+      <div class="card-content empty-state">
+        <div class="empty-radar">
+          <svg class="empty-radar-bg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="m16.24 7.76a6 6 0 0 1 0 8.49"/><path d="m7.76 16.24a6 6 0 0 1 0-8.49"/><circle cx="12" cy="12" r="2"/>
+          </svg>
+          <div class="empty-radar-cross">
+            <svg class="osint-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/>
+            </svg>
+          </div>
+        </div>
+        <h2 class="empty-title">Введите никнейм или имя</h2>
+        <p class="empty-desc">Все инструменты запустятся автоматически: Sherlock просканирует 20+ платформ, Maigret создаст профиль, Social Analyzer оценит цифровой след, Blackbird найдёт аккаунты.</p>
+        <div class="empty-tools">
+          <div class="empty-tool">
+            <svg class="empty-tool-arrow" viewBox="0 0 24 24" fill="none" stroke="#00f0ff" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            <div>
+              <span class="empty-tool-name" style="color: #00f0ff;">Sherlock</span>
+              <span class="empty-tool-desc">Поиск по 20+ платформам</span>
+            </div>
+          </div>
+          <div class="empty-tool">
+            <svg class="empty-tool-arrow" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            <div>
+              <span class="empty-tool-name" style="color: #a855f7;">Maigret</span>
+              <span class="empty-tool-desc">Глубокий AI-профиль</span>
+            </div>
+          </div>
+          <div class="empty-tool">
+            <svg class="empty-tool-arrow" viewBox="0 0 24 24" fill="none" stroke="#00ff41" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            <div>
+              <span class="empty-tool-name" style="color: #00ff41;">Social Analyzer</span>
+              <span class="empty-tool-desc">Анализ соцсетей</span>
+            </div>
+          </div>
+          <div class="empty-tool">
+            <svg class="empty-tool-arrow" viewBox="0 0 24 24" fill="none" stroke="#ff3e3e" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            <div>
+              <span class="empty-tool-name" style="color: #ff3e3e;">Blackbird</span>
+              <span class="empty-tool-desc">Поиск аккаунтов</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== RESULTS ===== -->
+    <div id="resultsSection" style="display:none;">
+      <div class="username-results-intro">
+        <h2 class="username-results-title">Сводка</h2>
+        <p class="username-results-hint">Вкладки — фактический вывод CLI. Сводка считает ссылки и домены по объединённому тексту ответов; время модулей и ожидание — по замерам API и браузера.</p>
+        <div class="summary-bar username-results-summary" id="summaryBar" style="display:none;" role="region" aria-label="Сводка по поиску">
+          <div class="badge badge-green">
+            <span class="badge-dot" style="background:var(--green);"></span>
+            Уникальных ссылок (HTTP/S) в отчёте: <strong id="summaryUniqueUrls">0</strong>
+          </div>
+          <div class="badge badge-purple">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            Уникальных доменов в ссылках: <strong id="summaryUniqueDomains">0</strong>
+          </div>
+          <div class="badge badge-cyan">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            Модулей без ошибки: <strong id="scannedCount">0</strong> из <strong id="runSelectedTotal">4</strong>
+          </div>
+          <div class="badge badge-cyan" style="border-color: rgba(0,240,255,.2);">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="12 6 12 12 16 14"/></svg>
+            Ожидание всех ответов: <strong id="wallTimeSec">0</strong> с
+          </div>
+        </div>
+      </div>
+
+      <div class="username-graph-status" id="usernameGraphStatus" role="status" aria-live="polite" data-state="idle">Результаты поиска будут добавлены в граф связей активного расследования.</div>
+      <section class="username-results-tools" aria-label="Фильтры и экспорт результатов">
+        <div class="username-results-tools__top"><div><strong>НАЙДЕННЫЕ ПРОФИЛИ</strong><span>Фильтры применяются к открытой вкладке</span></div>
+          <div class="username-results-tools__exports"><button type="button" id="usernameExportJson">Экспорт JSON</button><button type="button" id="usernameExportCsv">Экспорт CSV</button></div></div>
+        <div class="username-results-tools__controls">
+          <label class="username-filter-search"><span class="sr-only">Поиск по результатам</span><input type="search" id="usernameResultSearch" placeholder="Фильтр по платформе, URL или категории…"></label>
+          <label><span class="sr-only">Категория</span><select id="usernameResultCategory"><option value="">Все категории</option><option value="Соцсети">Соцсети</option><option value="Разработка">Разработка</option><option value="Видео">Видео</option><option value="Форумы">Форумы</option><option value="Сервис">Сервисы</option><option value="Сайт">Другие сайты</option></select></label>
+          <label><span class="sr-only">Сортировка</span><select id="usernameResultSort"><option value="default">Порядок инструмента</option><option value="az">Платформа: А–Я</option><option value="za">Платформа: Я–А</option></select></label>
+          <span class="username-results-tools__count" id="usernameVisibleCount" aria-live="polite">Результаты ещё не загружены</span>
+        </div>
+        <p class="username-results-tools__notice">Найденный профиль — это совпадение по username, а не подтверждение личности. Проверяйте URL и сведения вручную.</p>
+      </section>
+      <h2 class="username-tabs-heading">Результаты по инструментам</h2>
+      <div class="tabs-nav" id="tabsNav" role="tablist" aria-label="Вкладки инструментов">
+        <button class="tab-btn active-cyan" data-tab="sherlock" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Sherlock
+          <span class="badge badge-cyan js-tab-hit" style="margin-left:8px; padding:0 4px; font-size:10px; min-width:1.25em;" data-tab-key="sherlock" hidden>0</span>
+        </button>
+        <button class="tab-btn" data-tab="maigret" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m22 21-6-6"/></svg>
+          Maigret
+          <span class="badge badge-purple js-tab-hit" style="margin-left:8px; padding:0 4px; font-size:10px; min-width:1.25em;" data-tab-key="maigret" hidden>0</span>
+        </button>
+        <button class="tab-btn" data-tab="social" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Social
+          <span class="badge badge-green js-tab-hit" style="margin-left:8px; padding:0 4px; font-size:10px; min-width:1.25em;" data-tab-key="social" hidden>0</span>
+        </button>
+        <button class="tab-btn" data-tab="blackbird" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 7a2 2 0 0 1 2 2v4l1 2h-2l1-2V9a2 2 0 0 0-2-2"/><path d="M8 7a2 2 0 0 0-2 2v4l-1 2h2l-1-2V9a2 2 0 0 1 2-2"/><circle cx="12" cy="5" r="1"/></svg>
+          Blackbird
+          <span class="badge badge-red js-tab-hit" style="margin-left:8px; padding:0 4px; font-size:10px; min-width:1.25em;" data-tab-key="blackbird" hidden>0</span>
+        </button>
+      </div>
+
+      <!-- SHERLOCK -->
+      <div class="tab-content visible" id="tab-sherlock">
+        <!-- Заполняется реальными данными из API в username.js -->
+      </div>
+
+      <!-- MAIGRET -->
+      <div class="tab-content" id="tab-maigret">
+        <!-- Заполняется реальными данными из API в username.js -->
+      </div>
+
+      <!-- SOCIAL -->
+      <div class="tab-content" id="tab-social">
+        <!-- Заполняется реальными данными из API в username.js -->
+      </div>
+
+      <!-- BLACKBIRD -->
+      <div class="tab-content" id="tab-blackbird">
+        <!-- Заполняется реальными данными из API в username.js -->
+      </div>
+    </div>
+      </div>
+    </main>
+  </div>
+  <footer class="app-footer">
+    <span><a href="/" style="color:inherit;text-decoration:none">OSINT Panel</a></span>
+    <span class="footer-hint">Разведка в открытых источниках — домены, email, соцсети</span>
+  </footer>
+  <script defer src="/js/header-env.js"></script>
+  <script defer src="/js/header-ui.js"></script>
+  <script src="/modules/username-workspace/js/username.js?v=4.2.11" type="module"></script>
+  <script defer src="/js/workspace.js?v=4.3.2"></script>
+</body>
+</html>

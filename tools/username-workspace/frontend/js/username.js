@@ -1,0 +1,363 @@
+/**
+ * Username entrypoint: тонкий boot + динамический импорт рендера карточек.
+ */
+import { TOOL_DEFS } from "./consts.js";
+import { apiRun } from "./api.js";
+import { wireUserMenu } from "./user-menu.js";
+import { wireToolToggles, getEnabledTools } from "./toggles.js";
+import { wireTabs, resetTabHits, setTabHit } from "./tabs.js";
+import { setSummary, mergedLinkStats } from "./summary.js";
+import { resetProgressPanel, showProgressPanel, progressCard, setProgressState } from "./progress.js";
+import { setTabLoading, createTabRenderer } from "./render.js";
+
+/** @type {null | ((el: Element, o: { tabId: string, output: string, success: boolean }) => void)} */
+let renderUsernameTabPane = null;
+
+// Wait for the rich result renderer before starting a search. This avoids
+// rendering the first result in the fallback layout during a fast first click.
+const rendererReady = import("./username-output.js")
+  .then((m) => {
+    if (m && typeof m.renderUsernameTabPane === "function") {
+      renderUsernameTabPane = m.renderUsernameTabPane;
+    }
+  })
+  .catch((err) => {
+    console.warn("[username] Рендер карточек недоступен; используется безопасный текстовый вывод.", err);
+  });
+
+const renderTabCard = createTabRenderer({ getRenderer: () => renderUsernameTabPane });
+
+const SKIP_MSG =
+  "Инструмент выключен в списке модулей выше. Отметьте его и нажмите «Запуск выбранных», чтобы выполнить.";
+
+function graphStableId(type, value) {
+  let hash = 2166136261;
+  const source = String(value || "").trim().toLowerCase();
+  for (let i = 0; i < source.length; i += 1) {
+    hash ^= source.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return type + ":" + (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+function buildUsernameGraphPayload(username, rows) {
+  const successful = (rows || []).filter((row) => row && row.ok);
+  if (!successful.length) return { nodes: [], edges: [] };
+  const nodes = [], edges = [], known = new Set();
+  const addNode = (type, label, details) => {
+    const clean = String(label || "").trim().slice(0, 180);
+    if (!clean) return null;
+    const id = graphStableId(type, clean);
+    if (!known.has(id)) {
+      known.add(id);
+      nodes.push({ id, type, label: clean, details: String(details || "").slice(0, 1200) });
+    }
+    return id;
+  };
+  const addEdge = (source, target, label) => {
+    if (!source || !target || source === target) return;
+    if (!edges.some((edge) => edge.source === source && edge.target === target && edge.label === label)) edges.push({ source, target, label });
+  };
+  const sourceNames = successful.map((row) => row.toolName || row.toolId).filter(Boolean);
+  const provenance = "Username OSINT · Источники: " + sourceNames.join(", ");
+  const personId = addNode("person", username, provenance);
+  const mergedOutput = successful.map((row) => row.out || "").join("\n");
+  const profilesByHost = new Map();
+  for (const token of mergedOutput.split(/\\s+/)) {
+    const candidate = token.replace(/[),.;]+$/, "");
+    if (!candidate.toLowerCase().startsWith("http://") && !candidate.toLowerCase().startsWith("https://")) continue;
+    try {
+      const profileUrl = new URL(candidate);
+      const rawHost = profileUrl.hostname.toLowerCase();
+      const host = rawHost.startsWith("www.") ? rawHost.slice(4) : rawHost;
+      if (!host || !host.includes(".")) continue;
+      const cleanUrl = profileUrl.toString();
+      const list = profilesByHost.get(host) || [];
+      if (!list.includes(cleanUrl)) list.push(cleanUrl);
+      profilesByHost.set(host, list);
+    } catch (_) {}
+  }
+  profilesByHost.forEach((urls, host) => {
+    const profileUrl = urls.find((value) => {
+      try { const path = new URL(value).pathname.replace(/\\/+$/, ""); return Boolean(path && path !== ""); } catch (_) { return false; }
+    }) || urls[0];
+    const id = addNode("domain", host, "Профиль найден при поиске " + username + ".\nURL профиля: " + profileUrl + "\n" + provenance);
+    addEdge(personId, id, "профиль на платформе");
+  });
+  const emails = new Set(mergedOutput.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi) || []);
+  emails.forEach((email) => {
+    const id = addNode("email", email.toLowerCase(), "Email обнаружен в результатах поиска " + username + ". " + provenance);
+    addEdge(personId, id, "email в результатах");
+  });
+  const ips = new Set(mergedOutput.match(/(?<![\w.])(?:25[0-5]|2[0-4]\d|1?\d?\d)(?:\.(?:25[0-5]|2[0-4]\d|1?\d?\d)){3}(?![\w.])/g) || []);
+  ips.forEach((ip) => {
+    const id = addNode("ip", ip, "IP обнаружен в результатах поиска " + username + ". " + provenance);
+    addEdge(personId, id, "IP в результатах");
+  });
+  return { nodes, edges };
+}
+
+async function persistUsernameGraph(username, rows) {
+  const graph = buildUsernameGraphPayload(username, rows);
+  if (!graph.nodes.length) return { nodes: 0, edges: 0 };
+  const response = await fetch("/api/graph/merge", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(graph),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || "Не удалось сохранить результаты в граф.");
+  return { nodes: graph.nodes.length, edges: graph.edges.length };
+}
+
+async function runAll(username) {
+  await rendererReady;
+  const enabled = getEnabledTools();
+  const enabledSet = new Set(enabled.map((t) => t.tab));
+
+  resetTabHits();
+  showProgressPanel(true);
+  resetProgressPanel(enabledSet);
+
+  for (const t of TOOL_DEFS) {
+    if (!enabledSet.has(t.tab)) {
+      renderTabCard(t.tab, t.title, SKIP_MSG, true);
+      setTabHit(t.tab, 0);
+    } else {
+      setTabLoading(t.tab, t.title);
+    }
+  }
+
+  if (enabled.length === 0) {
+    setSummary({ uniqueUrls: 0, uniqueDomains: 0, scannedCount: 0, selectedTotal: 0, wallSeconds: 0 });
+    return;
+  }
+
+  const wallT0 = typeof performance !== "undefined" ? performance.now() : Date.now();
+  const rows = await Promise.all(
+    enabled.map(async (t) => {
+      const card = progressCard(t.tab);
+      setProgressState(card, { mode: "running", status: "Запрос к API…" });
+
+      try {
+        const data = await apiRun(t.id, { username });
+        const out = (data.output || data.error || "").trim() || "(нет вывода)";
+        const ok = Boolean(data.success);
+        const stats = data.stats || null;
+        renderTabCard(t.tab, t.title, out, ok);
+        setTabHit(t.tab, stats || { unique_hosts: 0 });
+        const sec = stats && typeof stats.duration_ms === "number" ? stats.duration_ms / 1000 : 0;
+        const doneLine = sec > 0 ? `Готово за ${sec.toFixed(sec >= 10 ? 1 : 2)} с` : "Готово";
+        if (ok) {
+          setProgressState(card, { mode: "done", pct: 100, status: doneLine });
+        } else {
+          const errLine =
+            sec > 0 ? `Через ${sec.toFixed(sec >= 10 ? 1 : 2)} с — неуспешное завершение` : "Завершено с ошибкой";
+          setProgressState(card, { mode: "error", pct: 100, status: errLine });
+        }
+        return { toolId: t.id, toolName: t.title, ok, out, stats };
+      } catch (e) {
+        renderTabCard(t.tab, t.title, e.message || "Ошибка", false);
+        setTabHit(t.tab, 0);
+        setProgressState(card, { mode: "error", pct: 100, status: "Ошибка" });
+        return { ok: false, out: "", stats: null };
+      }
+    })
+  );
+
+  const wallMs = (typeof performance !== "undefined" ? performance.now() : Date.now()) - wallT0;
+  const wallSeconds = wallMs / 1000;
+
+  const okTools = rows.filter((r) => r.ok).length;
+  const merged = mergedLinkStats(rows.map((r) => r.out));
+
+  setSummary({
+    uniqueUrls: merged.uniqueUrls,
+    uniqueDomains: merged.uniqueDomains,
+    scannedCount: okTools,
+    selectedTotal: enabled.length,
+    wallSeconds,
+  });
+  const graphStatus = document.getElementById("usernameGraphStatus");
+  if (graphStatus) {
+    if (!okTools) {
+      graphStatus.textContent = "В граф ничего не добавлено: нет успешных результатов.";
+      graphStatus.dataset.state = "warning";
+    } else {
+      try {
+        const saved = await persistUsernameGraph(username, rows);
+        graphStatus.textContent = "Граф обновлён: добавлено " + saved.nodes + " сущностей и " + saved.edges + " связей в активное расследование.";
+        graphStatus.dataset.state = "success";
+      } catch (error) {
+        graphStatus.textContent = "Поиск завершён, но граф не обновлён: " + (error.message || "ошибка сохранения");
+        graphStatus.dataset.state = "error";
+      }
+    }
+  }
+}
+
+function getUsernameResultCards() {
+  return [...document.querySelectorAll('.tab-content .result-card')].map((card) => {
+    const tab = card.closest('.tab-content');
+    const platform = card.querySelector('.result-platform')?.textContent?.trim() || 'Профиль';
+    const link = card.querySelector('a.result-url[href]');
+    const category = card.querySelector('.result-category, .u-sub')?.textContent?.trim() || '';
+    const fields = [...card.querySelectorAll('.u-field')].map((row) => ({
+      key: row.querySelector('.u-key')?.textContent?.trim() || '',
+      value: row.querySelector('.u-val')?.textContent?.trim() || '',
+    })).filter((x) => x.key || x.value);
+    return { card, tool: (tab?.id || '').replace(/^tab-/, ''), platform, url: link?.href || '', category, fields, verification: 'Не подтверждено' };
+  }).filter((row) => row.url);
+}
+
+function openUsernameProfileDetails(card) {
+  const platform = card.querySelector('.result-platform')?.textContent?.trim() || 'Профиль';
+  const url = card.querySelector('a.result-url[href]')?.href || '';
+  const category = card.querySelector('.result-category, .u-sub')?.textContent?.trim() || 'Категория не указана';
+  const tab = card.closest('.tab-content');
+  const fields = [...card.querySelectorAll('.u-field')].map((row) => [row.querySelector('.u-key')?.textContent?.trim() || '', row.querySelector('.u-val')?.textContent?.trim() || '']).filter((pair) => pair[0] || pair[1]);
+  document.getElementById('usernameProfileDialog')?.remove();
+  const dialog = document.createElement('div'); dialog.id = 'usernameProfileDialog'; dialog.className = 'username-profile-dialog'; dialog.setAttribute('role', 'dialog'); dialog.setAttribute('aria-modal', 'true'); dialog.setAttribute('aria-label', 'Подробности найденного профиля');
+  const panel = document.createElement('section'); panel.className = 'username-profile-dialog__panel';
+  const head = document.createElement('header'); head.className = 'username-profile-dialog__head';
+  const title = document.createElement('h3'); title.textContent = platform;
+  const close = document.createElement('button'); close.type = 'button'; close.className = 'username-profile-dialog__close'; close.textContent = 'Закрыть'; close.addEventListener('click', () => dialog.remove());
+  head.append(title, close); panel.append(head);
+  const source = document.createElement('p'); source.className = 'username-profile-dialog__source'; source.textContent = 'Источник: ' + ((tab?.id || '').replace(/^tab-/, '') || 'неизвестно') + ' · ' + category; panel.append(source);
+  const status = document.createElement('p'); status.className = 'username-profile-dialog__warning'; status.textContent = 'Статус: совпадение по username. Личность владельца не подтверждена.'; panel.append(status);
+  if (url) { const link = document.createElement('a'); link.href = url; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = url; link.className = 'username-profile-dialog__url'; panel.append(link); }
+  if (fields.length) { const list = document.createElement('dl'); list.className = 'username-profile-dialog__fields'; fields.forEach(([key, value]) => { const dt = document.createElement('dt'); dt.textContent = key; const dd = document.createElement('dd'); dd.textContent = value; list.append(dt, dd); }); panel.append(list); }
+  dialog.append(panel); dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.remove(); });
+  dialog.addEventListener('keydown', (event) => { if (event.key === 'Escape') dialog.remove(); });
+  document.body.append(dialog); close.focus();
+}
+
+function enhanceUsernameProfileCards() {
+  document.querySelectorAll('.tab-content .result-card').forEach((card) => {
+    if (card.querySelector('.username-profile-details')) return;
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'username-profile-details'; button.textContent = 'Подробнее';
+    button.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); openUsernameProfileDetails(card); });
+    card.append(button);
+  });
+}
+
+function refreshUsernameResultControls() {
+  enhanceUsernameProfileCards();
+  const active = document.querySelector('.tab-content.visible');
+  const cards = [...(active?.querySelectorAll('.result-card') || [])];
+  const query = (document.getElementById('usernameResultSearch')?.value || '').trim().toLowerCase();
+  const category = document.getElementById('usernameResultCategory')?.value || '';
+  const sort = document.getElementById('usernameResultSort')?.value || 'default';
+  cards.forEach((card) => {
+    const text = card.textContent.toLowerCase();
+    const categoryText = card.querySelector('.result-category, .u-sub')?.textContent || '';
+    card.hidden = Boolean((query && !text.includes(query)) || (category && !categoryText.includes(category)));
+  });
+  if (sort !== 'default') {
+    active?.querySelectorAll('.results-grid').forEach((grid) => {
+      [...grid.querySelectorAll(':scope > .result-card')].sort((a, b) => {
+        const aa = a.querySelector('.result-platform')?.textContent?.trim() || '';
+        const bb = b.querySelector('.result-platform')?.textContent?.trim() || '';
+        return aa.localeCompare(bb, 'ru') * (sort === 'za' ? -1 : 1);
+      }).forEach((card) => grid.appendChild(card));
+    });
+  }
+  const visible = cards.filter((card) => !card.hidden).length;
+  const count = document.getElementById('usernameVisibleCount');
+  if (count) count.textContent = cards.length ? `Показано ${visible} из ${cards.length}` : 'В этой вкладке пока нет карточек';
+}
+
+function downloadUsernameExport(format) {
+  const rows = getUsernameResultCards();
+  if (!rows.length) { alert('Нет найденных профилей для экспорта.'); return; }
+  let content, mime, extension;
+  if (format === 'json') {
+    content = JSON.stringify({ exportedAt: new Date().toISOString(), note: 'Совпадения по username не подтверждают личность.', results: rows.map(({ card, ...row }) => row) }, null, 2);
+    mime = 'application/json;charset=utf-8'; extension = 'json';
+  } else {
+    const columns = ['tool', 'platform', 'url', 'category', 'verification'];
+    const safe = (value) => { let v = String(value ?? ''); if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; return '"' + v.replace(/"/g, '""') + '"'; };
+    content = [columns, ...rows.map((row) => columns.map((key) => row[key]))].map((line) => line.map(safe).join(',')).join('\r\n');
+    mime = 'text/csv;charset=utf-8'; extension = 'csv';
+  }
+  const blob = new Blob(['\uFEFF', content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url; link.download = `username-results-${new Date().toISOString().slice(0, 10)}.${extension}`;
+  document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url);
+}
+
+function wireUsernameResultControls() {
+  document.getElementById('usernameResultSearch')?.addEventListener('input', refreshUsernameResultControls);
+  document.getElementById('usernameResultCategory')?.addEventListener('change', refreshUsernameResultControls);
+  document.getElementById('usernameResultSort')?.addEventListener('change', refreshUsernameResultControls);
+  document.getElementById('usernameExportJson')?.addEventListener('click', () => downloadUsernameExport('json'));
+  document.getElementById('usernameExportCsv')?.addEventListener('click', () => downloadUsernameExport('csv'));
+  document.getElementById('tabsNav')?.addEventListener('click', () => requestAnimationFrame(refreshUsernameResultControls));
+  refreshUsernameResultControls();
+}
+let searchInProgress = false;
+
+function wireSearch() {
+  const btn = document.getElementById("searchBtn");
+  const input = document.getElementById("searchInput");
+  if (!btn || !input) return;
+
+  async function go() {
+    if (searchInProgress) return;
+    const q = (input.value || "").trim();
+    if (!q) {
+      input.focus();
+      alert("Введите никнейм или имя для поиска.");
+      return;
+    }
+
+    if (getEnabledTools().length === 0) {
+      alert("Включите хотя бы один модуль (Sherlock, Maigret, Social Analyzer или Blackbird).");
+      return;
+    }
+
+    const empty = document.getElementById("emptyState");
+    const results = document.getElementById("resultsSection");
+    if (empty) empty.style.display = "none";
+    if (results) results.style.display = "block";
+
+    document.querySelectorAll(".tab-btn").forEach((b) => (b.className = "tab-btn"));
+    const sherBtn = document.querySelector('.tab-btn[data-tab="sherlock"]');
+    if (sherBtn) sherBtn.classList.add("active-cyan");
+    document.querySelectorAll(".tab-content").forEach((t) => t.classList.remove("visible"));
+    document.getElementById("tab-sherlock")?.classList.add("visible");
+
+    searchInProgress = true;
+    btn.disabled = true;
+    btn.setAttribute("aria-busy", "true");
+    const graphStatus = document.getElementById("usernameGraphStatus");
+    if (graphStatus) { graphStatus.textContent = "Ожидание результатов…"; graphStatus.dataset.state = "running"; }
+    try {
+      await runAll(q);
+    } finally {
+      searchInProgress = false;
+      btn.disabled = false;
+      btn.removeAttribute("aria-busy");
+    }
+  }
+
+  btn.addEventListener("click", () => void go());
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      void go();
+    }
+  });
+}
+
+function boot() {
+  wireUserMenu();
+  wireToolToggles();
+  wireTabs();
+  wireSearch();
+  wireUsernameResultControls();
+}
+
+boot();
+

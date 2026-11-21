@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "id": "ip-rdap",
+  "name": "IP / RDAP",
+  "version": "1.1.0",
+  "category": "network",
+  "description": "Пассивная информация о публичном IP через RDAP.",
+  "status": "integrated",
+  "enabled": true,
+  "entrypoints": {
+    "page_url": "/modules/ip-rdap/",
+    "frontend": "tools/ip-rdap/frontend/index.html",
+    "backend_adapter": "tools/ip-rdap/backend/tool.py",
+    "manifest_readme": "tools/ip-rdap/README.md",
+    "tool_class": "ToolIPRDAP"
+  },
+  "dependencies": {
+    "python": [],
+    "system": [],
+    "optional": []
+  },
+  "capabilities": [
+    "passive-public-ip-rdap-lookup"
+  ],
+  "legacy_paths": [
+    "static/p/ip-rdap/index.html",
+    "static/p/ip-rdap/page.js",
+    "backend/tools/tool_ip_rdap.py"
+  ],
+  "notes": [
+    "Канонические frontend и backend реализации находятся внутри tools/ip-rdap/.",
+    "Старый URL /p/ip-rdap/ перенаправляет на новый канонический адрес.",
+    "Существующий backend registry продолжает использовать стабильный compatibility adapter."
+  ]
+}

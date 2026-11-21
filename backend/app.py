@@ -5,7 +5,10 @@ import io
 import json
 import os
 import platform
+import shutil
 import sys
+import threading
+import uuid
 import zipfile
 from urllib.parse import quote, urlparse
 import ipaddress
@@ -16,6 +19,18 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 _BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
 _PROJECT_ROOT = os.path.dirname(_BACKEND_DIR)
 _GRABCAM_PANEL_DIR = os.path.join(_PROJECT_ROOT, "tools", "grabcam", "panel")
+_GRABCAM_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "grabcam", "frontend")
+_IP_RDAP_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "ip-rdap", "frontend")
+_PHONE_LOOKUP_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "phone-lookup", "frontend")
+_PERSON_INTELLIGENCE_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "person-intelligence", "frontend")
+_EVIDENCE_CENTER_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "evidence-center", "frontend")
+_INVESTIGATION_WORKSPACE_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "investigation-workspace", "frontend")
+_DOMAIN_WORKSPACE_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "domain-workspace", "frontend")
+_PHOTO_WORKSPACE_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "photo-workspace", "frontend")
+_USERNAME_WORKSPACE_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "username-workspace", "frontend")
+_AI_AGENT_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "ai-agent", "frontend")
+_HISTORY_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "history", "frontend")
+_GOOGLE_OSINT_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "google-osint", "frontend")
 if _BACKEND_DIR not in sys.path:
     sys.path.insert(0, _BACKEND_DIR)
 
@@ -25,12 +40,40 @@ from flask_cors import CORS
 from datetime import datetime, timezone, timedelta
 
 from db import init_db, save_run, get_run_history, get_last_successful_run, delete_run, clear_runs
+from db.graph_store import (get_graph_data, merge_graph_data, replace_graph_data, clear_graph_data, list_investigations, create_investigation, activate_investigation, rename_investigation, delete_investigation, list_investigation_notes, create_investigation_note, delete_investigation_note)
+from db.evidence_store import list_evidence, create_evidence, update_evidence, delete_evidence
 from tools import get_all_tools, get_tool, run_tool
 from tools.tool_formgrab import add_capture, get_captures, get_grab_page_html, get_or_create_token
 from settings_keys import get_keys_for_api, save_keys_from_api, load_env_into_os
 
 from css_bundle import BUNDLE_TOOL_IDS, build_tool_css_bundle
+from module_registry import discover_modules, get_navigation_modules
+from module_runtime import get_runtime_module_issues
 from update_manager import check_update, install_update, UpdateError
+from tool_manager import inspect_tools, install_missing_tools
+
+# Background update job state for the local UI.
+_UPDATE_JOB_LOCK = threading.Lock()
+_UPDATE_JOB = None
+
+
+def _run_update_job(job_id):
+    global _UPDATE_JOB
+    def report(percent, stage):
+        with _UPDATE_JOB_LOCK:
+            if _UPDATE_JOB and _UPDATE_JOB.get('id') == job_id:
+                _UPDATE_JOB.update({'progress': percent, 'stage': stage})
+    try:
+        result = install_update(progress=report)
+        with _UPDATE_JOB_LOCK:
+            if _UPDATE_JOB and _UPDATE_JOB.get('id') == job_id:
+                _UPDATE_JOB.update({'state': 'completed', 'progress': 100, 'stage': 'Обновление завершено', 'result': result})
+        if result.get('updated'):
+            threading.Timer(3.0, lambda: os._exit(75)).start()
+    except Exception as exc:
+        with _UPDATE_JOB_LOCK:
+            if _UPDATE_JOB and _UPDATE_JOB.get('id') == job_id:
+                _UPDATE_JOB.update({'state': 'error', 'stage': 'Ошибка обновления', 'error': str(exc)})
 
 import requests
 from bs4 import BeautifulSoup
@@ -96,12 +139,50 @@ def username_page_no_slash():
 
 @app.route("/username/")
 def username_page():
-    """Автономная страница Username: static/username/index.html."""
-    base = os.path.join(app.static_folder, "username")
-    index_path = os.path.join(base, "index.html")
-    if not os.path.isfile(index_path):
-        return jsonify({"error": "Страница не найдена", "page": "username"}), 404
-    return send_from_directory(base, "index.html")
+    """Compatibility URL for the canonical Username Workspace module."""
+    return redirect("/modules/username-workspace/", code=302)
+
+
+@app.route("/modules/username-workspace/", methods=["GET"])
+def username_workspace_module_page():
+    """Serve the canonical Username Workspace frontend."""
+    return send_from_directory(_USERNAME_WORKSPACE_FRONTEND_DIR, "index.html")
+
+
+@app.route("/modules/username-workspace/<path:filename>", methods=["GET"])
+def username_workspace_module_assets(filename):
+    """Serve static assets owned by the Username Workspace module."""
+    return send_from_directory(_USERNAME_WORKSPACE_FRONTEND_DIR, filename)
+
+
+@app.route("/modules/ai-agent/", methods=["GET"])
+def ai_agent_module_page():
+    return send_from_directory(_AI_AGENT_FRONTEND_DIR, "index.html")
+
+
+@app.route("/modules/ai-agent/<path:filename>", methods=["GET"])
+def ai_agent_module_assets(filename):
+    return send_from_directory(_AI_AGENT_FRONTEND_DIR, filename)
+
+
+@app.route("/modules/history/", methods=["GET"])
+def history_module_page():
+    return send_from_directory(_HISTORY_FRONTEND_DIR, "index.html")
+
+
+@app.route("/modules/history/<path:filename>", methods=["GET"])
+def history_module_assets(filename):
+    return send_from_directory(_HISTORY_FRONTEND_DIR, filename)
+
+
+@app.route("/modules/google-osint/", methods=["GET"])
+def google_osint_module_page():
+    return send_from_directory(_GOOGLE_OSINT_FRONTEND_DIR, "index.html")
+
+
+@app.route("/modules/google-osint/<path:filename>", methods=["GET"])
+def google_osint_module_assets(filename):
+    return send_from_directory(_GOOGLE_OSINT_FRONTEND_DIR, filename)
 
 
 @app.route("/photo")
@@ -112,12 +193,20 @@ def photo_page_no_slash():
 
 @app.route("/photo/")
 def photo_page():
-    """Автономная страница Фото: static/photo/index.html."""
-    base = os.path.join(app.static_folder, "photo")
-    index_path = os.path.join(base, "index.html")
-    if not os.path.isfile(index_path):
-        return jsonify({"error": "Страница не найдена", "page": "photo"}), 404
-    return send_from_directory(base, "index.html")
+    """Compatibility URL for the canonical Photo Workspace module."""
+    return redirect("/modules/photo-workspace/", code=302)
+
+
+@app.route("/modules/photo-workspace/", methods=["GET"])
+def photo_workspace_module_page():
+    """Serve the canonical Photo Workspace frontend."""
+    return send_from_directory(_PHOTO_WORKSPACE_FRONTEND_DIR, "index.html")
+
+
+@app.route("/modules/photo-workspace/<path:filename>", methods=["GET"])
+def photo_workspace_module_assets(filename):
+    """Serve static assets owned by the Photo Workspace module."""
+    return send_from_directory(_PHOTO_WORKSPACE_FRONTEND_DIR, filename)
 
 
 @app.route("/domain")
@@ -128,12 +217,20 @@ def domain_page_no_slash():
 
 @app.route("/domain/")
 def domain_page():
-    """Автономная страница Domain tools: static/domain/index.html."""
-    base = os.path.join(app.static_folder, "domain")
-    index_path = os.path.join(base, "index.html")
-    if not os.path.isfile(index_path):
-        return jsonify({"error": "Страница не найдена", "page": "domain"}), 404
-    return send_from_directory(base, "index.html")
+    """Compatibility URL for the canonical Domain Workspace module."""
+    return redirect("/modules/domain-workspace/", code=302)
+
+
+@app.route("/modules/domain-workspace/", methods=["GET"])
+def domain_workspace_module_page():
+    """Serve the canonical Domain Workspace frontend."""
+    return send_from_directory(_DOMAIN_WORKSPACE_FRONTEND_DIR, "index.html")
+
+
+@app.route("/modules/domain-workspace/<path:filename>", methods=["GET"])
+def domain_workspace_module_assets(filename):
+    """Serve static assets owned by the Domain Workspace module."""
+    return send_from_directory(_DOMAIN_WORKSPACE_FRONTEND_DIR, filename)
 
 
 @app.route("/api/exif", methods=["POST"])
@@ -537,7 +634,8 @@ def api_photo_export_report():
             lines += [f"### {k}", "", "```json", preview, "```", ""]
     if isinstance(search_results, list) and search_results:
         lines += ["## Web search", "", "```json", json.dumps(search_results, ensure_ascii=False, indent=2)[:4000], "```", ""]
-    return jsonify({"success": True, "report": "\n".join(lines)})
+    return jsonify({"success": True, "report": "
+".join(lines)})
 
 
 # AI/VLM endpoints в текущем проекте не реализованы — отдаём JSON, чтобы фронт не падал на HTML.
@@ -786,7 +884,8 @@ def api_host_os():
 def tool_css_bundle(tool_id: str):
     """Один CSS на вкладку: общая база + стили инструмента (без цепочки link в HTML)."""
     if tool_id not in BUNDLE_TOOL_IDS:
-        return Response("/* unknown tool bundle */\n", status=404, mimetype="text/css; charset=utf-8")
+        return Response("/* unknown tool bundle */
+", status=404, mimetype="text/css; charset=utf-8")
     try:
         body = build_tool_css_bundle(
             static_root=app.static_folder,
@@ -794,7 +893,8 @@ def tool_css_bundle(tool_id: str):
             tool_id=tool_id,
         )
     except OSError as e:
-        return Response(f"/* bundle error: {e} */\n", status=500, mimetype="text/css; charset=utf-8")
+        return Response(f"/* bundle error: {e} */
+", status=500, mimetype="text/css; charset=utf-8")
     return Response(
         body,
         mimetype="text/css; charset=utf-8",
@@ -817,10 +917,238 @@ def grabcam_panel_static(path):
 
 # --- API ---
 
+@app.route("/modules/grabcam/", methods=["GET"])
+def grabcam_module_page():
+    """Serve the canonical GrabCam module frontend."""
+    return send_from_directory(_GRABCAM_FRONTEND_DIR, "index.html")
+
+
+@app.route("/modules/grabcam/<path:filename>", methods=["GET"])
+def grabcam_module_assets(filename):
+    """Serve static assets owned by the GrabCam module."""
+    return send_from_directory(_GRABCAM_FRONTEND_DIR, filename)
+
+
+@app.route("/modules/ip-rdap/", methods=["GET"])
+def ip_rdap_module_page():
+    """Serve the canonical IP/RDAP module frontend without stale browser caching."""
+    response = send_from_directory(_IP_RDAP_FRONTEND_DIR, "index.html")
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
+
+@app.route("/modules/ip-rdap/<path:filename>", methods=["GET"])
+def ip_rdap_module_assets(filename):
+    """Serve IP/RDAP assets without stale browser caching."""
+    response = send_from_directory(_IP_RDAP_FRONTEND_DIR, filename)
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
+
+@app.route("/modules/investigation-workspace/", methods=["GET"])
+def investigation_workspace_module_page():
+    response = send_from_directory(_INVESTIGATION_WORKSPACE_FRONTEND_DIR, "index.html")
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return response
+
+
+@app.route("/modules/investigation-workspace/<path:filename>", methods=["GET"])
+def investigation_workspace_module_assets(filename):
+    return send_from_directory(_INVESTIGATION_WORKSPACE_FRONTEND_DIR, filename)
+
+
+@app.route("/modules/evidence-center/", methods=["GET"])
+def evidence_center_module_page():
+    response = send_from_directory(_EVIDENCE_CENTER_FRONTEND_DIR, "index.html")
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return response
+
+
+@app.route("/modules/evidence-center/<path:filename>", methods=["GET"])
+def evidence_center_module_assets(filename):
+    return send_from_directory(_EVIDENCE_CENTER_FRONTEND_DIR, filename)
+
+
+@app.route("/api/evidence", methods=["GET", "POST"])
+def api_evidence():
+    try:
+        if request.method == "GET":
+            return jsonify(list_evidence(request.args.get("investigation_id")))
+        return jsonify(create_evidence(request.get_json(silent=True) or {})), 201
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
+@app.route("/api/evidence/<item_id>", methods=["PATCH", "DELETE"])
+def api_evidence_item(item_id):
+    try:
+        if request.method == "PATCH":
+            return jsonify(update_evidence(item_id, request.get_json(silent=True) or {}))
+        return jsonify(delete_evidence(item_id))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 404
+
+
+@app.route("/modules/person-intelligence/", methods=["GET"])
+def person_intelligence_module_page():
+    response = send_from_directory(_PERSON_INTELLIGENCE_FRONTEND_DIR, "index.html")
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return response
+
+
+@app.route("/modules/person-intelligence/<path:filename>", methods=["GET"])
+def person_intelligence_module_assets(filename):
+    response = send_from_directory(_PERSON_INTELLIGENCE_FRONTEND_DIR, filename)
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return response
+
+
+@app.route("/modules/phone-lookup/", methods=["GET"])
+def phone_lookup_module_page():
+    response = send_from_directory(_PHONE_LOOKUP_FRONTEND_DIR, "index.html")
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return response
+
+
+@app.route("/modules/phone-lookup/<path:filename>", methods=["GET"])
+def phone_lookup_module_assets(filename):
+    response = send_from_directory(_PHONE_LOOKUP_FRONTEND_DIR, filename)
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return response
+
+
+@app.route("/api/modules", methods=["GET"])
+def api_modules_list():
+    """Return manifest diagnostics plus backend runtime loading status."""
+    # Ensure the central registry has performed its one-time runtime load before
+    # exposing runtime status in the diagnostics endpoint.
+    get_all_tools()
+    result = discover_modules(_PROJECT_ROOT)
+    runtime_issues = get_runtime_module_issues()
+    issue_by_module = {item["module_id"]: item for item in runtime_issues}
+    for module in result["modules"]:
+        if module["id"] in issue_by_module:
+            module["runtime_ok"] = False
+            module["issues"].append({
+                "code": issue_by_module[module["id"]]["code"],
+                "message": issue_by_module[module["id"]]["message"],
+                "severity": "error",
+            })
+        elif module.get("status") == "integrated" and module.get("entrypoints", {}).get("backend_adapter"):
+            module["runtime_ok"] = True
+    result["runtime_issues"] = runtime_issues
+    result["summary"]["runtime_errors"] = len(runtime_issues)
+    return jsonify(result)
+
+
+@app.route("/api/navigation", methods=["GET"])
+def api_navigation_list():
+    """Return manifest entries only when their canonical page route is registered."""
+    registered_routes = {rule.rule for rule in app.url_map.iter_rules()}
+    modules = [
+        module for module in get_navigation_modules(_PROJECT_ROOT)
+        if module["href"] in registered_routes
+    ]
+    return jsonify({"modules": modules})
+
+
 @app.route("/api/tools", methods=["GET"])
 def api_tools_list():
     """Список доступных инструментов."""
     return jsonify(get_all_tools())
+
+
+@app.route("/api/investigations", methods=["GET", "POST"])
+def api_investigations():
+    if request.method == "GET":
+        return jsonify(list_investigations())
+    data = request.get_json(silent=True) or {}
+    try:
+        return jsonify(create_investigation(data.get("name"))), 201
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
+@app.route("/api/investigations/<investigation_id>/activate", methods=["POST"])
+def api_activate_investigation(investigation_id):
+    try:
+        graph = activate_investigation(investigation_id)
+        return jsonify({"graph": graph, "investigations": list_investigations()})
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 404
+
+
+@app.route("/api/investigations/<investigation_id>", methods=["PATCH", "DELETE"])
+def api_investigation_item(investigation_id):
+    data = request.get_json(silent=True) or {}
+    try:
+        if request.method == "PATCH":
+            return jsonify(rename_investigation(investigation_id, data.get("name")))
+        result = delete_investigation(investigation_id)
+        result["investigations"] = list_investigations()
+        return jsonify(result)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
+@app.route("/api/investigations/notes", methods=["GET", "POST"])
+def api_investigation_notes():
+    """List or create notes attached to the active investigation."""
+    try:
+        if request.method == "GET":
+            return jsonify(list_investigation_notes(request.args.get("investigation_id")))
+        data = request.get_json(silent=True) or {}
+        return jsonify(create_investigation_note(data.get("content"), data.get("investigation_id"))), 201
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
+@app.route("/api/investigations/notes/<note_id>", methods=["DELETE"])
+def api_investigation_note_item(note_id):
+    try:
+        return jsonify(delete_investigation_note(note_id, request.args.get("investigation_id")))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 404
+
+
+@app.route("/api/graph", methods=["GET", "PUT", "DELETE"])
+def api_relationship_graph():
+    """Чтение, замена или очистка постоянного графа расследований."""
+    if request.method == "GET":
+        return jsonify(get_graph_data())
+    if request.method == "DELETE":
+        return jsonify(clear_graph_data())
+    data = request.get_json(silent=True) or {}
+    try:
+        return jsonify(replace_graph_data(data))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
+@app.route("/api/graph/merge", methods=["POST"])
+def api_relationship_graph_merge():
+    """Добавить сущности и связи в общий граф, не удаляя предыдущие расследования."""
+    data = request.get_json(silent=True) or {}
+    try:
+        return jsonify(merge_graph_data(data))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
+
+@app.route("/api/public-person-search", methods=["POST"])
+def api_public_person_search():
+    """Transient public-web lookup. Deliberately excluded from run history."""
+    data = request.get_json(silent=True) or {}
+    tool = get_tool("phone-lookup")
+    if tool is None or not hasattr(tool, "search_person"):
+        return jsonify({"error": "Инструмент поиска человека недоступен."}), 503
+    result = tool.search_person(data.get("name", ""), data.get("location", ""))
+    return jsonify(result), 200 if result.get("success") else 400
 
 
 @app.route("/api/tools/<tool_id>/run", methods=["POST"])
@@ -830,15 +1158,7 @@ def api_tool_run(tool_id):
     result = run_tool(tool_id, data)
     if not result.get("started"):
         save_run(tool_id, data, result if result.get("success") else None, result.get("error"))
-    if tool_id == "grabcam" and result.get("local_url"):
-        # Сохраняем порт из local_url, но подставляем хост запроса (для доступа из локальной сети).
-        host = (request.host or "127.0.0.1:5000").split(":")[0]
-        try:
-            u = urlparse(result["local_url"])
-            port = u.port or 3333
-        except Exception:
-            port = 3333
-        result["local_url"] = "http://{}:{}".format(host, port)
+    # The demo server binds to loopback only; never rewrite this to a LAN/public host.
     if not result.get("success") and result.get("error") == f"Unknown tool: {tool_id}":
         return jsonify({"error": result["error"]}), 404
     return jsonify(result)
@@ -889,9 +1209,39 @@ def _verify_one(url: str, timeout_sec: float = 6.0) -> dict:
         ms = int((datetime.now().timestamp() - t0) * 1000)
         code = int(getattr(r, "status_code", 0) or 0)
         final = str(getattr(r, "url", u) or u)
-        ok = 200 <= code < 400
-        hint = "ok" if ok else ("blocked" if code in {401, 403, 429} else "not_found" if code == 404 else "http_error")
-        return {"url": u, "ok": ok, "status": code, "final_url": final, "latency_ms": ms, "hint": hint}
+        # HTTP 200 only proves that a page responded. Many platforms return
+        # soft-404 pages or generic landing pages for nonexistent usernames.
+        body = str(getattr(r, "text", "") or "")[:12000].lower()
+        soft_404_markers = (
+            "page not found", "user not found", "profile not found",
+            "account not found", "this page does not exist",
+            "the page you are looking for", "couldn't find this user",
+            "could not find this user", "такой страницы нет",
+            "пользователь не найден", "страница не найдена",
+        )
+        soft_404 = code == 200 and any(marker in body for marker in soft_404_markers)
+        try:
+            original = urlparse(u)
+            resolved = urlparse(final)
+            redirected_to_root = bool(
+                original.path.strip("/") and not resolved.path.strip("/")
+                and (original.hostname or "").lower() == (resolved.hostname or "").lower()
+            )
+        except Exception:
+            redirected_to_root = False
+        if code == 404 or soft_404:
+            verdict = "not_found"
+        elif code in {401, 403, 429}:
+            verdict = "blocked"
+        elif 200 <= code < 400:
+            verdict = "reachable_unconfirmed"
+        else:
+            verdict = "http_error"
+        return {
+            "url": u, "ok": verdict == "reachable_unconfirmed", "status": code,
+            "final_url": final, "latency_ms": ms, "hint": verdict,
+            "soft_404": soft_404, "redirected_to_root": redirected_to_root,
+        }
     except requests.Timeout:
         return {"url": u, "ok": False, "error": "timeout"}
     except requests.RequestException as e:
@@ -989,317 +1339,78 @@ def api_grabcam_run_status():
     if not tool or not hasattr(tool, "get_run_status"):
         return jsonify({"running": False, "link": None, "local_url": None, "error": "Инструмент не найден"})
     data = tool.get_run_status()
-    if data.get("local_url"):
-        host = (request.host or "127.0.0.1:5000").split(":")[0]
-        try:
-            u = urlparse(data["local_url"])
-            port = u.port or 3333
-        except Exception:
-            port = 3333
-        data["local_url"] = "http://{}:{}".format(host, port)
+    # Keep the loopback URL: the local demo server is intentionally not LAN-exposed.
     return jsonify(data)
-
-
-@app.route("/api/tools/grabcam/session-stats", methods=["GET"])
-def api_grabcam_session_stats():
-    """Реальные данные сводки сессии: уникальные IP (устройства) и количество целей по данным из Photo и form_captures."""
-    unique_ips = set()
-    if os.path.isdir(_GRABCAM_PHOTO_DIR):
-        for name in os.listdir(_GRABCAM_PHOTO_DIR):
-            sub = os.path.join(_GRABCAM_PHOTO_DIR, name)
-            if os.path.isdir(sub) and ".." not in name and name.strip():
-                unique_ips.add(name.strip())
-    if os.path.isfile(_GRABCAM_FORM_CAPTURES_FILE):
-        try:
-            with open(_GRABCAM_FORM_CAPTURES_FILE, "r", encoding="utf-8", errors="replace") as f:
-                data = json.load(f)
-            for c in (data.get("captures") or []):
-                ip = (c.get("ip") or "").strip()
-                if ip:
-                    unique_ips.add(ip)
-        except (OSError, ValueError):
-            pass
-    count = len(unique_ips)
-    return jsonify({"unique_ips": count, "targets": count})
 
 
 @app.route("/api/tools/grabcam/stop", methods=["POST"])
 def api_grabcam_stop():
-    """Остановить Grabcam (PHP/Serveo)."""
+    """Остановить локальный сервер и/или туннель учебной демонстрации."""
     tool = get_tool("grabcam")
     if not tool or not hasattr(tool, "stop_run"):
-        return jsonify({"success": False, "error": "Инструмент не найден"})
+        return jsonify({"success": False, "error": "Инструмент не найден"}), 404
     ok, msg = tool.stop_run()
     return jsonify({"success": ok, "message": msg})
 
 
-# Корень проекта уже задан вверху
-_GRABCAM_PHOTO_DIR = os.path.join(_PROJECT_ROOT, "tools", "grabcam", "Photo")
+# Legacy GrabCam collection endpoints are intentionally disabled.
+# The current demo does not collect or retain photos, audio, screen captures,
+# location history, form submissions, or credentials.
+def _grabcam_legacy_disabled():
+    return jsonify({
+        "success": False,
+        "error": "Этот endpoint отключён: учебная версия GrabCam не собирает и не хранит данные посетителей.",
+    }), 410
+
+
+@app.route("/api/tools/grabcam/session-stats", methods=["GET"])
+def api_grabcam_session_stats():
+    return _grabcam_legacy_disabled()
 
 
 @app.route("/api/tools/grabcam/photos", methods=["GET"])
 def api_grabcam_photos():
-    """Список последних снятых фото: задняя (back) и передняя (front) камера, галерея. Экран — отдельный endpoint."""
-    if not os.path.isdir(_GRABCAM_PHOTO_DIR):
-        return jsonify({"photos": [], "total": 0, "unique_devices": 0})
-    limit = min(int(request.args.get("limit", 30) or 30), 100)
-    allowed_cameras = ("back", "front", "gallery")
-    photos = []
-    for root, _, files in os.walk(_GRABCAM_PHOTO_DIR):
-        for f in files:
-            if f.lower().endswith((".png", ".jpg", ".jpeg")):
-                full = os.path.join(root, f)
-                try:
-                    mtime = os.path.getmtime(full)
-                except OSError:
-                    mtime = 0
-                rel = os.path.relpath(full, _GRABCAM_PHOTO_DIR)
-                if ".." in rel or rel.startswith("/"):
-                    continue
-                rel_norm = rel.replace("\\", "/")
-                parts = rel_norm.split("/")
-                ip = parts[0] if len(parts) >= 1 else ""
-                camera = parts[1] if len(parts) >= 2 else ""
-                if camera not in allowed_cameras:
-                    continue
-                photos.append({"path": rel_norm, "mtime": mtime, "ip": ip, "camera": camera})
-    photos.sort(key=lambda x: -x["mtime"])
-    total_all = len(photos)
-    unique_ips = len(set(p["ip"] for p in photos))
-    photos = photos[:limit]
-    for p in photos:
-        p["url"] = "/api/tools/grabcam/photo?path=" + quote(p["path"], safe="")
-    return jsonify({
-        "photos": photos,
-        "total": total_all,
-        "unique_devices": unique_ips,
-    })
+    return _grabcam_legacy_disabled()
 
 
 @app.route("/api/tools/grabcam/photo", methods=["GET"])
 def api_grabcam_photo():
-    """Отдать одно фото из папки Photo. Query: path=IP/front/file.png"""
-    photo_path = (request.args.get("path") or "").strip()
-    if not photo_path or ".." in photo_path or photo_path.startswith("/") or "\\" in photo_path:
-        return "", 404
-    photo_path = photo_path.replace("\\", "/")
-    return send_from_directory(_GRABCAM_PHOTO_DIR, photo_path)
-
-
-def _collect_media_by_type(media_type, allowed_extensions):
-    """Собирает файлы из Photo/IP/media_type/ (screen или audio)."""
-    if not os.path.isdir(_GRABCAM_PHOTO_DIR):
-        return []
-    items = []
-    for name in os.listdir(_GRABCAM_PHOTO_DIR):
-        sub = os.path.join(_GRABCAM_PHOTO_DIR, name)
-        type_dir = os.path.join(sub, media_type)
-        if not os.path.isdir(type_dir) or ".." in name:
-            continue
-        for f in os.listdir(type_dir):
-            if not any(f.lower().endswith(ext) for ext in allowed_extensions):
-                continue
-            full = os.path.join(type_dir, f)
-            try:
-                mtime = os.path.getmtime(full)
-            except OSError:
-                mtime = 0
-            rel = os.path.relpath(full, _GRABCAM_PHOTO_DIR).replace("\\", "/")
-            items.append({"path": rel, "mtime": mtime, "ip": name})
-    return items
+    return _grabcam_legacy_disabled()
 
 
 @app.route("/api/tools/grabcam/screen", methods=["GET"])
 def api_grabcam_screen():
-    """Список захватов экрана (Photo/IP/screen/)."""
-    limit = min(int(request.args.get("limit", 30) or 30), 100)
-    items = _collect_media_by_type("screen", (".png", ".jpg", ".jpeg"))
-    items.sort(key=lambda x: -x["mtime"])
-    items = items[:limit]
-    for p in items:
-        p["url"] = "/api/tools/grabcam/photo?path=" + quote(p["path"], safe="")
-    return jsonify({"items": items, "total": len(items)})
+    return _grabcam_legacy_disabled()
 
 
 @app.route("/api/tools/grabcam/audio", methods=["GET"])
 def api_grabcam_audio():
-    """Список записей микрофона (Photo/IP/audio/)."""
-    limit = min(int(request.args.get("limit", 50) or 50), 150)
-    items = _collect_media_by_type("audio", (".webm", ".mp4", ".ogg", ".wav"))
-    items.sort(key=lambda x: -x["mtime"])
-    items = items[:limit]
-    for p in items:
-        p["url"] = "/api/tools/grabcam/file?path=" + quote(p["path"], safe="")
-    return jsonify({"items": items, "total": len(items)})
+    return _grabcam_legacy_disabled()
 
 
 @app.route("/api/tools/grabcam/file", methods=["GET"])
 def api_grabcam_file():
-    """Отдать файл из Photo (аудио и т.д.)."""
-    path = (request.args.get("path") or "").strip()
-    if not path or ".." in path or path.startswith("/") or "\\" in path:
-        return "", 404
-    path = path.replace("\\", "/")
-    return send_from_directory(_GRABCAM_PHOTO_DIR, path)
-
-
-def _parse_geo_info(content):
-    """Парсит geo_info.txt в словарь."""
-    d = {"ip": "", "country": "", "region": "", "city": "", "lat": "", "lon": "", "isp": "", "last_update": ""}
-    for line in content.splitlines():
-        line = line.strip()
-        if ":" not in line:
-            continue
-        key, _, val = line.partition(":")
-        key, val = key.strip().lower(), val.strip()
-        if key == "ip":
-            d["ip"] = val
-        elif key == "country":
-            d["country"] = val
-        elif key == "region":
-            d["region"] = val
-        elif key == "city":
-            d["city"] = val
-        elif key == "latitude":
-            d["lat"] = val
-        elif key == "longitude":
-            d["lon"] = val
-        elif key == "isp":
-            d["isp"] = val
-        elif key == "last update":
-            d["last_update"] = val
-    return d
+    return _grabcam_legacy_disabled()
 
 
 @app.route("/api/tools/grabcam/locations", methods=["GET"])
 def api_grabcam_locations():
-    """Список IP и местоположений из Photo/*/geo_info.txt."""
-    if not os.path.isdir(_GRABCAM_PHOTO_DIR):
-        return jsonify({"locations": []})
-    locations = []
-    for name in os.listdir(_GRABCAM_PHOTO_DIR):
-        sub = os.path.join(_GRABCAM_PHOTO_DIR, name)
-        if not os.path.isdir(sub) or ".." in name:
-            continue
-        geo_file = os.path.join(sub, "geo_info.txt")
-        if not os.path.isfile(geo_file):
-            continue
-        try:
-            with open(geo_file, "r", encoding="utf-8", errors="replace") as f:
-                content = f.read()
-        except OSError:
-            continue
-        geo = _parse_geo_info(content)
-        geo["device_id"] = name
-        try:
-            mtime = os.path.getmtime(geo_file)
-            geo["mtime"] = mtime
-        except OSError:
-            geo["mtime"] = 0
-        locations.append(geo)
-    locations.sort(key=lambda x: -x["mtime"])
-    return jsonify({"locations": locations})
+    return _grabcam_legacy_disabled()
 
 
-_GRABCAM_FORM_CAPTURES_FILE = os.path.join(_PROJECT_ROOT, "tools", "grabcam", "form_captures.json")
-_GRABCAM_OPTIONS_FILE = os.path.join(_PROJECT_ROOT, "tools", "grabcam", "options.json")
-
-
-@app.route("/api/tools/grabcam/options", methods=["GET"])
-def api_grabcam_options_get():
-    """Текущие опции (камера, гео, форма, галерея, микрофон, экран). Меняются на лету без перезапуска."""
-    default = {"camera": True, "geo": True, "form": True, "gallery": False, "mic": False, "screen": False}
-    if not os.path.isfile(_GRABCAM_OPTIONS_FILE):
-        return jsonify(default)
-    try:
-        with open(_GRABCAM_OPTIONS_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        for k in default:
-            if k in data and isinstance(data[k], bool):
-                default[k] = data[k]
-    except (OSError, ValueError):
-        pass
-    return jsonify(default)
-
-
-@app.route("/api/tools/grabcam/options", methods=["POST"])
-def api_grabcam_options_post():
-    """Сохранить опции. Страница фишинга подхватывает их без перезапуска."""
-    data = request.get_json(silent=True) or {}
-    options = {
-        "camera": bool(data.get("camera", True)),
-        "geo": bool(data.get("geo", True)),
-        "form": bool(data.get("form", True)),
-        "gallery": bool(data.get("gallery", False)),
-        "mic": bool(data.get("mic", False)),
-        "screen": bool(data.get("screen", False)),
-    }
-    try:
-        with open(_GRABCAM_OPTIONS_FILE, "w", encoding="utf-8") as f:
-            json.dump(options, f, ensure_ascii=False, indent=2)
-    except OSError:
-        return jsonify({"success": False, "error": "Не удалось записать файл"}), 500
-    return jsonify({"success": True, "options": options})
+@app.route("/api/tools/grabcam/options", methods=["GET", "POST"])
+def api_grabcam_options():
+    return _grabcam_legacy_disabled()
 
 
 @app.route("/api/tools/grabcam/form-captures", methods=["GET"])
 def api_grabcam_form_captures():
-    """Введённые данные с формы входа на странице фишинга (одна ссылка Grabcam)."""
-    limit = min(int(request.args.get("limit", 100) or 100), 500)
-    captures = []
-    if os.path.isfile(_GRABCAM_FORM_CAPTURES_FILE):
-        try:
-            with open(_GRABCAM_FORM_CAPTURES_FILE, "r", encoding="utf-8", errors="replace") as f:
-                data = json.load(f)
-            captures = (data.get("captures") or [])[-limit:]
-            captures = list(reversed(captures))
-        except (OSError, ValueError):
-            pass
-    return jsonify({"captures": captures})
-
-
-def _build_grabcam_export_zip():
-    """Собирает ZIP: Photo/, form_captures.json, report.txt."""
-    buf = io.BytesIO()
-    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-        if os.path.isfile(_GRABCAM_FORM_CAPTURES_FILE):
-            with open(_GRABCAM_FORM_CAPTURES_FILE, "r", encoding="utf-8", errors="replace") as f:
-                zf.writestr("form_captures.json", f.read())
-        report_lines = ["Grabcam Export Report", "=====================", ""]
-        if os.path.isdir(_GRABCAM_PHOTO_DIR):
-            for root, _, files in os.walk(_GRABCAM_PHOTO_DIR):
-                for f in files:
-                    full = os.path.join(root, f)
-                    rel = os.path.relpath(full, _GRABCAM_PHOTO_DIR)
-                    arcname = "Photo/" + rel.replace("\\", "/")
-                    try:
-                        zf.write(full, arcname)
-                    except OSError:
-                        pass
-            for name in os.listdir(_GRABCAM_PHOTO_DIR):
-                sub = os.path.join(_GRABCAM_PHOTO_DIR, name)
-                if os.path.isdir(sub) and ".." not in name:
-                    report_lines.append(f"Device: {name.replace('_', '.')}")
-                    report_lines.append(f"  Folder: Photo/{name}/")
-                    report_lines.append("")
-        zf.writestr("report.txt", "\n".join(report_lines))
-    buf.seek(0)
-    return buf.getvalue()
+    return _grabcam_legacy_disabled()
 
 
 @app.route("/api/tools/grabcam/export", methods=["GET"])
 def api_grabcam_export():
-    """Скачать все данные Grabcam одним ZIP-архивом."""
-    try:
-        data = _build_grabcam_export_zip()
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    return send_file(
-        io.BytesIO(data),
-        mimetype="application/zip",
-        as_attachment=True,
-        download_name="grabcam_export.zip",
-    )
+    return _grabcam_legacy_disabled()
 
 
 @app.route("/api/tools/instagram-bruter/tried-count", methods=["GET"])
@@ -1492,6 +1603,70 @@ def _local_update_request():
     return True
 
 
+@app.route("/api/tools/dependencies", methods=["GET", "POST"])
+def api_tools_dependencies():
+    """Проверка и установка Python-зависимостей инструментов; только локальный интерфейс."""
+    if not _local_update_request():
+        return jsonify({"error": "Доступ разрешён только с этого компьютера."}), 403
+    try:
+        if request.method == "POST":
+            return jsonify({"success": True, "tools": install_missing_tools()})
+        return jsonify({"success": True, "tools": inspect_tools()})
+    except Exception as exc:
+        app.logger.exception("Tool dependency manager failed")
+        return jsonify({"success": False, "error": str(exc)}), 500
+
+
+@app.route("/api/system/health", methods=["GET"])
+def api_system_health():
+    """Локальная диагностика backend, зависимостей инструментов, модулей и диска."""
+    try:
+        tool_rows = inspect_tools()
+        tool_issues = [
+            row for row in tool_rows
+            if row.get("status") != "ready"
+            or row.get("missing_packages")
+            or row.get("missing_binaries")
+        ]
+        module_issues = get_runtime_module_issues()
+        try:
+            module_total = len(get_navigation_modules())
+        except Exception:
+            module_total = 0
+        disk = shutil.disk_usage(_PROJECT_ROOT)
+        free_percent = (disk.free / disk.total * 100) if disk.total else 0
+        storage_status = "ok" if free_percent >= 10 else "warning"
+        return jsonify({
+            "success": True,
+            "status": "healthy" if not tool_issues and not module_issues and storage_status == "ok" else "degraded",
+            "checked_at": datetime.now(timezone.utc).isoformat(),
+            "backend": {
+                "status": "ok",
+                "python_version": platform.python_version(),
+                "platform": platform.platform(),
+                "process_id": os.getpid(),
+            },
+            "tools": {
+                "total": len(tool_rows),
+                "ready": len(tool_rows) - len(tool_issues),
+                "issues": tool_issues,
+            },
+            "modules": {
+                "total": module_total,
+                "issues": module_issues,
+            },
+            "storage": {
+                "status": storage_status,
+                "free_bytes": disk.free,
+                "total_bytes": disk.total,
+                "free_percent": round(free_percent, 2),
+            },
+        })
+    except Exception as exc:
+        app.logger.exception("System health check failed")
+        return jsonify({"success": False, "error": str(exc)}), 500
+
+
 @app.route("/api/system/update", methods=["GET"])
 def api_system_update_check():
     if not _local_update_request():
@@ -1504,14 +1679,29 @@ def api_system_update_check():
 
 @app.route("/api/system/update", methods=["POST"])
 def api_system_update_install():
+    global _UPDATE_JOB
     if not _local_update_request():
         return jsonify({"error": "Доступ разрешён только с этого компьютера."}), 403
     if request.headers.get("X-Requested-With") != "OSINT-Panel":
         return jsonify({"error": "Недопустимый запрос обновления."}), 400
-    try:
-        return jsonify(install_update())
-    except UpdateError as exc:
-        return jsonify({"error": str(exc)}), 400
+    with _UPDATE_JOB_LOCK:
+        if _UPDATE_JOB and _UPDATE_JOB.get("state") == "running":
+            return jsonify({"error": "Обновление уже выполняется.", "job_id": _UPDATE_JOB["id"]}), 409
+        job_id = uuid.uuid4().hex
+        _UPDATE_JOB = {"id": job_id, "state": "running", "progress": 0, "stage": "Запуск обновления", "started_at": datetime.now(timezone.utc).isoformat()}
+    threading.Thread(target=_run_update_job, args=(job_id,), daemon=True).start()
+    return jsonify({"job_id": job_id, "state": "running"}), 202
+
+
+@app.route("/api/system/update/status", methods=["GET"])
+def api_system_update_status():
+    if not _local_update_request():
+        return jsonify({"error": "Доступ разрешён только с этого компьютера."}), 403
+    job_id = request.args.get("job_id", "")
+    with _UPDATE_JOB_LOCK:
+        if not _UPDATE_JOB or _UPDATE_JOB.get("id") != job_id:
+            return jsonify({"error": "Задача обновления не найдена."}), 404
+        return jsonify(dict(_UPDATE_JOB))
 
 
 @app.route("/api/settings/keys", methods=["GET"])

@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://errorox.github.io/OSINT/docs/module-manifest.schema.json",
+  "title": "OSINT Panel Module Manifest",
+  "description": "Declarative metadata for one OSINT Panel module. Manifests are data and must never be executed.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "name",
+    "version",
+    "category",
+    "status",
+    "entrypoints"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,62}$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "domain",
+        "identity",
+        "photo",
+        "network",
+        "education",
+        "utility",
+        "workspace",
+        "other"
+      ]
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "planned",
+        "legacy",
+        "migrating",
+        "integrated",
+        "disabled"
+      ]
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "entrypoints": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "page_url": {
+          "type": "string"
+        },
+        "frontend": {
+          "type": "string"
+        },
+        "backend_adapter": {
+          "type": "string"
+        },
+        "manifest_readme": {
+          "type": "string"
+        },
+        "tool_class": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        }
+      }
+    },
+    "dependencies": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "python": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "system": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "optional": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "capabilities": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_-]*$"
+      }
+    },
+    "legacy_paths": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 500
+      }
+    }
+  }
+}

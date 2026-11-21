@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "id": "google-osint",
+  "name": "Google OSINT",
+  "version": "1.1.0",
+  "category": "identity",
+  "description": "Объединённый legacy-адаптер Holehe/h8mail.",
+  "status": "integrated",
+  "enabled": true,
+  "entrypoints": {
+    "backend_adapter": "tools/google-osint/backend/tool.py",
+    "tool_class": "ToolGoogleOsint",
+    "page_url": "/modules/google-osint/",
+    "frontend": "tools/google-osint/frontend/index.html",
+    "manifest_readme": "tools/google-osint/OSINT_PANEL.md"
+  },
+  "dependencies": {
+    "python": [],
+    "system": [],
+    "optional": [
+      "Holehe",
+      "h8mail",
+      "API keys for supported providers"
+    ]
+  },
+  "capabilities": [
+    "email-osint",
+    "public-registration-check",
+    "breach-source-lookup"
+  ],
+  "legacy_paths": [
+    "backend/tools/tool_google_osint.py",
+    "backend/tools/tool_holehe.py",
+    "backend/tools/tool_h8mail.py",
+    "static/p/google-osint/index.html",
+    "static/p/google-osint/page.js"
+  ],
+  "notes": [
+    "Каноническая реализация и вспомогательные адаптеры находятся в backend/ внутри каталога модуля.",
+    "Старые backend/tools import paths сохранены для совместимости.",
+    "Внешние проверки выполняются только после явного запуска инструмента с введённым email."
+  ]
+}

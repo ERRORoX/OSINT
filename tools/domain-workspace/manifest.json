@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "id": "domain-workspace",
+  "name": "Domain Workspace",
+  "version": "1.0.0",
+  "category": "domain",
+  "description": "Единая рабочая область доменного анализа: WHOIS, DNS, SSL, поддомены и внешние источники.",
+  "status": "integrated",
+  "enabled": true,
+  "entrypoints": {
+    "page_url": "/modules/domain-workspace/",
+    "frontend": "tools/domain-workspace/frontend/index.html",
+    "manifest_readme": "tools/domain-workspace/README.md"
+  },
+  "dependencies": {
+    "python": [],
+    "system": [],
+    "optional": [
+      "API keys for optional data providers"
+    ]
+  },
+  "capabilities": [
+    "domain-intelligence-workspace",
+    "multi-tool-orchestration",
+    "report-export"
+  ],
+  "legacy_paths": [
+    "static/domain/index.html",
+    "static/domain/css/domain.css",
+    "static/domain/js/domain.js"
+  ],
+  "notes": [
+    "Страница оркестрирует существующие backend tool IDs: domain-search, theharvester, shodan, subfinder и dnsx.",
+    "Каждый backend инструмент продолжает регистрироваться отдельно; общие API-контракты остаются в ядре.",
+    "Старый адрес /domain/ перенаправляет на канонический адрес модуля."
+  ]
+}

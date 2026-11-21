@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "id": "history",
+  "name": "History",
+  "version": "1.0.0",
+  "category": "workspace",
+  "description": "Рабочая область истории запусков, результатов и сохранённых записей.",
+  "status": "integrated",
+  "enabled": true,
+  "entrypoints": {
+    "page_url": "/modules/history/",
+    "frontend": "tools/history/frontend/index.html",
+    "manifest_readme": "tools/history/README.md"
+  },
+  "dependencies": {
+    "python": [],
+    "system": [],
+    "optional": []
+  },
+  "capabilities": [
+    "run-history",
+    "saved-results",
+    "workspace-navigation"
+  ],
+  "legacy_paths": [
+    "static/p/history/index.html",
+    "static/p/history/page.js"
+  ],
+  "notes": [
+    "Frontend перенесён в tools/history; API и база данных остаются общими сервисами приложения."
+  ]
+}

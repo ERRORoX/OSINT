@@ -3,102 +3,242 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="OSINT Panel — единая панель для разведки в открытых источниках: домены, email, имена пользователей, утечки.">
-  <meta name="theme-color" content="#060608">
-  <title>OSINT Panel</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect fill='%23060608' width='32' height='32' rx='4'/><text x='16' y='22' font-size='16' text-anchor='middle' fill='%2300ff88' font-family='monospace'>O</text></svg>">
-  <link rel="stylesheet" href="/css/tool-bundle/hub.css"><link rel="stylesheet" href="/css/panel-41.css?v=4.1.1">
+  <meta name="theme-color" content="#050914">
+  <meta name="description" content="OSINT Panel — рабочее пространство для анализа открытых источников.">
+  <title>OSINT Panel 4.2 — Intelligence Workspace</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23050914'/><path d='M16 4 27 10v12l-11 6L5 22V10z' fill='none' stroke='%230b75ff' stroke-width='2'/></svg>">
+  <link rel="stylesheet" href="/css/tool-bundle/hub.css">
+  <link rel="stylesheet" href="/css/panel-41.css?v=4.2.0">
+  <link rel="stylesheet" href="/css/hub-only.css?v=4.2.30">
 </head>
-<body>
-  <div class="osint-bg cyber-grid" aria-hidden="true">
-    <div class="particle" style="left:10%;bottom:-5px;--duration:9s;--delay:0s"></div>
-    <div class="particle" style="left:22%;bottom:-5px;--duration:12s;--delay:1.2s"></div>
-    <div class="particle" style="left:34%;bottom:-5px;--duration:10s;--delay:2.2s"></div>
-    <div class="particle" style="left:46%;bottom:-5px;--duration:14s;--delay:3.4s"></div>
-    <div class="particle" style="left:58%;bottom:-5px;--duration:11s;--delay:4.4s"></div>
-    <div class="particle" style="left:70%;bottom:-5px;--duration:13s;--delay:5.6s"></div>
-    <div class="particle" style="left:82%;bottom:-5px;--duration:10s;--delay:6.1s"></div>
-    <div class="particle" style="left:94%;bottom:-5px;--duration:15s;--delay:7.0s"></div>
-  </div>
-  <header class="osint-header app-header">
-    <div class="osint-header-inner scan-line">
-      <div class="osint-logo" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          
-          <circle cx="12" cy="12" r="6"></circle>
-          <circle cx="12" cy="12" r="2"></circle>
-        </svg>
-      </div>
-      <div class="osint-title">
-        <h1><span class="accent">OSINT</span><span class="dim">Panel</span></h1>
-        <p>◆ Разведка по открытым источникам | домены, username, email, утечки | Python + UI</p>
-      </div>
-      <div class="app-header-right">
-        <span class="app-header-system" id="header-system">ОС: —</span>
-        <div class="app-update-control"><button type="button" class="app-update-btn" id="btn-check-updates">↻ Обновить</button><span class="app-update-status" id="update-status" role="status" aria-live="polite"></span></div>
-        <div class="app-header-user" id="header-user">
-          <button type="button" class="app-header-user-btn" aria-expanded="false" aria-haspopup="true" id="btn-user-menu">
-            <span class="app-header-user-icon" aria-hidden="true"></span>
-            <span class="app-header-user-name">Admin</span>
-            <span class="app-header-user-chevron" aria-hidden="true"></span>
+<body class="dashboard-page">
+  <div class="dashboard-shell">
+    <div class="dashboard-main">
+      <header class="topbar">
+        <a class="mobile-brand" href="/" aria-label="OSINT Panel — главная"><span class="mobile-brand-icon">◈</span> OSINT PANEL <span>4.2</span></a>
+        <label class="global-search" for="hub-search">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>
+          <input id="hub-search" type="search" placeholder="Поиск инструментов, модулей…" autocomplete="off" aria-label="Поиск инструментов">
+          <kbd>Ctrl K</kbd>
+        </label>
+        <div class="topbar-actions">
+          <div class="topbar-update-wrap"><button class="topbar-update" type="button" id="btn-check-updates"><span aria-hidden="true">⟳</span> Обновить</button><span id="update-status" class="update-status" role="status" aria-live="polite"></span></div>
+          <span class="topbar-indicator" title="Локальная панель"><i></i><span>LOCAL</span></span>
+          <button class="user-button" type="button" id="btn-user-menu" aria-expanded="false" aria-haspopup="true">
+            <span class="user-avatar">A</span><span class="user-meta"><strong>Admin</strong><small>Локальный профиль</small></span><span class="user-chevron">⌄</span>
           </button>
-          <div class="app-header-user-menu" id="user-menu" hidden>
-            <a href="/p/settings/" class="app-header-user-menu-item" data-tool-id="settings">API ключи</a>
+          <div class="user-menu" id="user-menu" hidden>
+            <a href="/p/settings/" class="app-header-user-menu-item admin-settings-link" data-tool-id="settings" aria-label="Открыть настройки и API">
+              <span class="admin-settings-icon" aria-hidden="true">⚙</span>
+              <span><strong>Настройки</strong><small>API-ключи и параметры панели</small></span>
+              <span class="admin-settings-arrow" aria-hidden="true">→</span>
+            </a>
           </div>
         </div>
-      </div>
-    </div>
-    <div class="osint-tabs">
-      <nav id="nav-tools" class="tab-nav" aria-label="Разделы"></nav>
-    </div>
-  </header>
-  <div class="app-body osint-body">
-    <main class="main osint-main osint-scrollbar" id="main-content">
-      <section class="hub-hero" aria-labelledby="hub-title">
-        <div class="hub-hero-copy">
-          <span class="hub-kicker">OPEN SOURCE INTELLIGENCE / WORKSPACE</span>
-          <h2 id="hub-title">Центр <span>разведки</span></h2>
-          <p>Рабочее пространство для анализа открытых источников. Выберите направление или найдите нужный инструмент.</p>
-          <div class="hub-status-row">
-            <span class="hub-status"><i></i> Локальная панель</span>
-            <span class="hub-status hub-status-muted" id="hub-tool-count">Загрузка инструментов…</span>
+      </header>
+
+      <main id="main-content" class="dashboard-content">
+        <section class="investigation-hero" aria-labelledby="welcome-title">
+          <div class="investigation-intro">
+            <div class="investigation-kicker"><span class="signal-pulse"></span> INVESTIGATION COMMAND CENTER <span class="kicker-divider">/</span> LOCAL WORKSPACE</div>
+            <h1 id="welcome-title">Центр <span>расследований</span></h1>
+            <p>Единая рабочая среда для сбора открытых данных, проверки цифровых следов и анализа связей.</p>
+            <div class="investigation-actions">
+              <a class="primary-action" href="#tools-section"><span>↗</span> Начать исследование</a>
+              <a class="secondary-action" href="/p/history/"><span>◷</span> История операций</a>
+            </div>
+            <div class="hero-meta"><span><i></i> Локальная среда</span><span>OSINT PANEL <b>4.2</b></span></div>
           </div>
+
+          <aside class="system-card investigation-status">
+            <div class="panel-heading"><span class="heading-dot"></span><h2>Состояние системы</h2><span class="live-label">LOCAL</span></div>
+            <div class="system-content">
+              <div class="system-ring"><div><strong id="system-state">—</strong><small id="system-state-label">Проверка</small></div></div>
+              <div class="system-facts">
+                <div><span>API сервера</span><strong id="backend-state">Проверка…</strong></div>
+                <div><span>Инструментов в реестре</span><strong id="rail-tools">—</strong></div>
+                <div><span>Модулей навигации</span><strong id="rail-modules">—</strong></div>
+                <div><span>Версия Python</span><strong id="system-python-version">—</strong></div>
+                <div><span>Свободно на диске</span><strong id="system-disk-free">—</strong></div>
+                <div><span>Отклик API</span><strong id="system-api-latency">—</strong></div>
+              </div>
+            </div>
+            <div class="system-foot"><span class="pulse-line"></span><span id="system-foot-label">Проверяется состояние компонентов</span></div>
+            <div class="system-monitor-actions"><button type="button" id="system-health-refresh">Проверить сейчас</button><span id="system-health-checked" aria-live="polite">Ожидание проверки</span></div>
+            <div class="system-health-details" id="system-health-details" aria-live="polite"><div class="system-health-empty">Проверка компонентов будет выполнена автоматически.</div></div>
+          </aside>
+        </section>
+
+        <section class="investigation-visual graph-workspace" id="investigation-graph-panel" aria-label="Интерактивная карта связей">
+            <div class="graph-heading"><div><span class="graph-eyebrow">RELATIONSHIP ANALYSIS</span><h2>Карта связей</h2></div><span class="graph-mode-badge" id="graph-data-mode">ЗАГРУЗКА</span></div>
+            <div class="graph-toolbar">
+              <div class="graph-investigation-controls"><label class="graph-mode-select" for="graph-investigation-select">Набор данных<select id="graph-investigation-select" aria-label="Выбрать расследование"><option value="">Загрузка…</option></select></label><button type="button" id="graph-save-investigation">Сохранить расследование</button><button type="button" id="graph-investigation-new">+ Новое расследование</button><button type="button" id="graph-investigation-rename">Переименовать</button><button type="button" id="graph-investigation-delete">Удалить расследование</button></div>
+              <div class="graph-zoom-controls" aria-label="Управление масштабом"><button type="button" id="graph-zoom-out" aria-label="Уменьшить">−</button><button type="button" id="graph-zoom-reset" aria-label="Сбросить масштаб">100%</button><button type="button" id="graph-zoom-in" aria-label="Увеличить">+</button><button type="button" id="graph-fit" aria-label="Вписать граф">Вписать</button><label class="graph-layout-select">Раскладка<select id="graph-layout-mode" aria-label="Алгоритм раскладки"><option value="hierarchical">Иерархическая</option><option value="organic">Органическая</option><option value="circular">Круговая</option><option value="grid">Сетка</option></select></label><button type="button" id="graph-auto-layout" aria-label="Автоматически расположить узлы">Автораскладка</button><button type="button" id="graph-fullscreen" aria-label="Развернуть граф на весь экран" aria-pressed="false">На весь экран</button></div>
+            </div>
+            <div class="graph-filter-row" aria-label="Фильтр типов сущностей">
+              <label><input type="checkbox" data-graph-filter="person" checked> Люди</label><label><input type="checkbox" data-graph-filter="domain" checked> Домены</label><label><input type="checkbox" data-graph-filter="ip" checked> IP</label><label><input type="checkbox" data-graph-filter="email" checked> Email</label><label><input type="checkbox" data-graph-filter="organization" checked> Организации</label><label><input type="checkbox" data-graph-filter="phone" checked> Телефоны</label>
+            </div>
+            <div class="graph-canvas-wrap"><svg id="investigation-graph" class="relationship-graph interactive-relationship-graph" viewBox="0 0 760 420" role="img" aria-label="Интерактивный граф сущностей и связей"><g id="graph-viewport"><g id="graph-edges"></g><g id="graph-nodes"></g></g></svg><div class="graph-empty-state" id="graph-empty-state" hidden>Пока нет сохранённых расследований. Запусти анализ домена — найденные сущности появятся автоматически.</div></div>
+            <div class="graph-bottomline"><span id="graph-summary" role="status">Загрузка графа…</span><span>Shift + щелчок — выбрать группу · перетаскивание — переместить узел или группу · колесо — масштаб</span></div>
+            <div class="graph-context-menu" id="graph-context-menu" role="menu" aria-label="Действия с объектом" hidden></div>
+             <div class="graph-detail" id="graph-node-details"><span class="graph-detail-type">ОБЪЕКТ НЕ ВЫБРАН</span><strong>Выберите узел на карте</strong><p>Здесь появятся тип сущности, описание и связанные объекты.</p></div>
+            <div class="graph-workspace-bottom">
+            <section class="graph-notes-panel" aria-labelledby="graph-notes-title">
+              <div class="graph-notes-heading"><div><span class="graph-eyebrow">CASE NOTES</span><h3 id="graph-notes-title">Заметки расследования</h3></div><span id="graph-notes-count">0 заметок</span></div>
+              <label class="graph-notes-label" for="graph-note-input">Зафиксировать наблюдение, гипотезу или следующий шаг</label>
+              <textarea id="graph-note-input" rows="3" maxlength="5000" placeholder="Напишите заметку к текущему расследованию…"></textarea>
+              <div class="graph-notes-actions"><span id="graph-notes-status" role="status">Заметки сохраняются отдельно от графа.</span><button type="button" id="graph-note-save">Сохранить заметку</button></div>
+              <div id="graph-notes-list" class="graph-notes-list"><p class="graph-notes-empty">Заметок пока нет.</p></div>
+            </section>
+            <aside class="graph-composition-panel" aria-labelledby="graph-composition-title">
+              <div class="graph-notes-heading"><div><span class="graph-eyebrow">GRAPH INTELLIGENCE</span><h3 id="graph-composition-title">Состав графа</h3></div><span class="graph-composition-live">LIVE</span></div>
+              <div class="graph-composition-total"><strong id="graph-stat-total">0</strong><span>сущностей в расследовании</span></div>
+              <div class="graph-composition-grid">
+                <div><span class="graph-stat-dot person"></span><span>Люди</span><strong id="graph-stat-person">0</strong></div>
+                <div><span class="graph-stat-dot domain"></span><span>Домены</span><strong id="graph-stat-domain">0</strong></div>
+                <div><span class="graph-stat-dot ip"></span><span>IP-адреса</span><strong id="graph-stat-ip">0</strong></div>
+                <div><span class="graph-stat-dot email"></span><span>Email</span><strong id="graph-stat-email">0</strong></div>
+                <div><span class="graph-stat-dot organization"></span><span>Организации</span><strong id="graph-stat-organization">0</strong></div>
+                <div><span class="graph-stat-dot phone"></span><span>Телефоны</span><strong id="graph-stat-phone">0</strong></div>
+              </div>
+              <div class="graph-composition-footer"><span>Связей между объектами</span><strong id="graph-stat-edges">0</strong></div>
+              <p class="graph-composition-hint" id="graph-composition-hint">Добавляйте результаты анализа — состав графа обновится автоматически.</p>
+            </aside>
+            </div>
+          </section>
+
+        <div class="content-columns">
+          <div class="primary-column">
+            <section class="content-panel tools-panel" id="tools-section">
+              <div class="section-heading">
+                <div><span class="eyebrow">WORKSPACE</span><h2>Инструменты</h2><p>Выберите модуль для начала исследования.</p></div>
+                <a href="#tools-section" class="text-link" id="show-all-tools">Все инструменты <span>→</span></a>
+              </div>
+              <div class="hub-filters" role="group" aria-label="Фильтр инструментов">
+                <button class="hub-filter" type="button" data-hub-filter="all" aria-pressed="true">Все</button>
+                <button class="hub-filter" type="button" data-hub-filter="recon" aria-pressed="false">Разведка</button>
+                <button class="hub-filter" type="button" data-hub-filter="identity" aria-pressed="false">Идентификаторы</button>
+                <button class="hub-filter" type="button" data-hub-filter="media" aria-pressed="false">Медиа</button>
+                <button class="hub-filter" type="button" data-hub-filter="analysis" aria-pressed="false">Анализ</button>
+                <button class="hub-filter" type="button" data-hub-filter="workspace" aria-pressed="false">Рабочее место</button>
+                <button class="hub-filter" type="button" data-hub-filter="favorites" aria-pressed="false">★</button>
+              </div>
+              <div class="catalog-meta"><span id="catalog-result-count" role="status" aria-live="polite">Загрузка каталога…</span><span id="catalog-favorite-count">Избранное: 0</span></div>
+              <div id="hub-cards" class="hub-grid" aria-label="Каталог инструментов"></div>
+              <p id="hub-empty" class="hub-empty" hidden>Инструменты не найдены. Измените запрос или фильтр.</p>
+              <div class="tools-footnote"><span>●</span> Список разделов загружается из локального сервера.</div>
+            </section>
+
+          </div>
+
+          <aside class="secondary-column">
+            <section class="content-panel activity-panel">
+              <div class="section-heading compact-heading"><div><span class="eyebrow">SESSION</span><h2>Последняя активность</h2></div><span class="activity-live">LOCAL</span></div>
+              <div id="hub-activity" class="activity-list"><div class="activity-empty">Здесь появятся недавно открытые разделы.</div></div>
+            </section>
+            <section class="content-panel insight-panel">
+              <div class="section-heading compact-heading"><div><span class="eyebrow">YOUR WORKSPACE</span><h2>Быстрый доступ</h2></div><span class="subtle-label">Локальные данные</span></div>
+              <div class="quick-access">
+                <a href="/p/history/"><span class="quick-icon">◷</span><span><strong>История операций</strong><small>Ранее выполненные действия</small></span><b>→</b></a>
+              </div>
+            </section>
+            <section class="content-panel info-panel">
+              <div class="section-heading compact-heading"><div><span class="eyebrow">PROJECT INFO</span><h2>О проекте</h2></div><span class="info-symbol">◈</span></div>
+              <p>OSINT Panel объединяет инструменты для работы с общедоступными источниками, проверки инфраструктуры и анализа цифровых следов.</p>
+              <div class="info-meta"><span>Версия интерфейса</span><strong>4.2</strong></div>
+              <div class="info-meta"><span>Режим</span><strong>Локальный</strong></div>
+            </section>
+            <section class="content-panel safety-panel">
+              <span class="safety-icon">◇</span><div><strong>Ответственное использование</strong><p>Используйте инструменты законно и уважайте приватность других людей.</p></div>
+            </section>
+          </aside>
         </div>
-        <div class="hub-hero-mark" aria-hidden="true">
-          <div class="hub-orbit hub-orbit-one"></div>
-          <div class="hub-orbit hub-orbit-two"></div>
-          <div class="hub-mark-core">O</div>
+
+        <div class="workspace-bottom-grid">
+            <details class="content-panel saved-materials-panel saved-materials-collapsible" id="saved-materials-panel">
+              <summary class="saved-materials-summary">
+                <span class="saved-materials-summary-title"><span class="eyebrow">CASE MATERIALS</span><strong>Сохранённые материалы</strong></span>
+                <span class="saved-materials-summary-meta"><span class="subtle-label" id="saved-materials-count">0 материалов</span><span class="saved-materials-chevron" aria-hidden="true">⌄</span></span>
+              </summary>
+              <div class="saved-materials-content">
+                <div class="saved-materials-toolbar">
+                  <button type="button" id="saved-materials-export" class="saved-material-export" disabled>Экспорт JSON</button>
+                  <label class="saved-materials-search"><span class="sr-only">Поиск по сохранённым материалам</span><input id="saved-materials-search" type="search" placeholder="Найти в архиве материалов…" autocomplete="off"></label>
+                </div>
+                <p class="saved-materials-note">Результаты, которые вы закрепили в рабочей области инструментов. Хранятся локально в этом браузере.</p>
+                <div id="saved-materials-list" class="saved-materials-list">
+                  <div class="saved-materials-empty">Загрузка сохранённых материалов…</div>
+                </div>
+              </div>
+            </details>
+            <details class="content-panel case-projects-panel case-projects-collapsible" id="case-projects-panel">
+              <summary class="case-projects-summary">
+                <span class="saved-materials-summary-title"><span class="eyebrow">WORKSPACE / ARCHIVE</span><strong>Дела расследований</strong></span>
+                <span class="saved-materials-summary-meta"><span class="subtle-label" id="case-project-count">0 дел</span><span class="saved-materials-chevron" aria-hidden="true">⌄</span></span>
+              </summary>
+              <div class="case-projects-content">
+                <p class="saved-materials-note">Отдельные дела, рабочие заметки и прикреплённые материалы. Данные хранятся локально в этом браузере.</p>
+                <form id="case-project-form" class="case-project-form">
+                  <label class="case-project-field"><span>Название дела</span><input id="case-project-name" name="name" maxlength="100" required placeholder="Например: Проверка домена example.org"></label>
+                  <label class="case-project-field"><span>Исходная заметка (необязательно)</span><textarea id="case-project-note" name="note" rows="2" maxlength="3000" placeholder="Цель, исходные данные, вопросы для проверки…"></textarea></label>
+                  <button type="submit" class="saved-material-export">＋ Создать дело</button>
+                </form>
+                <div id="case-project-list" class="case-project-list"><div class="saved-materials-empty">Пока нет дел. Создайте первое расследование.</div></div>
+              </div>
+            </details>
         </div>
-      </section>
-      <section class="hub-workspace">
-        <div class="hub-section-head">
-          <div><span class="hub-kicker">WORKSPACE</span><h2>Инструменты</h2></div>
-          <label class="hub-search-wrap">
-            <span aria-hidden="true">⌕</span>
-            <input id="hub-search" type="search" placeholder="Найти инструмент…" autocomplete="off" aria-label="Найти инструмент">
-          </label>
-        </div>
-        <div class="hub-filters" role="group" aria-label="Фильтр разделов"><button class="hub-filter" type="button" data-hub-filter="all" aria-pressed="true">Все</button><button class="hub-filter" type="button" data-hub-filter="recon" aria-pressed="false">Разведка</button><button class="hub-filter" type="button" data-hub-filter="identity" aria-pressed="false">Идентификаторы</button><button class="hub-filter" type="button" data-hub-filter="media" aria-pressed="false">Медиа</button><button class="hub-filter" type="button" data-hub-filter="analysis" aria-pressed="false">Анализ</button><button class="hub-filter" type="button" data-hub-filter="workspace" aria-pressed="false">Рабочее место</button><button class="hub-filter" type="button" data-hub-filter="favorites" aria-pressed="false">★ Избранное</button></div>
-        <div id="hub-cards" class="hub-grid" aria-label="Разделы панели"></div>
-        <p id="hub-empty" class="hub-empty" hidden>Ничего не найдено. Измените поисковый запрос.</p>
-      </section>
-    </main>
+      </main>
+
+      <footer class="dashboard-footer"><span>OSINT PANEL 4.2 <i>|</i> Intelligence Workspace</span><span><i class="footer-dot"></i> Локальная панель <b id="footer-clock">—</b></span></footer>
+    </div>
   </div>
-  <footer class="app-footer">
-    <span>OSINT Panel</span>
-    <span class="footer-hint">Разведка в открытых источниках — домены, email, соцсети</span>
-  </footer>
+
   <script defer src="/js/header-env.js"></script>
   <script defer src="/js/header-ui.js"></script>
   <script>
     (function () {
       var h = (location.hash || "").replace(/^#/, "");
-      if (!h) return;
-      var legacy = { reports: "history", dashboard: "domain-tools", page: "domain-tools" };
-      var id = legacy[h] || h;
-      if (id) location.replace("/p/" + encodeURIComponent(id) + "/");
+      if (h) {
+        var legacy = { reports: "history", dashboard: "domain-tools", page: "domain-tools" };
+        location.replace("/p/" + encodeURIComponent(legacy[h] || h) + "/");
+      }
+      var input = document.getElementById("hub-search");
+      var clock = document.getElementById("footer-clock");
+      function updateClock() {
+        if (clock) clock.textContent = new Intl.DateTimeFormat("ru-RU", { day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit" }).format(new Date()).replace(",", " ·");
+      }
+      updateClock();
+      window.setInterval(updateClock, 30000);
+      document.addEventListener("keydown", function (event) {
+        var target = event.target;
+        var typing = target && (target.isContentEditable || /INPUT|
+            <aside class="graph-composition-panel" aria-labelledby="graph-composition-title">
+              <div class="graph-notes-heading"><div><span class="graph-eyebrow">GRAPH INTELLIGENCE</span><h3 id="graph-composition-title">Состав графа</h3></div><span class="graph-composition-live">LIVE</span></div>
+              <div class="graph-composition-total"><strong id="graph-stat-total">0</strong><span>сущностей в расследовании</span></div>
+              <div class="graph-composition-grid">
+                <div><span class="graph-stat-dot person"></span><span>Люди</span><strong id="graph-stat-person">0</strong></div>
+                <div><span class="graph-stat-dot domain"></span><span>Домены</span><strong id="graph-stat-domain">0</strong></div>
+                <div><span class="graph-stat-dot ip"></span><span>IP-адреса</span><strong id="graph-stat-ip">0</strong></div>
+                <div><span class="graph-stat-dot email"></span><span>Email</span><strong id="graph-stat-email">0</strong></div>
+                <div><span class="graph-stat-dot organization"></span><span>Организации</span><strong id="graph-stat-organization">0</strong></div>
+                <div><span class="graph-stat-dot phone"></span><span>Телефоны</span><strong id="graph-stat-phone">0</strong></div>
+              </div>
+              <div class="graph-composition-footer"><span>Связей между объектами</span><strong id="graph-stat-edges">0</strong></div>
+              <p class="graph-composition-hint" id="graph-composition-hint">Добавляйте результаты анализа — состав графа обновится автоматически.</p>
+            </aside>
+          </div>TEXTAREA|SELECT/.test(target.tagName));
+        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+          event.preventDefault(); if (input) input.focus(); return;
+        }
+        if (event.key === "/" && !typing) {
+          event.preventDefault(); if (input) input.focus();
+        }
+        if (event.key === "Escape" && input) {
+          input.value = ""; input.blur(); input.dispatchEvent(new Event("input", { bubbles:true }));
+        }
+      });
     })();
   </script>
-  <script src="/js/app-hub.js?v=4.1.1" type="module"></script>
+  <script src="/js/app-hub.js?v=4.2.32" type="module"></script>
 </body>
 </html>

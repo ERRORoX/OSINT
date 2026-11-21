@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "id": "blackbird",
+  "name": "Blackbird",
+  "version": "1.1.0",
+  "category": "identity",
+  "description": "Поиск публичных аккаунтов по username через legacy backend-адаптер.",
+  "status": "integrated",
+  "enabled": true,
+  "entrypoints": {
+    "backend_adapter": "tools/blackbird/backend/tool.py",
+    "tool_class": "ToolBlackbird"
+  },
+  "dependencies": {
+    "python": [],
+    "system": [],
+    "optional": []
+  },
+  "capabilities": [
+    "public-username-presence-search"
+  ],
+  "legacy_paths": [
+    "backend/tools/tool_blackbird.py"
+  ],
+  "notes": [
+    "Каноническая реализация находится в backend/tool.py внутри каталога модуля.",
+    "Старый backend/tools import path сохранён как compatibility adapter.",
+    "Модуль предназначен для поиска публичных профилей и не выполняет аутентификацию или перебор паролей."
+  ]
+}

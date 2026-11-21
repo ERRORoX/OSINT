@@ -14,9 +14,8 @@ let grabcamCssPromise = null;
 
 /** Стили Grabcam не в index.html — только при открытии вкладки, без конкуренции с остальными инструментами до этого. */
 function ensureGrabcamStylesLoaded() {
-  if (document.querySelector('link[href*="/css/tool-bundle/grabcam.css"]')) {
-    return Promise.resolve();
-  }
+  // Не считаем общий CSS-бандл признаком загрузки Grabcam:
+  // он может существовать, но не содержит полный набор модульных стилей панели.
   if (document.querySelector(`link[href="${GRABCAM_CSS_HREF}"][data-osint-grabcam-bundle]`)) {
     return Promise.resolve();
   }
@@ -61,12 +60,6 @@ function runFeaturesAfterMount(container) {
       const features = await import("./modules/features/index.js");
       const { showLink, pollStatus, showCopyFeedback } = features.initControl(container);
       features.initLink(container, showCopyFeedback);
-      features.initMap(container);
-      features.initPhotos(container);
-      features.initLocations(container);
-      features.initForms(container);
-      features.initScreen(container);
-      features.initAudio(container);
 
       try {
         const res = await fetch(API.runStatus);
@@ -78,13 +71,18 @@ function runFeaturesAfterMount(container) {
         const submitBtn = container.querySelector("#gc-btn-start");
         const stopBtn = container.querySelector("#gc-btn-stop");
         const statusEl = container.querySelector("#gc-status");
+        if (!st.running && st.error && statusEl) {
+          statusEl.textContent = st.error;
+        }
         if (st.running || st.link || st.local_url) {
           if (st.link || st.local_url) showLink(st.link || null, st.local_url || null);
+          const statusToggle = container.querySelector("#gc-feat-status");
+          if (statusToggle) statusToggle.checked = !!st.running;
           if (st.running && submitBtn && stopBtn && statusEl) {
             submitBtn.disabled = true;
             submitBtn.style.display = "none";
             stopBtn.style.display = "inline-block";
-            statusEl.textContent = "Сервер запущен. Ожидание ссылки…";
+            statusEl.textContent = st.error || (st.link ? "Публичный туннель активен." : st.local_url ? "Локальный сервер активен." : "Ожидание ссылки туннеля…");
             POLL_IDS.status = setInterval(pollStatus, POLL_INTERVALS.status);
           }
           if (resultEl) {

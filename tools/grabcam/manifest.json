@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "id": "grabcam",
+  "name": "GrabCam",
+  "version": "2.1.0",
+  "category": "education",
+  "description": "Учебная демонстрация браузерных разрешений с явным действием пользователя; серверная версия не собирает данные посетителей.",
+  "status": "integrated",
+  "enabled": true,
+  "entrypoints": {
+    "page_url": "/modules/grabcam/",
+    "frontend": "tools/grabcam/frontend/index.html",
+    "backend_adapter": "tools/grabcam/backend/tool.py",
+    "tool_class": "ToolGrabcam",
+    "manifest_readme": "tools/grabcam/README.md"
+  },
+  "dependencies": {
+    "python": [],
+    "system": [
+      "php"
+    ],
+    "optional": [
+      "ssh",
+      "cloudflared"
+    ]
+  },
+  "capabilities": [
+    "local-demo-server",
+    "explicit-browser-permission-demo",
+    "tunnel-link-management"
+  ],
+  "legacy_paths": [
+    "static/p/grabcam/index.html",
+    "static/p/grabcam/page.js",
+    "backend/tools/tool_grabcam.py"
+  ],
+  "notes": [
+    "Канонические backend и frontend файлы находятся в каталоге tools/grabcam/.",
+    "Старый URL /p/grabcam/ перенаправляет на /modules/grabcam/; старый backend import сохранён через adapter.",
+    "Учебная demo-страница использует только явные действия пользователя; скрытый сбор данных и автоматическая отправка данных не поддерживаются.",
+    "Каталоги tools/grabcam/panel/ и tools/grabcam/demo/ остаются внутри модуля."
+  ]
+}

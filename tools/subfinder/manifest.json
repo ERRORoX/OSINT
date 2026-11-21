@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "id": "subfinder",
+  "name": "Subfinder",
+  "version": "1.1.0",
+  "category": "domain",
+  "description": "Пассивное обнаружение поддоменов через legacy backend-адаптер.",
+  "status": "integrated",
+  "enabled": true,
+  "entrypoints": {
+    "backend_adapter": "tools/subfinder/backend/tool.py",
+    "tool_class": "ToolSubfinder"
+  },
+  "dependencies": {
+    "python": [],
+    "system": [],
+    "optional": []
+  },
+  "capabilities": [
+    "legacy-backend-adapter"
+  ],
+  "legacy_paths": [
+    "backend/tools/tool_subfinder.py"
+  ],
+  "notes": [
+    "Каноническая backend-реализация находится в каталоге этого модуля.",
+    "Старый импорт backend/tools/tool_subfinder.py сохранён как compatibility adapter.",
+    "Модуль используется в составе Domain Workspace; отдельная страница ему не требуется."
+  ]
+}

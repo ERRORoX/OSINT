@@ -102,3 +102,106 @@
 #panel-settings .settings-message.error {
   color: var(--error);
 }
+
+
+/* Settings workspace refinement */
+#panel-settings {
+  width: min(100%, 1040px);
+  margin: 0 auto;
+  padding: clamp(16px, 2.4vw, 30px);
+}
+#panel-settings > h2 {
+  color: var(--text);
+  font-size: clamp(22px, 2.4vw, 28px);
+  letter-spacing: -.035em;
+}
+#panel-settings > .description {
+  max-width: 72ch;
+  line-height: 1.65;
+  color: var(--text-muted);
+}
+#panel-settings .settings-key-row {
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgba(17,29,43,.82), rgba(9,17,27,.9));
+  margin: 0 0 12px;
+}
+#panel-settings .settings-key-row label {
+  font-weight: 650;
+  letter-spacing: .01em;
+}
+#panel-settings .key-input-wrap {
+  gap: 9px;
+}
+#panel-settings .key-input-wrap input {
+  min-height: 42px;
+  border-radius: 8px;
+  background: rgba(4,10,17,.72);
+}
+#panel-settings .btn-save,
+#panel-settings .btn-primary {
+  min-height: 40px;
+  padding: 9px 15px;
+  border-radius: 8px;
+  font-weight: 650;
+}
+#panel-settings .settings-message {
+  padding: 10px 12px;
+  border-radius: 8px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+#panel-settings .settings-message.success {
+  background: rgba(22,217,154,.08);
+  border: 1px solid rgba(22,217,154,.2);
+}
+#panel-settings .settings-message.error {
+  background: rgba(255,91,105,.08);
+  border: 1px solid rgba(255,91,105,.22);
+}
+#panel-settings .settings-key-state {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font: 700 9px/1.2 var(--font-mono);
+  letter-spacing: .06em;
+}
+#panel-settings .settings-key-state.is-set {
+  color: #57d6a6;
+  border: 1px solid rgba(87,214,166,.25);
+  background: rgba(87,214,166,.08);
+}
+#panel-settings .settings-key-state.is-empty {
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.025);
+}
+#panel-settings #tool-dependencies-panel,
+#panel-settings #system-update-panel {
+  margin-top: 20px !important;
+  padding: 18px;
+}
+#panel-settings #tool-dependencies-panel h3,
+#panel-settings #system-update-panel h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  color: var(--text);
+}
+#panel-settings #tool-dependencies-results > div {
+  min-width: 0;
+}
+#panel-settings #btn-check-tools:disabled,
+#panel-settings #btn-install-update:disabled,
+#panel-settings .btn-save:disabled {
+  opacity: .55;
+  cursor: wait;
+}
+@media (max-width: 640px) {
+  #panel-settings { padding: 14px 10px 28px; }
+  #panel-settings .settings-key-row { padding: 13px; }
+  #panel-settings .key-input-wrap input { min-width: 100%; }
+  #panel-settings .settings-key-state { margin-right: auto; }
+  #panel-settings #tool-dependencies-panel,
+  #panel-settings #system-update-panel { padding: 14px; }
+}

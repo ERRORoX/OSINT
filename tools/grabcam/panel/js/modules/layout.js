@@ -7,13 +7,17 @@ import { getWidgetHTMLMap } from "./widgets/index.js";
 import { escapeHtml } from "./utils.js";
 import { LAYOUT_STORAGE_KEY, MIN_SPAN, MAX_SPAN } from "./config.js";
 
+// Only the two safe, currently supported widgets belong in the active GrabCam panel.
+// This also filters stale layouts saved by older builds (photos/audio/forms/screen captures). 
+const ACTIVE_WIDGET_IDS = new Set(["control", "link"]);
+
 export function getLayout() {
   try {
     const raw = localStorage.getItem(LAYOUT_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && Array.isArray(parsed.gridWidgets)) {
-        const widgets = parsed.gridWidgets.map((w) => ({
+        const widgets = parsed.gridWidgets.filter((w) => w && ACTIVE_WIDGET_IDS.has(w.id)).map((w) => ({
           id: w.id,
           col: w.col,
           row: w.row,
@@ -22,13 +26,13 @@ export function getLayout() {
         }));
         return {
           gridColumns: Math.max(1, Number(parsed.gridColumns) || 2),
-          gridWidgets: widgets,
-          fullWidthWidgets: Array.isArray(parsed.fullWidthWidgets) ? parsed.fullWidthWidgets : GRABCAM_LAYOUT.fullWidthWidgets || [],
+          gridWidgets: widgets.length ? widgets : GRABCAM_LAYOUT.gridWidgets.filter((w) => ACTIVE_WIDGET_IDS.has(w.id)),
+          fullWidthWidgets: (Array.isArray(parsed.fullWidthWidgets) ? parsed.fullWidthWidgets : GRABCAM_LAYOUT.fullWidthWidgets || []).filter((id) => ACTIVE_WIDGET_IDS.has(id)),
         };
       }
     }
   } catch (_) {}
-  const gridWidgets = (GRABCAM_LAYOUT.gridWidgets || []).map((w) => ({
+  const gridWidgets = (GRABCAM_LAYOUT.gridWidgets || []).filter((w) => ACTIVE_WIDGET_IDS.has(w.id)).map((w) => ({
     id: w.id,
     col: w.col,
     row: w.row,
@@ -38,7 +42,7 @@ export function getLayout() {
   return {
     gridColumns: GRABCAM_LAYOUT.gridColumns || 2,
     gridWidgets,
-    fullWidthWidgets: [...(GRABCAM_LAYOUT.fullWidthWidgets || [])],
+    fullWidthWidgets: [...(GRABCAM_LAYOUT.fullWidthWidgets || [])].filter((id) => ACTIVE_WIDGET_IDS.has(id)),
   };
 }
 

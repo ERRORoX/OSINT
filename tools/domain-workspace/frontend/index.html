@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#060608">
+  <title>Домен — OSINT Panel</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect fill='%23060608' width='32' height='32' rx='4'/><text x='16' y='22' font-size='16' text-anchor='middle' fill='%2300ff88' font-family='monospace'>O</text></svg>">
+
+  <link rel="stylesheet" href="/css/variables.css">
+  <link rel="stylesheet" href="/css/layout.css">
+  <link rel="stylesheet" href="/css/proba-theme.css">
+  <link rel="stylesheet" href="./css/domain.css?v=4.2.22">
+  <link rel="stylesheet" href="/css/unified-workstation.css?v=4.5.0">
+  <link rel="stylesheet" href="/css/panel-42-dashboard.css?v=4.2.1">
+</head>
+<body class="domain-standalone">
+  <div class="osint-bg cyber-grid" aria-hidden="true">
+    <div class="particle" style="left:10%;bottom:-5px;--duration:9s;--delay:0s"></div>
+    <div class="particle" style="left:22%;bottom:-5px;--duration:12s;--delay:1.2s"></div>
+    <div class="particle" style="left:34%;bottom:-5px;--duration:10s;--delay:2.2s"></div>
+    <div class="particle" style="left:46%;bottom:-5px;--duration:14s;--delay:3.4s"></div>
+    <div class="particle" style="left:58%;bottom:-5px;--duration:11s;--delay:4.4s"></div>
+    <div class="particle" style="left:70%;bottom:-5px;--duration:13s;--delay:5.6s"></div>
+    <div class="particle" style="left:82%;bottom:-5px;--duration:10s;--delay:6.1s"></div>
+    <div class="particle" style="left:94%;bottom:-5px;--duration:15s;--delay:7.0s"></div>
+  </div>
+
+  <header class="topbar domain-topbar">
+    <a class="domain-topbar-brand" href="/" aria-label="OSINT Panel — главная">
+      <span class="domain-brand-mark" aria-hidden="true">◈</span>
+      <span class="domain-brand-copy"><strong>OSINT <b>Panel</b></strong><small>DOMAIN INTELLIGENCE</small></span>
+    </a>
+    <div class="topbar-actions domain-topbar-actions">
+      <span class="domain-run-badges" aria-label="Статус анализа">
+        <span class="badge badge-amber pulse" id="badgeRunning" style="display:none">0 активны</span>
+        <span class="badge badge-done" id="badgeDone" style="display:none">0/5</span>
+      </span>
+      <span class="topbar-indicator" title="Локальная панель"><i></i><span>LOCAL</span></span>
+      <button class="user-button" type="button" id="btn-user-menu" aria-expanded="false" aria-haspopup="true" aria-controls="user-menu">
+        <span class="user-avatar" aria-hidden="true">A</span>
+        <span class="user-meta"><strong>Admin</strong><small>Локальный профиль</small></span>
+        <span class="user-chevron" aria-hidden="true">⌄</span>
+      </button>
+      <div class="user-menu" id="user-menu" hidden>
+        <a href="/p/settings/" class="admin-settings-link" data-tool-id="settings" aria-label="Открыть настройки и API">
+          <span class="admin-settings-icon" aria-hidden="true">⚙</span>
+          <span><strong>Настройки</strong><small>API-ключи и параметры панели</small></span>
+          <span class="admin-settings-arrow" aria-hidden="true">→</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <div class="app-body osint-body">
+    <main class="main osint-main osint-scrollbar">
+      <div class="search-section">
+        <div class="search-inner" id="searchArea"></div>
+      </div>
+      <div id="mainArea" class="domain-main"></div>
+    </main>
+  </div>
+
+  <footer class="app-footer">
+    <span><a href="/" style="color:inherit;text-decoration:none">OSINT Panel</a></span>
+    <span class="footer-hint">Разведка в открытых источниках — домены, email, соцсети</span>
+  </footer>
+
+  
+  <script defer src="/js/header-ui.js?v=4.2.22"></script>
+  <script defer src="./js/domain.js?v=4.2.22"></script>
+  <script defer src="/js/workspace.js?v=4.3.2"></script>
+</body>
+</html>
+

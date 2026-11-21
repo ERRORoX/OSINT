@@ -13,19 +13,19 @@
   --gc-space-md: 15px; /* это отступы */
   --gc-space-lg: 22px; /* это отступы */
   /* Цвета под макет (тёмный "glass"). */
-  --gc-bg: #0b1220;
-  --gc-surface: rgba(18, 26, 40, 0.78);
-  --gc-surface-2: rgba(10, 16, 26, 0.72);
-  --gc-border: rgba(255, 255, 255, 0.08);
-  --gc-text: rgba(235, 242, 255, 0.92);
-  --gc-muted: rgba(200, 212, 235, 0.62);
-  --gc-accent: rgba(0, 162, 255, 1);
-  --gc-accent-hover: rgba(0, 190, 255, 1);
-  --gc-danger: #ff1f2d;
-  --gc-radius: 14px;
+  --gc-bg: #080d14;
+  --gc-surface: rgba(13, 21, 32, 0.94);
+  --gc-surface-2: rgba(8, 14, 23, 0.88);
+  --gc-border: rgba(145, 170, 198, 0.14);
+  --gc-text: #e7eef7;
+  --gc-muted: #91a2b6;
+  --gc-accent: #59b8f5;
+  --gc-accent-hover: #82ccff;
+  --gc-danger: #f05b68;
+  --gc-radius: 15px;
   --gc-radius-sm: 10px;
   /** Ширина правой колонки (сводка + ссылка). Чтобы растянуть — увеличьте значение (например 400px, 420px). */
-  --gc-sidebar-width: 360px; /* это ширина правой колонки */
+  --gc-sidebar-width: 360px; /* ширина правой колонки */
 }
 
 #panel-grabcam.tool-panel.active {
@@ -108,11 +108,13 @@
   /* Важно: не переопределяем grid-template-columns.
      Его задаёт layout.js инлайном (и может быть пользовательский layout из localStorage). */
   /* Карта занимает две левые колонки: увеличиваем их долю — карта визуально шире */
-  grid-template-columns: 4fr 1fr 1fr !important;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.85fr) !important;
   grid-template-areas:
-    "control control control"
-    "map map link"
-    "photos locations forms";
+    "control control"
+    "map link"
+    "photos locations"
+    "screen forms"
+    "audio audio";
 }
 
 /* Привязка виджетов к областям (перекрываем inline grid-column/grid-row). */
@@ -123,6 +125,8 @@
 #panel-grabcam .gc-widget-photos { grid-area: photos; }
 #panel-grabcam .gc-widget-locations { grid-area: locations; }
 #panel-grabcam .gc-widget-forms { grid-area: forms; }
+#panel-grabcam .gc-widget-screen { grid-area: screen; }
+#panel-grabcam .gc-widget-audio { grid-area: audio; }
 
 #panel-grabcam .gc-widget-map {
   margin-top: 0;
@@ -136,6 +140,21 @@
 
 #panel-grabcam .gc-widget-summary-text {
   margin-top: 0.5rem;
+}
+
+@media (max-width: 900px) {
+  #panel-grabcam .gc-grid-widgets {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-areas:
+      "control"
+      "map"
+      "link"
+      "photos"
+      "locations"
+      "screen"
+      "forms"
+      "audio";
+  }
 }
 
 @media (max-width: 768px) {
@@ -286,4 +305,125 @@
 #panel-grabcam .gc-widget-map .maplibregl-ctrl-group button.maplibregl-ctrl-fullscreen .maplibregl-ctrl-icon {
   opacity: 0.92;
   filter: invert(1);
+}
+
+
+/* 4.2 visual refinement: restrained black/blue-green palette and cleaner hierarchy. */
+#panel-grabcam .tool-view-grabcam {
+  background:
+    radial-gradient(900px 440px at 78% -180px, rgba(49, 115, 142, .16), transparent 62%),
+    radial-gradient(760px 420px at -15% 20%, rgba(46, 116, 94, .10), transparent 58%),
+    linear-gradient(180deg, #080d14 0%, #070b11 100%);
+}
+#panel-grabcam .gc-shell { padding: clamp(12px, 2vw, 24px); gap: 20px; }
+#panel-grabcam .gc-content { gap: 18px; }
+#panel-grabcam .gc-page-head {
+  min-height: 54px;
+  padding: 4px 2px 12px;
+  border-bottom: 1px solid rgba(145, 170, 198, .12);
+}
+#panel-grabcam .gc-page-name { font-size: 1.15rem; letter-spacing: -.025em; }
+#panel-grabcam .gc-page-mark {
+  width: 34px; height: 34px; border-radius: 11px;
+  background: rgba(89, 184, 245, .09);
+  border-color: rgba(89, 184, 245, .22);
+  color: #76c7fa;
+}
+#panel-grabcam .gc-grid-widgets { gap: 16px; align-items: stretch; }
+#panel-grabcam .gc-widget,
+#panel-grabcam .gc-widget-control {
+  border-color: rgba(145, 170, 198, .13);
+  border-radius: 15px;
+  background: linear-gradient(155deg, rgba(16, 26, 39, .96), rgba(10, 17, 27, .97));
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .20);
+  backdrop-filter: blur(12px);
+}
+#panel-grabcam .gc-widget:hover,
+#panel-grabcam .gc-widget-control:hover {
+  border-color: rgba(89, 184, 245, .26);
+  box-shadow: 0 16px 38px rgba(0, 0, 0, .25);
+}
+#panel-grabcam .gc-widget-title,
+#panel-grabcam .gc-widget-control .gc-control-title {
+  font-family: var(--font-sans);
+  font-size: .9rem;
+  font-weight: 700;
+  letter-spacing: -.01em;
+}
+#panel-grabcam .gc-widget-map .gc-map-canvas:not(.gc-map-empty),
+#panel-grabcam .gc-widget-map .gc-map-canvas.gc-map-empty {
+  min-height: 320px;
+  border-radius: 12px;
+}
+#panel-grabcam .gc-widget-photos,
+#panel-grabcam .gc-widget-locations,
+#panel-grabcam .gc-widget-forms,
+#panel-grabcam .gc-widget-screen,
+#panel-grabcam .gc-widget-audio { min-width: 0; }
+#panel-grabcam button,
+#panel-grabcam select,
+#panel-grabcam input { accent-color: var(--gc-accent); }
+#panel-grabcam button:focus-visible,
+#panel-grabcam a:focus-visible,
+#panel-grabcam input:focus-visible,
+#panel-grabcam select:focus-visible {
+  outline: 2px solid rgba(89, 184, 245, .78);
+  outline-offset: 2px;
+}
+#panel-grabcam .gc-widget-control .gc-control-btn-start {
+  background: rgba(89, 184, 245, .10);
+  color: #76c7fa;
+  border-color: rgba(89, 184, 245, .28);
+}
+#panel-grabcam .gc-widget-control .gc-control-btn-start:hover:not(:disabled) {
+  background: rgba(89, 184, 245, .16);
+}
+#panel-grabcam .gc-widget-control .gc-control-select { border-color: var(--gc-border); }
+@media (max-width: 900px) {
+  #panel-grabcam .gc-widget-map .gc-map-canvas:not(.gc-map-empty),
+  #panel-grabcam .gc-widget-map .gc-map-canvas.gc-map-empty { min-height: 260px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #panel-grabcam .gc-widget,
+  #panel-grabcam .gc-widget-control { transition: none; }
+}
+
+/* Unified compact heading and icon scale for GrabCam widgets. */
+#panel-grabcam .gc-page-head {
+  min-height: 30px;
+  padding: 0 2px;
+}
+#panel-grabcam .gc-page-mark {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  font-size: 13px;
+}
+#panel-grabcam .gc-page-name {
+  font-size: 15px;
+  line-height: 1.25;
+}
+#panel-grabcam .gc-widget h3,
+#panel-grabcam .gc-widget .gc-section-title {
+  font-size: .95rem;
+  line-height: 1.35;
+  margin-top: 0;
+}
+#panel-grabcam .gc-widget h3 > svg,
+#panel-grabcam .gc-widget h3 > img,
+#panel-grabcam .gc-widget .gc-widget-icon {
+  width: 18px !important;
+  height: 18px !important;
+  max-width: 18px !important;
+  max-height: 18px !important;
+  vertical-align: middle;
+  object-fit: contain;
+}
+#panel-grabcam .gc-widget > img:not(.gc-map-marker-pin),
+#panel-grabcam .gc-widget > .gc-hero-icon {
+  width: 28px;
+  height: 28px;
+  max-width: 28px;
+  max-height: 28px;
+  object-fit: contain;
 }

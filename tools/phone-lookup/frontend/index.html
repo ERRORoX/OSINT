@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ru"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080d15"><meta name="description" content="Пассивный анализ телефонных номеров и метаданных плана нумерации.">
+<title>Phone Intelligence — OSINT Panel</title>
+<link rel="stylesheet" href="/css/tool-bundle/hub.css"><link rel="stylesheet" href="/css/panel-41.css?v=4.2.0"><link rel="stylesheet" href="/css/unified-workstation.css?v=4.5.0">
+<style>
+:root{color-scheme:dark;--ph-bg:#080d15;--ph-panel:#101a27;--ph-panel2:#0b1420;--ph-line:#22364a;--ph-text:#e6f0fb;--ph-muted:#8da2b8;--ph-blue:#62c2ff;--ph-green:#6cdaa5;--ph-red:#ff8585}
+.phone-page{width:min(1180px,calc(100% - 34px));margin:26px auto 58px;color:var(--ph-text)}
+.phone-hero{position:relative;overflow:hidden;padding:clamp(22px,4vw,42px);border:1px solid #23435b;border-radius:22px;background:radial-gradient(ellipse at 92% 4%,rgba(48,151,214,.2),transparent 37%),linear-gradient(135deg,#142438,#0b121d 72%);box-shadow:0 22px 65px #0005}
+.phone-hero:after{content:"";position:absolute;right:7%;top:23%;width:190px;height:190px;border:1px solid #59b8f522;border-radius:50%;box-shadow:0 0 0 25px #59b8f508,0 0 0 55px #59b8f505;pointer-events:none}
+.ph-kicker{font:700 .7rem/1.4 ui-monospace,monospace;letter-spacing:.16em;color:var(--ph-blue)}.phone-hero h2{font-size:clamp(1.8rem,4vw,2.8rem);letter-spacing:-.045em;margin:13px 0 9px}.phone-hero h2 span{color:var(--ph-blue)}.ph-lead{max-width:740px;color:#aebed0;line-height:1.7;margin:0}
+.ph-search{display:flex;gap:10px;margin:26px 0 9px;max-width:790px;position:relative;z-index:1}.ph-input-wrap{display:flex;align-items:center;flex:1;min-width:0;border:1px solid #38536b;background:#070e17;border-radius:12px;padding:0 14px;transition:.2s}.ph-input-wrap:focus-within{border-color:var(--ph-blue);box-shadow:0 0 0 3px #62c2ff18}.ph-prefix{color:var(--ph-blue);font:700 1.1rem ui-monospace,monospace}.ph-search input{width:100%;min-width:0;padding:15px 10px;border:0;outline:0;background:transparent;color:#f1f7ff;font:600 1rem ui-monospace,monospace}.ph-search input::placeholder{color:#60758b}.ph-btn{border:1px solid #62c2ff66;border-radius:12px;background:linear-gradient(135deg,#1b6592,#174666);color:#e7f6ff;font-weight:750;padding:0 20px;cursor:pointer;transition:.2s;white-space:nowrap}.ph-btn:hover{filter:brightness(1.15);transform:translateY(-1px)}.ph-btn:disabled{opacity:.55;cursor:wait;transform:none}.ph-btn.secondary{background:#132235;border-color:#2d465e;color:#bdd5e9}.ph-quick{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.ph-chip{border:1px solid #2a4055;border-radius:999px;background:#0b1521;color:#9eb6cb;padding:6px 10px;font-size:.75rem;cursor:pointer}.ph-chip:hover{border-color:#62c2ff;color:#d5efff}
+.ph-status{display:flex;align-items:center;gap:9px;min-height:30px;margin:16px 0 0;color:var(--ph-muted);font-size:.84rem}.ph-status:before{content:"";width:7px;height:7px;border-radius:50%;background:#71869b;box-shadow:0 0 0 4px #71869b18}.ph-status[data-state=success]:before{background:var(--ph-green);box-shadow:0 0 0 4px #6cdaa51c}.ph-status[data-state=error]:before{background:var(--ph-red);box-shadow:0 0 0 4px #ff85851c}.ph-status[data-state=loading]:before{background:var(--ph-blue);box-shadow:0 0 0 4px #62c2ff1c}
+.ph-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(260px,.75fr);gap:16px;margin-top:18px}.ph-card{border:1px solid var(--ph-line);border-radius:16px;background:linear-gradient(145deg,#111d2b,#0b131e);overflow:hidden;min-width:0}.ph-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 18px;border-bottom:1px solid var(--ph-line)}.ph-card-head strong{font-size:.82rem;letter-spacing:.07em}.ph-eyebrow{color:#7994ac;font:700 .65rem ui-monospace,monospace;letter-spacing:.12em}.ph-overview{padding:22px}.ph-number{font:700 clamp(1.25rem,3vw,1.9rem)/1.35 ui-monospace,monospace;overflow-wrap:anywhere;color:#f0f7ff}.ph-country{display:flex;align-items:center;gap:9px;margin-top:10px;color:#a8bdd0;font-size:.9rem}.ph-flag{font-size:1.5rem}.ph-valid{display:inline-flex;align-items:center;gap:6px;margin-top:16px;padding:6px 10px;border:1px solid #397a5c;border-radius:99px;background:#123323;color:#8ce0b2;font-size:.72rem;font-weight:750}.ph-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:0 18px 18px}.ph-metric{padding:13px;border:1px solid #1e3347;border-radius:11px;background:#0a1420;min-width:0}.ph-metric span{display:block;color:#8198ae;font-size:.7rem;margin-bottom:7px}.ph-metric strong{display:block;color:#dceaf7;font-size:.9rem;overflow-wrap:anywhere;font-weight:650}
+.ph-details{padding:6px 18px 18px}.ph-detail{display:grid;grid-template-columns:minmax(110px,.7fr) minmax(0,1.3fr);gap:12px;padding:11px 0;border-bottom:1px solid #1c2d3e;font-size:.82rem}.ph-detail:last-child{border:0}.ph-detail span{color:#8499ad}.ph-detail strong{color:#d9e7f5;font-weight:600;overflow-wrap:anywhere;text-align:right}
+.ph-actions{display:flex;flex-wrap:wrap;gap:8px}.ph-actions button{padding:7px 10px;font-size:.72rem}.ph-empty{padding:28px 20px;color:#7f94a9;text-align:center;line-height:1.7;font-size:.86rem}.ph-empty b{display:block;color:#c0d2e3;font-size:.94rem;margin-bottom:7px}.ph-section{margin-top:17px}.ph-note{padding:15px 17px;border:1px solid #26394d;border-radius:13px;background:#0c1622;color:#92a7bc;font-size:.76rem;line-height:1.7}.ph-note b{color:#c4d7e8}.ph-note a{color:var(--ph-blue)}
+.ph-history-list{padding:7px 16px 14px}.ph-history-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 2px;border-bottom:1px solid #1b2c3d}.ph-history-item:last-child{border:0}.ph-history-item button{background:none;border:0;color:#c5d8e9;font:600 .8rem ui-monospace,monospace;cursor:pointer;text-align:left;overflow-wrap:anywhere}.ph-history-item small{color:#71869b;font-size:.68rem;white-space:nowrap}
+.ph-result-empty{display:block}.ph-result-ready{display:none}.ph-result-ready.is-visible{display:block}.ph-side-copy{color:#91a8bd;font-size:.77rem;line-height:1.7;padding:16px 18px}.ph-side-copy ul{padding-left:18px;margin:9px 0}.ph-side-copy li{margin:6px 0}.ph-raw{display:none;margin:0;padding:16px 18px;white-space:pre-wrap;overflow-wrap:anywhere;color:#b9cde0;background:#08111b;border-top:1px solid var(--ph-line);font:.76rem/1.7 ui-monospace,monospace}.ph-raw.open{display:block}
+@media(max-width:760px){#person-search-form{display:flex!important;flex-direction:column}#person-search-form input{box-sizing:border-box;width:100%;min-height:44px;border:1px solid #29445c;border-radius:9px;padding:10px;background:#09131f;color:#e6f0fb}.ph-grid{grid-template-columns:1fr}.phone-page{width:calc(100% - 20px);margin:12px auto 36px}.ph-search{flex-direction:column}.ph-btn{min-height:48px}.phone-hero:after{right:-75px;top:35%}}
+@media(max-width:430px){.ph-metrics{grid-template-columns:1fr 1fr;padding:0 12px 14px}.ph-overview{padding:17px}.ph-detail{grid-template-columns:1fr;gap:4px}.ph-detail strong{text-align:left}.ph-card-head{padding:13px}.ph-actions{width:100%}}
+
+.ph-public-checks{margin:0 18px 20px;padding:15px;border:1px solid #28445d;border-radius:12px;background:linear-gradient(145deg,#0d1c2b,#09131e)}
+.ph-public-checks>strong{display:block;margin-top:7px;color:#e1effd;font-size:.9rem}
+.ph-public-checks p{margin:7px 0 12px;color:#8fa7bd;font-size:.75rem;line-height:1.6}
+.ph-public-links{display:flex;flex-wrap:wrap;gap:8px}
+.ph-public-links a{display:inline-flex;align-items:center;gap:6px;padding:8px 10px;border:1px solid #2b4962;border-radius:8px;background:#102238;color:#a9d7f7;text-decoration:none;font-size:.75rem;font-weight:650}
+.ph-public-links a:hover{border-color:#62c2ff;color:#e5f6ff}
+.ph-public-links span{color:#7890a7;font-size:.75rem}
+.ph-link-group+.ph-link-group{margin-top:14px;padding-top:12px;border-top:1px solid #20364a}.ph-link-heading{display:block;margin:0 0 8px;color:#8ea8bf;font-size:.7rem;letter-spacing:.06em;text-transform:uppercase}.ph-link-items{display:flex;flex-wrap:wrap;gap:8px}
+@media(max-width:430px){.ph-public-checks{margin:0 12px 14px;padding:12px}}
+
+.ph-source-controls{margin-bottom:10px}.ph-source-hint{display:block;color:#8fa7bd;font-size:.74rem;line-height:1.55;margin:0 0 10px}.ph-source-options{display:flex;flex-wrap:wrap;gap:7px}.ph-source-option{display:inline-flex;align-items:center;gap:7px;padding:7px 9px;border:1px solid #29445c;border-radius:8px;background:#0b1927;color:#b8cde0;font-size:.74rem;cursor:pointer}.ph-source-option input{accent-color:#58b9f5;width:14px;height:14px;margin:0}.ph-source-actions{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 10px}.ph-source-actions button{padding:8px 11px;border:1px solid #31536e;border-radius:8px;background:#10263a;color:#b9def8;font-size:.73rem;font-weight:650;cursor:pointer}.ph-source-actions .ph-source-clear{background:transparent;color:#8fa7bd;border-color:#293d50}.ph-selected-links{display:flex;flex-wrap:wrap;gap:8px}.ph-selected-links:empty{display:none}
+.ph-auto-search{margin-top:14px;padding-top:13px;border-top:1px solid #20364a}.ph-auto-head{color:#8ea8bf;font-size:.68rem;font-weight:750;letter-spacing:.09em;margin-bottom:9px}.ph-auto-message,.ph-auto-note{display:block;color:#8fa7bd;font-size:.74rem;line-height:1.55;margin:0 0 10px}.ph-auto-statuses{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.ph-auto-status{display:flex;flex-direction:column;gap:5px;padding:9px;border:1px solid #29445c;border-radius:8px;background:#0b1927;min-width:0}.ph-auto-status strong{font-size:.72rem;color:#c6d9ea}.ph-auto-status span{font-size:.68rem;color:#8fa7bd}.ph-auto-status span[data-state=found]{color:#8ce0b2}.ph-auto-results{display:grid;gap:8px;margin-top:10px}.ph-auto-result{padding:10px;border:1px solid #233b50;border-radius:9px;background:#0a1623}.ph-auto-result small{display:block;color:#7fa3bf;font-size:.65rem;margin-bottom:5px}.ph-auto-result strong{display:block;color:#d8eafa;font-size:.77rem;overflow-wrap:anywhere}.ph-auto-result p{color:#8fa7bd;font-size:.72rem;line-height:1.5;margin:6px 0}.ph-auto-result a{color:#83cfff;font-size:.72rem;text-decoration:none}@media(max-width:430px){.ph-auto-statuses{grid-template-columns:1fr}}
+.ph-direct-messengers{width:100%;padding:12px;margin-bottom:12px;border:1px solid #31536e;border-radius:10px;background:#0b1b2a}.ph-direct-links{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}.ph-direct-item{display:flex;flex-direction:column;gap:5px;min-width:0;padding:9px;border:1px solid #29445c;border-radius:8px;background:#102238}.ph-direct-item a{color:#a9d7f7;font-size:.76rem;font-weight:700;text-decoration:none}.ph-direct-item small{color:#8fa7bd;font-size:.66rem;line-height:1.45}@media(max-width:520px){.ph-direct-links{grid-template-columns:1fr}}
+</style></head>
+<body>
+<header class="osint-header app-header"><div class="osint-header-inner scan-line"><div class="osint-logo"><a href="/" style="color:inherit;text-decoration:none">◎</a></div><div class="osint-title"><h1><a href="/" style="text-decoration:none;color:inherit"><span class="accent">OSINT</span><span class="dim">Panel</span></a></h1><p>Phone Number Intelligence · Пассивный анализ</p></div></div></header>
+<main class="main osint-main phone-page">
+<section class="phone-hero" aria-labelledby="phone-title">
+<div class="ph-kicker">TELECOM INTELLIGENCE / NUMBERING PLAN</div><h2 id="phone-title">Phone <span>Intelligence</span></h2>
+<p class="ph-lead">Анализ международного номера по локальным справочным базам: страна, регион нумерации, тип линии, формат, часовые пояса и сведения об исходном операторском диапазоне.</p>
+<form class="ph-search" id="phone-form">
+<label class="ph-input-wrap"><span class="ph-prefix">+</span><input id="phone-input" name="phone" type="tel" inputmode="tel" autocomplete="tel" autocapitalize="off" spellcheck="false" placeholder="код страны и номер" required aria-label="Номер телефона в международном формате"></label>
+<button class="ph-btn" id="phone-submit" type="submit">Анализировать номер ↗</button>
+</form>
+<div class="ph-quick"><button class="ph-chip" type="button" data-example="+992">Таджикистан +992</button><button class="ph-chip" type="button" data-example="+7">Россия +7</button><button class="ph-chip" type="button" data-example="+1">США / Канада +1</button><button class="ph-chip" type="button" id="phone-clear">Очистить</button></div>
+<div class="ph-status" id="phone-status" role="status" aria-live="polite" data-state="idle">Ожидание номера · укажите международный код страны</div>
+</section>
+
+<section class="ph-card" style="margin:0 0 18px;padding:18px" aria-labelledby="person-search-title">
+  <div class="ph-eyebrow">PUBLIC PEOPLE SEARCH</div>
+  <h3 id="person-search-title" style="margin:5px 0 8px;color:#e6f0fb">Поиск по имени и фамилии</h3>
+  <p style="color:#8da2b8;font-size:.82rem;margin:0 0 12px">Поиск публичных страниц, в первую очередь Одноклассники. Город или страна помогают отсеять часть однофамильцев.</p>
+  <form id="person-search-form" class="ph-search" style="margin:0;grid-template-columns:1fr 1fr auto">
+    <input id="person-name" type="text" maxlength="120" required placeholder="Имя и фамилия" aria-label="Имя и фамилия">
+    <input id="person-location" type="text" maxlength="100" placeholder="Город или страна (необязательно)" aria-label="Город или страна">
+    <button class="ph-btn" id="person-search-submit" type="submit">Искать ↗</button>
+  </form>
+  <div id="person-search-status" class="ph-status" role="status" aria-live="polite" style="margin-top:10px">Ожидание запроса</div>
+  <div id="person-search-results" class="ph-auto-search-result" style="margin-top:12px"><span>Здесь появятся найденные публичные страницы.</span></div>
+</section>
+<div class="ph-grid">
+<section class="ph-card" aria-label="Результаты анализа">
+<div class="ph-card-head"><div><div class="ph-eyebrow">ANALYSIS OUTPUT</div><strong>РЕЗУЛЬТАТ АНАЛИЗА</strong></div><div class="ph-actions"><button class="ph-btn secondary" id="phone-copy" type="button" disabled>Копировать</button><button class="ph-btn secondary" id="phone-export" type="button" disabled>JSON ↓</button></div></div>
+<div class="ph-result-empty ph-empty" id="phone-empty"><b>Результаты появятся здесь</b>После анализа будут показаны доступные характеристики номера. Проверка выполняется по локальной базе, без поиска владельца.</div>
+<div class="ph-result-ready" id="phone-result">
+<div class="ph-overview"><div class="ph-eyebrow">NORMALIZED NUMBER</div><div class="ph-number" id="ph-e164">—</div><div class="ph-country"><span class="ph-flag" id="ph-flag">🌐</span><span id="ph-country">Страна не определена</span></div><span class="ph-valid" id="ph-valid">✓ Формат подтверждён</span></div>
+<div class="ph-metrics">
+<div class="ph-metric"><span>Код вызова</span><strong id="ph-code">—</strong></div><div class="ph-metric"><span>Тип линии</span><strong id="ph-type">—</strong></div>
+<div class="ph-metric"><span>Регион нумерации</span><strong id="ph-region">—</strong></div><div class="ph-metric"><span>Оператор диапазона</span><strong id="ph-carrier">—</strong></div>
+</div>
+<div class="ph-details" id="ph-details"></div>
+<section class="ph-public-checks" aria-labelledby="ph-public-title">
+<div class="ph-eyebrow">OPEN WEB / REPUTATION ONLY</div>
+<strong id="ph-public-title">Публичная репутация номера</strong>
+<p>Автопоиск передаёт введённый номер внешнему поисковому API (Brave Search или Google CSE) для 15 направлений: общий веб, Одноклассники, VK, соцсети, WhatsApp, Telegram, imo, объявления, каталоги, карты, форумы, документы, видео, жалобы и бизнес-контакты. Ниже также остаются ручные поисковые ссылки. Для каждого результата показываются домен, поисковый запрос, время обнаружения и низкая исходная достоверность. Это поиск публичных страниц, а не проверка регистрации или существования закрытого аккаунта.</p>
+<div class="ph-public-links" id="ph-public-links"><span>Ссылки появятся после проверки номера.</span></div>
+<div class="ph-auto-search"><div class="ph-auto-head">АВТОМАТИЧЕСКИЙ ПОИСК ПО СЕРВИСАМ</div><div id="ph-auto-search-result" class="ph-auto-search-result"><span>Результаты автоматической проверки появятся здесь.</span></div></div>
+</section>
+<pre class="ph-raw" id="ph-raw"></pre>
+</div>
+</section>
+<aside class="ph-card">
+<div class="ph-card-head"><div><div class="ph-eyebrow">INTELLIGENCE SCOPE</div><strong>ЧТО МОЖНО УЗНАТЬ</strong></div></div>
+<div class="ph-side-copy"><b style="color:#dceaf7">Публичные технические данные</b><ul><li>Международный и национальный формат</li><li>Страна и код телефонного плана</li><li>Регион и тип номера</li><li>Справочный оператор исходного диапазона</li><li>Возможные часовые пояса</li><li>Статус валидности по базе нумерации</li><li>Публичные жалобы на спам и мошеннические звонки</li></ul><div class="ph-note"><b>Чего этот анализ не показывает:</b> ФИО владельца, адрес проживания, GPS, текущее местоположение, активность SIM-карты или аккаунты в мессенджерах. Оператор может отличаться после переноса номера.</div></div>
+<div class="ph-card-head" style="border-top:1px solid var(--ph-line)"><div><div class="ph-eyebrow">SESSION</div><strong>ПОСЛЕДНИЕ ПРОВЕРКИ</strong></div><button class="ph-chip" id="phone-history-clear" type="button">Очистить</button></div>
+<div class="ph-history-list" id="phone-history"><div class="ph-empty" style="padding:12px">В этой сессии проверок пока нет.</div></div>
+</aside>
+</div>
+<section class="ph-section ph-note"><b>Методология и точность.</b> Результаты формируются локальной библиотекой libphonenumber и её справочными данными. Валидность означает соответствие известному плану нумерации, но не подтверждает, что номер активен или кому-либо принадлежит. Географическое описание может быть неполным для мобильных и неперсональных номеров. Результат сохраняется в граф расследований только как телефонный узел с техническими метаданными. Поиск по сырым дампам утечек и чужим телефонным книгам не выполняется; для учебного Breach Intelligence используйте синтетические или обезличенные наборы данных.</section>
+</main>
+<footer class="app-footer"><span><a href="/" style="color:inherit;text-decoration:none">OSINT Panel</a></span><span class="footer-hint">Phone & Public People Intelligence · 2.7.0</span></footer>
+<script src="/modules/phone-lookup/page.js?v=2.7.0" defer></script><script defer src="/js/workspace.js?v=4.3.2"></script>
+</body></html>

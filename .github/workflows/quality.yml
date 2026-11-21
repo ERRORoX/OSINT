@@ -1,0 +1,104 @@
+name: Quality Checks
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  python-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install required test dependency
+        run: python -m pip install Pillow requests
+
+      - name: Check installer shell syntax
+        run: bash -n install.sh
+
+      - name: Check settings JavaScript syntax
+        run: node --input-type=module --check < static/js/settings.js
+
+      - name: Check home navigation JavaScript syntax
+        run: node --input-type=module --check < static/js/app-hub.js
+
+      - name: Check domain workspace JavaScript syntax
+        run: node --check tools/domain-workspace/frontend/js/domain.js
+
+      - name: Test module registry
+        run: python -m unittest discover -s backend/tests -p "test_*.py" -v
+
+      - name: Test central tool registry
+        run: python -m unittest discover -s backend/tests -p "test_central_registry.py" -v
+
+      - name: Test integrated module runtime
+        run: python -m unittest discover -s backend/tests -p "test_module_runtime.py" -v
+
+      - name: Check Phone Lookup JavaScript syntax
+        run: node --check tools/phone-lookup/frontend/page.js
+
+      - name: Test Phone Lookup module
+        run: python tools/phone-lookup/tests/test_tool.py -v
+
+      - name: Test Photo Search module
+        run: python tools/photo-search/tests/test_tool.py -v
+
+      - name: Test Google OSINT module
+        run: python tools/google-osint/tests/test_tool.py -v
+
+      - name: Test GrabCam module
+        run: python tools/grabcam/tests/test_tool.py -v
+
+      - name: Test IP/RDAP module
+        run: python tools/ip-rdap/tests/test_tool.py -v
+
+      - name: Test dnsx module
+        run: python tools/dnsx/tests/test_tool.py -v
+
+      - name: Test Subfinder module
+        run: python tools/subfinder/tests/test_tool.py -v
+
+      - name: Test Shodan module
+        run: python tools/shodan/tests/test_tool.py -v
+
+      - name: Test theHarvester module
+        run: python tools/theharvester/tests/test_tool.py -v
+
+      - name: Test Domain Search module
+        run: python tools/domain-search/tests/test_tool.py -v
+
+      - name: Test Sherlock module
+        run: python tools/sherlock/tests/test_tool.py -v
+
+      - name: Test Maigret module
+        run: python tools/maigret/tests/test_tool.py -v
+
+      - name: Test Blackbird module
+        run: python tools/blackbird/tests/test_tool.py -v
+
+      - name: Test Social Analyzer module
+        run: python tools/social-analyzer/tests/test_tool.py -v
+
+      - name: Validate integrated runtime modules
+        run: python backend/module_cli.py runtime-check
+
+      - name: Validate module manifests
+        run: python backend/module_cli.py check

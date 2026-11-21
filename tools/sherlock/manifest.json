@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "id": "sherlock",
+  "name": "Sherlock",
+  "version": "1.1.0",
+  "category": "identity",
+  "description": "Проверка публичного присутствия username через legacy backend-адаптер.",
+  "status": "integrated",
+  "enabled": true,
+  "entrypoints": {
+    "backend_adapter": "tools/sherlock/backend/tool.py",
+    "tool_class": "ToolSherlock"
+  },
+  "dependencies": {
+    "python": [],
+    "system": [],
+    "optional": [
+      "Sherlock project source or CLI"
+    ]
+  },
+  "capabilities": [
+    "public-username-presence-search"
+  ],
+  "legacy_paths": [
+    "backend/tools/tool_sherlock.py"
+  ],
+  "notes": [
+    "Каноническая реализация находится в backend/tool.py внутри каталога модуля.",
+    "Старый backend/tools import path сохранён как compatibility adapter.",
+    "Поиск предназначен для проверки публичных профилей; модуль не пытается входить в аккаунты или обходить ограничения платформ."
+  ]
+}

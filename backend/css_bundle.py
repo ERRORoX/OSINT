@@ -70,15 +70,21 @@ def build_tool_css_bundle(*, static_root: str, grabcam_panel_dir: str, tool_id: 
         path = os.path.join(css_dir, "hub-only.css")
         chunks.append("\n/* === hub-only.css === */\n")
         chunks.append(_read_file(path))
+        chunks.append("\n/* === unified-workstation.css === */\n")
+        chunks.append(_read_file(os.path.join(css_dir, "unified-workstation.css")))
         return "".join(chunks)
     if tool_id == "grabcam":
         for rel in GRABCAM_CSS_FILES:
             path = os.path.join(grabcam_panel_dir, rel)
             chunks.append(f"\n/* === grabcam:{rel} === */\n")
             chunks.append(_read_file(path))
+        chunks.append("\n/* === unified-workstation.css === */\n")
+        chunks.append(_read_file(os.path.join(css_dir, "unified-workstation.css")))
         return "".join(chunks)
     for rel in TOOL_CSS_TAILS[tool_id]:
         path = os.path.join(css_dir, rel)
         chunks.append(f"\n/* === {rel} === */\n")
         chunks.append(_read_file(path))
+    chunks.append("\n/* === unified-workstation.css === */\n")
+    chunks.append(_read_file(os.path.join(css_dir, "unified-workstation.css")))
     return "".join(chunks)

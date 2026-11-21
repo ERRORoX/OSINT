@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "id": "photo-workspace",
+  "name": "Photo Workspace",
+  "version": "1.0.0",
+  "category": "photo",
+  "description": "Рабочая область анализа загруженных изображений, EXIF, OCR, QR и AI-инструментов.",
+  "status": "integrated",
+  "enabled": true,
+  "entrypoints": {
+    "page_url": "/modules/photo-workspace/",
+    "frontend": "tools/photo-workspace/frontend/index.html",
+    "manifest_readme": "tools/photo-workspace/README.md"
+  },
+  "dependencies": {
+    "python": [
+      "Pillow"
+    ],
+    "system": [],
+    "optional": [
+      "ExifTool",
+      "OCR engine",
+      "AI provider API key"
+    ]
+  },
+  "capabilities": [
+    "user-uploaded-image-workspace",
+    "image-metadata",
+    "ocr",
+    "qr-analysis",
+    "ai-image-analysis"
+  ],
+  "legacy_paths": [
+    "static/photo/index.html",
+    "static/photo/css/photo.css",
+    "static/photo/js/photo.js"
+  ],
+  "notes": [
+    "Frontend перенесён в tools/photo-workspace; связанные backend tool IDs остаются отдельными модулями.",
+    "Старый адрес /photo/ перенаправляет на /modules/photo-workspace/.",
+    "Файлы изображения обрабатываются только после явной загрузки пользователем."
+  ]
+}
