@@ -30,7 +30,6 @@ def _search_public_web(e164: str) -> dict[str, Any]:
         }
 
     digits = "".join(ch for ch in e164 if ch.isdigit())
-    national = digits.lstrip("0123456789") if False else digits
     spaced = " ".join([digits[:3], digits[3:6], digits[6:]])
     exact = f'"{e164}" OR "{digits}" OR "{spaced}"'
     queries = [
