@@ -1178,16 +1178,33 @@ async function graphWire(){
  document.getElementById("graph-fit")?.addEventListener("click",graphFitView);
  const graphPanel=document.getElementById("investigation-graph-panel");
  const fullButton=document.getElementById("graph-fullscreen");
- const toggleFullscreen=()=>{
+ const setGraphFullscreenState=active=>{
   if(!graphPanel)return;
-  const active=graphPanel.classList.toggle("graph-fullscreen");
-  if(fullButton){fullButton.textContent=active?"Свернуть":"На весь экран";fullButton.setAttribute("aria-pressed",String(active));}
+  graphPanel.classList.toggle("graph-fullscreen",active);
   document.body.classList.toggle("graph-fullscreen-active",active);
+  if(fullButton){fullButton.textContent=active?"Свернуть":"На весь экран";fullButton.setAttribute("aria-pressed",String(active));}
   requestAnimationFrame(()=>{graphFitView();graphRender();});
  };
+ const toggleFullscreen=async()=>{
+  if(!graphPanel)return;
+  const active=graphPanel.classList.contains("graph-fullscreen")||document.fullscreenElement===graphPanel;
+  if(active){
+   if(document.fullscreenElement===graphPanel&&document.exitFullscreen){try{await document.exitFullscreen();}catch(error){}}
+   setGraphFullscreenState(false);
+   return;
+  }
+  setGraphFullscreenState(true);
+  if(graphPanel.requestFullscreen){
+   try{await graphPanel.requestFullscreen();}catch(error){/* CSS fullscreen fallback remains active */}
+  }
+ };
  fullButton?.addEventListener("click",toggleFullscreen);
- document.addEventListener("keydown",event=>{if(event.key==="Escape"&&graphPanel?.classList.contains("graph-fullscreen"))toggleFullscreen();});
- window.addEventListener("resize",()=>{if(graphPanel?.classList.contains("graph-fullscreen"))graphFitView();});
+ document.addEventListener("fullscreenchange",()=>{
+  if(document.fullscreenElement===graphPanel)setGraphFullscreenState(true);
+  else if(!document.fullscreenElement&&graphPanel?.classList.contains("graph-fullscreen"))setGraphFullscreenState(false);
+ });
+ document.addEventListener("keydown",event=>{if(event.key==="Escape"&&graphPanel?.classList.contains("graph-fullscreen")&&document.fullscreenElement!==graphPanel)setGraphFullscreenState(false);});
+ window.addEventListener("resize",()=>{if(graphPanel?.classList.contains("graph-fullscreen"))requestAnimationFrame(()=>{graphFitView();graphRender();});});
  svg.addEventListener("wheel",event=>{event.preventDefault();graphScale=Math.max(.035,Math.min(2.5,graphScale*(event.deltaY<0?1.1:.9)));graphApplyTransform();},{passive:false});
  svg.addEventListener("pointerdown",event=>{if(event.button!==0)return;if(event.target===svg||event.target.id==="graph-viewport"||event.target.id==="graph-edges"){event.preventDefault();const point=graphPointerPosition(svg,event);graphDrag={kind:"pan",x:point.x,y:point.y,moved:false};svg.setPointerCapture(event.pointerId);}});
  svg.addEventListener("pointermove",event=>{
