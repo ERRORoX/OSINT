@@ -60,10 +60,15 @@ export function setProgressState(card, { pct, status, mode }) {
   if (mode === "error") {
     card.classList.add("is-error");
     const fill = card.querySelector(".js-progress-fill");
-    if (fill) fill.style.transform = "";
-    setProgressPct(card, pct ?? 100);
+    if (fill) {
+      fill.style.transform = "";
+      fill.style.width = "100%";
+    }
+    // 100% means completed successfully; failures get an explicit label.
+    const pctEl = card.querySelector(".js-progress-pct");
+    if (pctEl) pctEl.textContent = "ОШИБКА";
     const st = card.querySelector(".js-progress-status");
-    if (st) st.textContent = status || "Ошибка";
+    if (st) st.textContent = status || "Завершено с ошибкой";
   }
 }
 
