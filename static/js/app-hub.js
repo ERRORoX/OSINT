@@ -580,8 +580,9 @@ async function graphWire(){
    let maxRadius=0;
    for(let level=1;level<=maxLevel;level++){
     const members=groups.get(level)||[];
-    const radius=Math.max(190,Math.ceil(members.length*142/(Math.PI*2)));
-    radiusByLevel.set(level,radius);maxRadius=Math.max(maxRadius,radius);
+    const required=Math.ceil(members.length*142/(Math.PI*2));
+    const radius=Math.max(maxRadius+190,required,190);
+    radiusByLevel.set(level,radius);maxRadius=radius;
    }
    const componentWidth=Math.max(420,maxRadius*2+300),componentHeight=Math.max(420,maxRadius*2+300);
    const col=componentIndex%componentColumns,row=Math.floor(componentIndex/componentColumns);
