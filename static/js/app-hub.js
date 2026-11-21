@@ -499,7 +499,7 @@ function graphFitView(){
 }
 async function graphWire(){
  const svg=document.getElementById("investigation-graph");if(!svg)return;
- const mode=document.getElementById("graph-dataset-mode"),badge=document.getElementById("graph-data-mode"),input=document.getElementById("graph-json-input"),status=document.getElementById("graph-import-status");
+ const badge=document.getElementById("graph-data-mode"),input=document.getElementById("graph-json-input"),status=document.getElementById("graph-import-status");
  let serverGraph={nodes:[],edges:[]};
  let serverUpdatedAt=null;
  const requestGraph=async(method="GET",payload=null,path="/graph")=>{
@@ -614,7 +614,7 @@ async function graphWire(){
   const saved=await requestGraph("POST",graphData,"/graph/merge");
   serverGraph=graphValidate(saved);
   serverUpdatedAt=saved.updated_at||null;
-  if(badge&&mode?.value==="local")badge.textContent="ПОСТОЯННОЕ ХРАНИЛИЩЕ";
+  if(badge)badge.textContent="ПОСТОЯННОЕ ХРАНИЛИЩЕ";
  };
 
  window.addEventListener("focus",refreshServerGraph);
