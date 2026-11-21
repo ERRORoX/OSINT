@@ -2,9 +2,9 @@
   "schema_version": 1,
   "id": "phone-lookup",
   "name": "Phone Number Intelligence",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "category": "identity",
-  "description": "Расширенный пассивный анализ телефонного номера: страна, регион, тип линии, оператор диапазона, часовые пояса и экспорт отчёта.",
+  "description": "Пассивный анализ международного номера, технические метаданные плана нумерации и ссылки на публичные жалобы о спаме и мошенничестве.",
   "status": "integrated",
   "enabled": true,
   "entrypoints": {
@@ -31,11 +31,16 @@
     "carrier-range-metadata",
     "timezone-metadata",
     "json-report-export",
-    "relationship-graph-persistence"
+    "relationship-graph-persistence",
+    "national-significant-number-metadata",
+    "country-code-source-metadata",
+    "number-type-code",
+    "public-spam-reputation-search-links"
   ],
   "notes": [
-    "Локальная база libphonenumber; внешний поиск владельца не выполняется.",
-    "Не определяет абонента, адрес, GPS-местоположение, активность SIM-карты или аккаунты.",
-    "Оператор может отражать исходный диапазон и не учитывать перенос номера."
+    "Локальная база libphonenumber; внешний поиск публичной репутации запускается только по нажатию пользователя.",
+    "Не устанавливает владельца, адрес, GPS-местоположение, активность SIM-карты или аккаунты.",
+    "Оператор может отражать исходный диапазон и не учитывать перенос номера.",
+    "Публичные жалобы не являются доказательством нарушения и могут содержать ошибки."
   ]
 }
