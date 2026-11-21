@@ -886,6 +886,42 @@ async function graphWire(){
    if(status)status.textContent="Локальные данные перенесены в первое расследование.";
   }
  }catch(error){if(status)status.textContent="Не удалось загрузить список расследований: "+(error.message||"ошибка");}
+ const notesInput=document.getElementById("graph-note-input");
+ const notesList=document.getElementById("graph-notes-list");
+ const notesCount=document.getElementById("graph-notes-count");
+ const notesStatus=document.getElementById("graph-notes-status");
+ const renderNotes=items=>{
+  if(!notesList)return;
+  notesList.replaceChildren();
+  if(notesCount)notesCount.textContent=(items.length||0)+" заметок";
+  if(!items.length){const empty=document.createElement("p");empty.className="graph-notes-empty";empty.textContent="Заметок пока нет.";notesList.append(empty);return;}
+  items.forEach(note=>{
+   const article=document.createElement("article");article.className="graph-note-item";
+   const body=document.createElement("p");body.textContent=note.content;
+   const meta=document.createElement("small");meta.textContent=new Date(note.created_at).toLocaleString();
+   const remove=document.createElement("button");remove.type="button";remove.textContent="Удалить";
+   remove.addEventListener("click",async()=>{
+    if(!window.confirm("Удалить эту заметку?"))return;
+    try{await requestGraph("DELETE",null,"/investigations/notes/"+encodeURIComponent(note.id)+(activeInvestigationId?"?investigation_id="+encodeURIComponent(activeInvestigationId):""));await loadNotes();}
+    catch(error){if(notesStatus)notesStatus.textContent=error.message||"Не удалось удалить заметку.";}
+   });
+   article.append(body,meta,remove);notesList.append(article);
+  });
+ };
+ const loadNotes=async()=>{
+  try{const result=await requestGraph("GET",null,"/investigations/notes"+(activeInvestigationId?"?investigation_id="+encodeURIComponent(activeInvestigationId):""));renderNotes(result.items||[]);}
+  catch(error){if(notesStatus)notesStatus.textContent="Не удалось загрузить заметки: "+(error.message||"ошибка");}
+ };
+ document.getElementById("graph-note-save")?.addEventListener("click",async()=>{
+  const content=String(notesInput?.value||"").trim();
+  if(!content){if(notesStatus)notesStatus.textContent="Сначала введите текст заметки.";return;}
+  try{
+   await requestGraph("POST",{content,investigation_id:activeInvestigationId},"/investigations/notes");
+   if(notesInput)notesInput.value="";
+   if(notesStatus)notesStatus.textContent="Заметка сохранена в текущем расследовании.";
+   await loadNotes();await loadInvestigationList();
+  }catch(error){if(notesStatus)notesStatus.textContent=error.message||"Не удалось сохранить заметку.";}
+ });
  const autoLayout=()=>{
   const nodes=graphData.nodes,edges=graphData.edges,count=nodes.length;
   if(!count)return;
@@ -1000,7 +1036,7 @@ async function graphWire(){
    await requestGraph("POST",{},"/investigations/"+encodeURIComponent(target)+"/activate");
    await loadInvestigationList();
    const loaded=await requestGraph("GET");serverGraph=graphValidate(loaded);serverUpdatedAt=loaded.updated_at||null;graphData=serverGraph;
-   setMode();if(status)status.textContent="Открыто расследование: "+(investigationItems.find(item=>item.id===target)?.name||"");
+   setMode();await loadNotes();if(status)status.textContent="Открыто расследование: "+(investigationItems.find(item=>item.id===target)?.name||"");
   }catch(error){if(status)status.textContent="Не удалось открыть расследование: "+(error.message||"ошибка");await loadInvestigationList();}
  });
  investigationNew?.addEventListener("click",async()=>{
@@ -1008,7 +1044,7 @@ async function graphWire(){
   try{
    await requestGraph("POST",{name},"/investigations");await loadInvestigationList();
    const loaded=await requestGraph("GET");serverGraph=graphValidate(loaded);serverUpdatedAt=loaded.updated_at||null;graphData=serverGraph;
-   setMode();if(status)status.textContent="Создано новое пустое расследование.";
+   setMode();await loadNotes();if(status)status.textContent="Создано новое пустое расследование.";
   }catch(error){if(status)status.textContent="Не удалось создать расследование: "+(error.message||"ошибка");}
  });
  investigationRename?.addEventListener("click",async()=>{
@@ -1025,7 +1061,7 @@ async function graphWire(){
   try{
    await requestGraph("DELETE",null,"/investigations/"+encodeURIComponent(activeInvestigationId));
    await loadInvestigationList();const loaded=await requestGraph("GET");
-   serverGraph=graphValidate(loaded);serverUpdatedAt=loaded.updated_at||null;graphData=serverGraph;setMode();
+   serverGraph=graphValidate(loaded);serverUpdatedAt=loaded.updated_at||null;graphData=serverGraph;setMode();await loadNotes();
    if(status)status.textContent="Расследование удалено. Открыто следующее.";
   }catch(error){if(status)status.textContent="Не удалось удалить расследование: "+(error.message||"ошибка");}
  });
@@ -1113,6 +1149,7 @@ async function graphWire(){
  });
 
  setMode();
+ await loadNotes();
 }
 
 async function init(){
