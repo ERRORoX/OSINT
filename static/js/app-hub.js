@@ -452,21 +452,21 @@ function wireHeader(){
   const btn=document.getElementById("btn-user-menu");
   const menu=document.getElementById("user-menu");
   if(!btn||!menu)return;
+  // header-ui.js owns the shared Admin menu. Avoid registering a second
+  // click handler here: two independent toggles cancel each other out.
+  if(btn.dataset.menuInited==="1")return;
+  btn.dataset.menuInited="1";
   const close=()=>{menu.hidden=true;btn.setAttribute("aria-expanded","false");};
-  const open=()=>{menu.hidden=false;btn.setAttribute("aria-expanded","true");};
   btn.addEventListener("click",event=>{
     event.preventDefault();
-    event.stopPropagation();
-    if(menu.hidden)open();else close();
+    const open=btn.getAttribute("aria-expanded")==="true";
+    btn.setAttribute("aria-expanded",String(!open));
+    menu.hidden=open;
   });
-  menu.addEventListener("click",event=>event.stopPropagation());
   document.addEventListener("click",event=>{
     if(!btn.contains(event.target)&&!menu.contains(event.target))close();
   });
   document.addEventListener("keydown",event=>{if(event.key==="Escape"){close();btn.focus();}});
-  const settings=menu.querySelector('a[data-tool-id="settings"]');
-  if(settings)settings.href="/p/settings/";
-  close();
 }
 function showInitNotice(message){
  const main=document.getElementById("main-content");
