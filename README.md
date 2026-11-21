@@ -59,7 +59,7 @@
 ### Шаг 1 — получить код
 
 ```bash
-git clone https://github.com/ERRORoX/OSINT.git
+git clone -b feature/panel-4.2-osint-expansion https://github.com/ERRORoX/OSINT.git
 cd OSINT
 ```
 
