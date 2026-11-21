@@ -19,39 +19,51 @@ def _strip_ansi(text: str) -> str:
     return _ANSI.sub("", text)
 
 
+def _ensure_maigret(timeout_sec: int = 900) -> tuple[bool, str]:
+    """Install the published Maigret package into the active app interpreter when absent."""
+    try:
+        check = subprocess.run(
+            [sys.executable, "-m", "pip", "show", "maigret"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=30,
+        )
+        if check.returncode == 0:
+            return True, ""
+        install = subprocess.run(
+            [sys.executable, "-m", "pip", "install", "--disable-pip-version-check", "maigret"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=timeout_sec,
+        )
+        if install.returncode != 0:
+            return False, (install.stderr or install.stdout or "pip install maigret завершился с ошибкой")[-5000:]
+        return True, ""
+    except subprocess.TimeoutExpired:
+        return False, "Установка Maigret превысила допустимое время ожидания."
+    except Exception as exc:
+        return False, str(exc)
+
+
 def _run_maigret(username: str, timeout_sec: int = 180) -> tuple[str, str, int]:
     username = (username or "").strip()
     if not username or " " in username:
         return "", "Укажите одно имя пользователя без пробелов.", -1
 
-    local_dir = os.path.join(_ROOT, "tools", "maigret")
-    run_cwd = None
-    cmd = None
-
-    if os.path.isdir(os.path.join(local_dir, "maigret")):
-        run_cwd = local_dir
-        cmd = [sys.executable, "-m", "maigret", username, "--no-color"]
-    else:
+    # Do not execute the bundled source checkout: it can be incomplete and its
+    # settings.json layout differs between Maigret releases. Use the managed
+    # package in the same interpreter as OSINT Panel.
+    mg = shutil.which("maigret")
+    if not mg:
+        ready, install_error = _ensure_maigret()
+        if not ready:
+            return "", "Не удалось автоматически установить Maigret:\n" + install_error, -1
         mg = shutil.which("maigret")
-        if mg:
-            cmd = [mg, username, "--no-color"]
-        else:
-            try:
-                import maigret  # noqa: F401
-                cmd = [sys.executable, "-m", "maigret", username, "--no-color"]
-            except ImportError:
-                return "", "Maigret не найден. Установите: pip install maigret или клонируйте в tools/maigret.", -1
 
+    cmd = [mg, username, "--no-color"] if mg else [sys.executable, "-m", "maigret", username, "--no-color"]
     try:
         proc = subprocess.run(
-            cmd,
-            cwd=run_cwd,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=timeout_sec,
-            env={**os.environ, "PYTHONPATH": (run_cwd or "")} if run_cwd else None,
+            cmd, cwd=_ROOT, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=timeout_sec,
+            env={key: value for key, value in os.environ.items() if key not in {"PYTHONPATH"}},
         )
         out = _strip_ansi(proc.stdout or "")
         err = _strip_ansi(proc.stderr or "")
@@ -59,9 +71,9 @@ def _run_maigret(username: str, timeout_sec: int = 180) -> tuple[str, str, int]:
     except subprocess.TimeoutExpired:
         return "", "Превышено время ожидания ({} сек).".format(timeout_sec), -1
     except FileNotFoundError:
-        return "", "Команда не найдена.", -1
-    except Exception as e:
-        return "", str(e), -1
+        return "", "Maigret установлен, но исполняемый файл не найден. Перезапустите OSINT Panel.", -1
+    except Exception as exc:
+        return "", str(exc), -1
 
 
 class ToolMaigret(ToolBase):
