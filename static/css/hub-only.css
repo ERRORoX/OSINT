@@ -578,3 +578,17 @@ body.dashboard-page{margin:0!important;min-height:100vh;background:radial-gradie
 .graph-context-section{padding:8px 8px 4px;color:#57c6ee;font-size:7px;font-weight:900;letter-spacing:.13em;border-top:1px solid rgba(90,143,196,.18);margin-top:4px}
 .graph-context-menu button[data-transform]{border-left:2px solid rgba(57,184,224,.45);padding-left:10px}
 .graph-context-menu button[data-transform]:hover{border-left-color:#5ddcff}
+
+/* Live system health monitor */
+.system-monitor-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px}
+.system-monitor-actions button{padding:7px 11px;border:1px solid rgba(65,145,255,.35);border-radius:7px;background:rgba(20,91,178,.18);color:#b9d8ff;font-size:10px;font-weight:700;cursor:pointer}
+.system-monitor-actions button:hover{background:rgba(20,111,220,.3)}
+.system-monitor-actions button:disabled{opacity:.55;cursor:wait}
+.system-monitor-actions span{color:#7188a8;font-size:10px}
+.system-health-details{display:grid;gap:6px;margin-top:11px}
+.system-health-row{display:flex;justify-content:space-between;gap:12px;padding:7px 9px;border:1px solid rgba(91,145,220,.13);border-radius:7px;background:rgba(4,12,25,.38);font-size:10px}
+.system-health-row span{color:#91a6c4}.system-health-row strong{font-weight:700;text-align:right}
+.system-health-row.is-ok strong{color:#31d9a0}.system-health-row.is-warning strong{color:#ffc36b}.system-health-row.is-error strong{color:#ff7d89}
+.system-health-issue{display:grid;gap:3px;padding:7px 9px;border-left:2px solid #e5a84f;background:rgba(130,82,20,.1);font-size:10px;overflow-wrap:anywhere}
+.system-health-issue strong{color:#f3c77f}.system-health-issue span,.system-health-empty{color:#91a6c4;line-height:1.45}
+.system-health-empty{padding:7px 9px;font-size:10px}
