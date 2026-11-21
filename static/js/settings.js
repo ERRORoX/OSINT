@@ -22,13 +22,13 @@ export function initPanel(container) {
     <div id="settings-message" class="settings-message" role="status"></div>
     <section class="settings-key-row" id="tool-dependencies-panel" style="margin-top:24px">
       <h3>Инструменты и зависимости</h3>
-      <p class="description">Проверяет инструменты, устанавливает Python-пакеты в окружение панели, а системные программы — через пакетный менеджер вашей ОС (Kali/Debian, Fedora, Arch и другие). Для системной установки может потребоваться подтверждение прав администратора.</p>
+      <p class="description">Проверяет инструменты, устанавливает Python-пакеты в окружение панели, а системные программы — через пакетный менеджер вашей ОС (Kali/Debian, Fedora, Arch и другие). Для системной установки откроется системное окно подтверждения прав администратора.</p>
       <div class="key-input-wrap" style="gap:10px;flex-wrap:wrap">
         <button type="button" class="btn btn-primary" id="btn-check-tools">⌁ Проверить инструменты</button>
       </div>
       <div id="tool-dependencies-status" class="settings-message" role="status" aria-live="polite"></div>
       <div id="tool-dependencies-results" style="display:grid;gap:8px;margin-top:12px"></div>
-      <p class="description" style="margin-top:10px">Системные пакеты устанавливаются автоматически через sudo -n или системное окно подтверждения pkexec. Если ОС не поддерживается или нет прав администратора, панель покажет точную причину.</p>
+      <p class="description" style="margin-top:10px">Системные пакеты устанавливаются через системное окно подтверждения (Polkit). Подтвердите действие в появившемся окне; пароль вводится только в системном диалоге и не передаётся панели.</p>
     </section>
     <section class="settings-key-row" id="system-update-panel" style="margin-top:24px">
       <h3>Обновление системы</h3>
@@ -78,7 +78,7 @@ export function initPanel(container) {
     toolCheckBtn.disabled = true;
     toolCheckBtn.textContent = "Проверяем и устанавливаем…";
     toolCheckStatus.style.display = "block";
-    toolCheckStatus.textContent = "Проверяем Python-зависимости и системные программы. Установка может занять несколько минут; системный пакетный менеджер может запросить подтверждение администратора.";
+    toolCheckStatus.textContent = "Проверяем Python-зависимости и системные программы. Установка может занять несколько минут; для системных пакетов появится отдельное системное окно подтверждения администратора.";
     toolCheckStatus.className = "settings-message";
     toolCheckResults.innerHTML = "";
     try {
