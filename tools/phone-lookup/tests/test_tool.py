@@ -93,5 +93,30 @@ class PhoneLookupSearchTests(unittest.TestCase):
         self.assertEqual(urlopen.call_count, 7)
 
 
+
+    def test_public_person_search_targets_ok_ru_and_deduplicates(self):
+        payload = {"web": {"results": [{
+            "title": "Public OK profile", "url": "https://ok.ru/profile/123",
+            "description": "Publicly indexed profile",
+        }]}}
+        with patch.dict(os.environ, {"BRAVE_SEARCH_API_KEY": "test-token"}, clear=True):
+            with patch.object(PHONE_MODULE, "urlopen", side_effect=lambda *a, **k: self._response(payload)) as urlopen:
+                with patch.object(PHONE_MODULE.time, "sleep"):
+                    result = PHONE_MODULE._search_public_person("Иван Иванов", "Душанбе")
+        self.assertEqual(result["status"], "completed")
+        self.assertEqual(len(result["results"]), 1)
+        self.assertEqual(urlopen.call_count, 4)
+        first_query = parse_qs(urlparse(urlopen.call_args_list[0].args[0].full_url).query)["q"][0]
+        self.assertIn("site:ok.ru", first_query)
+        self.assertIn("Иван Иванов", first_query)
+        self.assertIn("Душанбе", first_query)
+
+    def test_person_search_validates_name(self):
+        tool = PHONE_MODULE.ToolPhoneLookup()
+        result = tool.search_person("И")
+        self.assertFalse(result["success"])
+        self.assertIn("имя и фамилию", result["error"])
+
+
 if __name__ == "__main__":
     unittest.main()
