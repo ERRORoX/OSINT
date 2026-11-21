@@ -62,15 +62,23 @@ function buildUsernameGraphPayload(username, rows) {
   const provenance = "Username OSINT · Источники: " + sourceNames.join(", ");
   const personId = addNode("person", username, provenance);
   const mergedOutput = successful.map((row) => row.out || "").join("\n");
-  const hosts = new Set();
-  for (const match of mergedOutput.matchAll(/https?:\/\/[^\s<>"'\])}]+/gi)) {
+  const profilesByHost = new Map();
+  for (const match of mergedOutput.matchAll(/https?:\\/\\/[^\\s<>"'\\])}]+/gi)) {
     try {
-      const host = new URL(match[0]).hostname.toLowerCase().replace(/^www\./, "");
-      if (host && host.includes(".") && !/^\d{1,3}(?:\.\d{1,3}){3}$/.test(host)) hosts.add(host);
+      const profileUrl = new URL(match[0].replace(/[),.;]+$/, ""));
+      const host = profileUrl.hostname.toLowerCase().replace(/^www\\./, "");
+      if (!host || !host.includes(".") || /^\\d{1,3}(?:\\.\\d{1,3}){3}$/.test(host)) continue;
+      const cleanUrl = profileUrl.toString();
+      const list = profilesByHost.get(host) || [];
+      if (!list.includes(cleanUrl)) list.push(cleanUrl);
+      profilesByHost.set(host, list);
     } catch (_) {}
   }
-  hosts.forEach((host) => {
-    const id = addNode("domain", host, "Публичный профиль найден при поиске " + username + ". " + provenance);
+  profilesByHost.forEach((urls, host) => {
+    const profileUrl = urls.find((value) => {
+      try { const path = new URL(value).pathname.replace(/\\/+$/, ""); return Boolean(path && path !== ""); } catch (_) { return false; }
+    }) || urls[0];
+    const id = addNode("domain", host, "Профиль найден при поиске " + username + ".\nURL профиля: " + profileUrl + "\n" + provenance);
     addEdge(personId, id, "профиль на платформе");
   });
   const emails = new Set(mergedOutput.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi) || []);
