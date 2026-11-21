@@ -109,10 +109,12 @@ class PhoneLookupSearchTests(unittest.TestCase):
         self.assertEqual(result["status"], "completed")
         self.assertEqual(len(result["results"]), 1)
         self.assertEqual(urlopen.call_count, 14)
-        first_query = parse_qs(urlparse(urlopen.call_args_list[0].args[0].full_url).query)["q"][0]
-        self.assertIn("site:ok.ru", first_query)
-        self.assertIn("Иван Иванов", first_query)
-        self.assertIn("Душанбе", first_query)
+        queries = [parse_qs(urlparse(call.args[0].full_url).query)["q"][0] for call in urlopen.call_args_list]
+        ok_query = next(query for query in queries if "site:ok.ru" in query)
+        self.assertIn("Иван Иванов", ok_query)
+        self.assertIn("Душанбе", ok_query)
+        self.assertTrue(any("site:linkedin.com/in" in query for query in queries))
+        self.assertTrue(any("filetype:pdf" in query for query in queries))
         self.assertEqual(result["results"][0]["domain"], "ok.ru")
         self.assertEqual(result["results"][0]["confidence"], "низкая")
 
