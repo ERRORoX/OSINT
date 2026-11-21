@@ -500,6 +500,11 @@ function graphFitView(){
 async function graphWire(){
  const svg=document.getElementById("investigation-graph");if(!svg)return;
  const badge=document.getElementById("graph-data-mode"),input=document.getElementById("graph-json-input"),status=document.getElementById("graph-import-status");
+ const datasetSelect=document.getElementById("graph-investigation-select");
+ const investigationNew=document.getElementById("graph-investigation-new");
+ const investigationRename=document.getElementById("graph-investigation-rename");
+ const investigationDelete=document.getElementById("graph-investigation-delete");
+ let investigationItems=[],activeInvestigationId=null;
  let serverGraph={nodes:[],edges:[]};
  let serverUpdatedAt=null;
  const requestGraph=async(method="GET",payload=null,path="/graph")=>{
@@ -516,36 +521,56 @@ async function graphWire(){
   if(status)status.textContent="Хранилище графа недоступно: "+(error.message||"ошибка");
  }
  const legacy=graphReadLocal();
- if(!serverGraph.nodes.length&&legacy&&legacy.nodes.length){
-  try{
-   const migrated=await requestGraph("PUT",legacy);
-   serverGraph=graphValidate(migrated);
-   serverUpdatedAt=migrated.updated_at||null;
-   if(status)status.textContent="Старые локальные данные перенесены в постоянное хранилище.";
-  }catch(error){if(status)status.textContent="Не удалось перенести локальные данные: "+(error.message||"ошибка");}
- }
+ const renderInvestigationOptions=()=>{
+  if(!datasetSelect)return;
+  datasetSelect.replaceChildren();
+  investigationItems.forEach(item=>{
+   const option=document.createElement("option");option.value=item.id;
+   option.textContent=item.name+" · "+item.node_count+" объектов";
+   datasetSelect.append(option);
+  });
+  datasetSelect.value=activeInvestigationId||"";
+  const has=investigationItems.length>0;
+  if(investigationRename)investigationRename.disabled=!has;
+  if(investigationDelete)investigationDelete.disabled=investigationItems.length<=1;
+ };
+ const loadInvestigationList=async()=>{
+  const result=await requestGraph("GET",null,"/investigations");
+  investigationItems=Array.isArray(result.items)?result.items:[];
+  activeInvestigationId=result.active_id||investigationItems[0]?.id||null;
+  renderInvestigationOptions();
+  return result;
+ };
  const setMode=()=>{
-  graphData=serverGraph.nodes.length?serverGraph:(legacy||{nodes:[],edges:[]});
   graphSelected=null;graphSelectedIds.clear();
-  if(badge)badge.textContent=serverGraph.nodes.length?"ПОСТОЯННОЕ ХРАНИЛИЩЕ":"НЕТ ДАННЫХ";
-  if(status&&!serverGraph.nodes.length)status.textContent="Постоянный граф пока пуст. Запусти анализ — найденные сущности появятся здесь автоматически.";
+  if(badge)badge.textContent=serverGraph.nodes.length?"СОХРАНЕНО":"ПУСТОЕ РАССЛЕДОВАНИЕ";
+  if(status&&!serverGraph.nodes.length)status.textContent="Это расследование пока пустое. Запусти анализ — найденные сущности появятся здесь автоматически.";
   graphFitView();graphRender();
  };
  const refreshServerGraph=async()=>{
-  
   try{
    const loaded=await requestGraph("GET");
-   const fresh=graphValidate(loaded);
-   serverGraph=fresh;
-   serverUpdatedAt=loaded.updated_at||null;
+   serverGraph=graphValidate(loaded);serverUpdatedAt=loaded.updated_at||null;
    graphData=serverGraph;
-   if(badge)badge.textContent=serverGraph.nodes.length?"ПОСТОЯННОЕ ХРАНИЛИЩЕ":"НЕТ ДАННЫХ";
-   graphFitView();
-   graphRender();
-  }catch(error){
-   if(status)status.textContent="Не удалось обновить граф: "+(error.message||"ошибка");
-  }
+   if(badge)badge.textContent=serverGraph.nodes.length?"СОХРАНЕНО":"ПУСТОЕ РАССЛЕДОВАНИЕ";
+   graphFitView();graphRender();
+   await loadInvestigationList();
+  }catch(error){if(status)status.textContent="Не удалось обновить расследование: "+(error.message||"ошибка");}
  };
+ try{
+  const list=await loadInvestigationList();
+  if(!list.items.length){
+   const created=await requestGraph("POST",{name:"Моё расследование"},"/investigations");
+   await loadInvestigationList();
+  }
+  const loaded=await requestGraph("GET");
+  serverGraph=graphValidate(loaded);serverUpdatedAt=loaded.updated_at||null;graphData=serverGraph;
+  if(!serverGraph.nodes.length&&legacy&&legacy.nodes.length){
+   const migrated=await requestGraph("PUT",legacy);
+   serverGraph=graphValidate(migrated);graphData=serverGraph;serverUpdatedAt=migrated.updated_at||null;
+   if(status)status.textContent="Локальные данные перенесены в первое расследование.";
+  }
+ }catch(error){if(status)status.textContent="Не удалось загрузить список расследований: "+(error.message||"ошибка");}
  const autoLayout=()=>{
   const nodes=graphData.nodes,edges=graphData.edges,count=nodes.length;
   if(!count)return;
@@ -611,12 +636,51 @@ async function graphWire(){
   graphRender();graphFitView();
  };
  const persistCurrent=async()=>{
-  const saved=await requestGraph("POST",graphData,"/graph/merge");
-  serverGraph=graphValidate(saved);
-  serverUpdatedAt=saved.updated_at||null;
-  if(badge)badge.textContent="ПОСТОЯННОЕ ХРАНИЛИЩЕ";
+  const saved=await requestGraph("PUT",graphData);
+  serverGraph=graphValidate(saved);serverUpdatedAt=saved.updated_at||null;
+  if(badge)badge.textContent="СОХРАНЕНО";
+  await loadInvestigationList();
  };
 
+ datasetSelect?.addEventListener("change",async()=>{
+  const target=datasetSelect.value;if(!target||target===activeInvestigationId)return;
+  try{
+   await requestGraph("POST",{},"/investigations/"+encodeURIComponent(target)+"/activate");
+   await loadInvestigationList();
+   const loaded=await requestGraph("GET");serverGraph=graphValidate(loaded);serverUpdatedAt=loaded.updated_at||null;graphData=serverGraph;
+   setMode();if(status)status.textContent="Открыто расследование: "+(investigationItems.find(item=>item.id===target)?.name||"");
+  }catch(error){if(status)status.textContent="Не удалось открыть расследование: "+(error.message||"ошибка");await loadInvestigationList();}
+ });
+ investigationNew?.addEventListener("click",async()=>{
+  const name=window.prompt("Название нового расследования:");if(name===null)return;
+  try{
+   await requestGraph("POST",{name},"/investigations");await loadInvestigationList();
+   const loaded=await requestGraph("GET");serverGraph=graphValidate(loaded);serverUpdatedAt=loaded.updated_at||null;graphData=serverGraph;
+   setMode();if(status)status.textContent="Создано новое пустое расследование.";
+  }catch(error){if(status)status.textContent="Не удалось создать расследование: "+(error.message||"ошибка");}
+ });
+ investigationRename?.addEventListener("click",async()=>{
+  const current=investigationItems.find(item=>item.id===activeInvestigationId);if(!current)return;
+  const name=window.prompt("Новое название расследования:",current.name);if(name===null)return;
+  try{
+   await requestGraph("PATCH",{name},"/investigations/"+encodeURIComponent(activeInvestigationId));
+   await loadInvestigationList();if(status)status.textContent="Название расследования сохранено.";
+  }catch(error){if(status)status.textContent="Не удалось переименовать: "+(error.message||"ошибка");}
+ });
+ investigationDelete?.addEventListener("click",async()=>{
+  const current=investigationItems.find(item=>item.id===activeInvestigationId);if(!current)return;
+  if(!window.confirm("Удалить расследование «"+current.name+"» целиком? Это действие нельзя отменить."))return;
+  try{
+   await requestGraph("DELETE",null,"/investigations/"+encodeURIComponent(activeInvestigationId));
+   await loadInvestigationList();const loaded=await requestGraph("GET");
+   serverGraph=graphValidate(loaded);serverUpdatedAt=loaded.updated_at||null;graphData=serverGraph;setMode();
+   if(status)status.textContent="Расследование удалено. Открыто следующее.";
+  }catch(error){if(status)status.textContent="Не удалось удалить расследование: "+(error.message||"ошибка");}
+ });
+ document.getElementById("graph-save-investigation")?.addEventListener("click",async()=>{
+  try{await persistCurrent();if(status)status.textContent="Расследование сохранено в SQLite.";}
+  catch(error){if(status)status.textContent="Не удалось сохранить расследование: "+(error.message||"ошибка");}
+ });
  window.addEventListener("focus",refreshServerGraph);
  window.addEventListener("pageshow",refreshServerGraph);
  document.addEventListener("visibilitychange",()=>{if(!document.hidden)refreshServerGraph();});
@@ -692,7 +756,7 @@ async function graphWire(){
   try{
    const cleared=await requestGraph("DELETE");
    serverGraph=graphValidate(cleared);serverUpdatedAt=null;localStorage.removeItem(GRAPH_STORAGE_KEY);
-   setMode("local");if(status)status.textContent="Постоянный граф очищен на сервере.";
+   graphData=serverGraph;setMode();if(status)status.textContent="Текущее расследование очищено.";
   }catch(error){if(status)status.textContent="Не удалось очистить граф: "+(error.message||"ошибка");}
  });
 
