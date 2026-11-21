@@ -13,6 +13,18 @@ import { setTabLoading, createTabRenderer } from "./render.js";
 /** @type {null | ((el: Element, o: { tabId: string, output: string, success: boolean }) => void)} */
 let renderUsernameTabPane = null;
 
+// Wait for the rich result renderer before starting a search. This avoids
+// rendering the first result in the fallback layout during a fast first click.
+const rendererReady = import("./username-output.js")
+  .then((m) => {
+    if (m && typeof m.renderUsernameTabPane === "function") {
+      renderUsernameTabPane = m.renderUsernameTabPane;
+    }
+  })
+  .catch((err) => {
+    console.warn("[username] Рендер карточек недоступен; используется безопасный текстовый вывод.", err);
+  });
+
 const renderTabCard = createTabRenderer({ getRenderer: () => renderUsernameTabPane });
 
 const SKIP_MSG =
@@ -88,6 +100,7 @@ async function persistUsernameGraph(username, rows) {
 }
 
 async function runAll(username) {
+  await rendererReady;
   const enabled = getEnabledTools();
   const enabledSet = new Set(enabled.map((t) => t.tab));
 
@@ -236,12 +249,3 @@ function boot() {
 
 boot();
 
-import("/modules/username-workspace/js/username-output.js")
-  .then((m) => {
-    if (m && typeof m.renderUsernameTabPane === "function") {
-      renderUsernameTabPane = m.renderUsernameTabPane;
-    }
-  })
-  .catch((err) => {
-    console.warn("[username] Карточки по ссылкам недоступны, используется текстовый вывод.", err);
-  });
