@@ -637,10 +637,11 @@ function graphSelect(id){
   button.addEventListener("click",()=>{graphSelectedIds.clear();graphSelectedIds.add(other.id);graphSelect(other.id);graphFocusNode(other.id);});
   neighbors.append(button);
  });
- const profileMatch=String(node.details||"").match(/(?:URL профиля|Profile URL):\\s*(https?:\\/\\/[^\\s]+)/i);
- if(profileMatch){
+ const profileLine=String(node.details||"").split("\n").find(line=>/^(?:URL профиля|Profile URL):/i.test(line.trim()));
+ const profileUrlText=profileLine?profileLine.trim().replace(/^(?:URL профиля|Profile URL):\\s*/i,""):"";
+ if(profileUrlText){
   try{
-   const profileUrl=new URL(profileMatch[1]);
+   const profileUrl=new URL(profileUrlText);
    if(profileUrl.protocol==="https:"||profileUrl.protocol==="http:"){
     const openProfile=document.createElement("button");openProfile.type="button";openProfile.textContent="Открыть профиль";
     openProfile.addEventListener("click",()=>window.open(profileUrl.href,"_blank","noopener,noreferrer"));
