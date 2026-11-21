@@ -20,6 +20,16 @@ export function initPanel(container) {
       <button type="submit" class="btn btn-primary btn-save">Сохранить</button>
     </form>
     <div id="settings-message" class="settings-message" role="status"></div>
+    <section class="settings-key-row" id="tool-dependencies-panel" style="margin-top:24px">
+      <h3>Инструменты и зависимости</h3>
+      <p class="description">Проверяет подключённые инструменты и устанавливает отсутствующие Python-зависимости в то же окружение, где запущена OSINT Panel.</p>
+      <div class="key-input-wrap" style="gap:10px;flex-wrap:wrap">
+        <button type="button" class="btn btn-primary" id="btn-check-tools">⌁ Проверить инструменты</button>
+      </div>
+      <div id="tool-dependencies-status" class="settings-message" role="status" aria-live="polite"></div>
+      <div id="tool-dependencies-results" style="display:grid;gap:8px;margin-top:12px"></div>
+      <p class="description" style="margin-top:10px">Для системных программ (например, whois, subfinder и dnsx) панель покажет отсутствие, но не будет запускать sudo или менять системные пакеты автоматически.</p>
+    </section>
     <section class="settings-key-row" id="system-update-panel" style="margin-top:24px">
       <h3>Обновление системы</h3>
       <p class="description">Проверка обновлений из официальной ветки GitHub. Перед установкой создаётся локальная резервная ветка.</p>
@@ -46,6 +56,54 @@ export function initPanel(container) {
   const listEl = container.querySelector("#settings-keys-list");
   const form = container.querySelector("#form-settings-keys");
   const messageEl = container.querySelector("#settings-message");
+  const toolCheckBtn = container.querySelector("#btn-check-tools");
+  const toolCheckStatus = container.querySelector("#tool-dependencies-status");
+  const toolCheckResults = container.querySelector("#tool-dependencies-results");
+
+  function renderToolChecks(rows) {
+    toolCheckResults.innerHTML = rows.map((item) => {
+      const ready = item.status === "ready";
+      const state = ready ? "ГОТОВ" : "НУЖНО ВНИМАНИЕ";
+      const details = item.message || (item.missing_packages?.length
+        ? "Не установлено: " + item.missing_packages.join(", ")
+        : item.missing_binaries?.length ? "Не найдены: " + item.missing_binaries.join(", ") : "");
+      return `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:11px 13px;border:1px solid var(--border,rgba(145,170,198,.18));border-radius:9px;background:rgba(8,18,30,.38)">
+        <div style="min-width:0"><strong>${escapeHtml(item.name)}</strong>${details ? `<div style="margin-top:4px;color:var(--text-muted,#91a2b6);font-size:12px;overflow-wrap:anywhere">${escapeHtml(details)}</div>` : ""}</div>
+        <span style="white-space:nowrap;font-size:11px;color:${ready ? "var(--accent,#59b8f5)" : "#e5ad62"}">${escapeHtml(state)}</span>
+      </div>`;
+    }).join("");
+  }
+
+  toolCheckBtn.addEventListener("click", async () => {
+    toolCheckBtn.disabled = true;
+    toolCheckBtn.textContent = "Проверяем и устанавливаем…";
+    toolCheckStatus.textContent = "Проверяем наличие инструментов. Установка отсутствующих Python-пакетов может занять несколько минут.";
+    toolCheckStatus.className = "settings-message";
+    toolCheckResults.innerHTML = "";
+    try {
+      const response = await fetch(`${API}/tools/dependencies`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Requested-With": "OSINT-Panel" },
+        body: "{}",
+        cache: "no-store"
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || "Не удалось проверить зависимости.");
+      renderToolChecks(data.tools || []);
+      const ready = (data.tools || []).filter(x => x.status === "ready").length;
+      const total = (data.tools || []).length;
+      const failed = (data.tools || []).filter(x => x.action === "failed").length;
+      toolCheckStatus.textContent = `Проверка завершена: ${ready} из ${total} инструментов готовы.` + (failed ? ` Не удалось установить зависимости для ${failed} инструментов.` : "");
+      toolCheckStatus.className = "settings-message " + (failed ? "error" : "success");
+    } catch (err) {
+      toolCheckStatus.textContent = "Ошибка проверки: " + err.message;
+      toolCheckStatus.className = "settings-message error";
+    } finally {
+      toolCheckBtn.disabled = false;
+      toolCheckBtn.textContent = "⌁ Проверить инструменты";
+    }
+  });
+
   const updateStatus = container.querySelector("#update-status");
   const installUpdateBtn = container.querySelector("#btn-install-update");
   const progressPanel = container.querySelector("#update-progress");
