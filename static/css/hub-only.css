@@ -800,3 +800,18 @@ body.dashboard-page{margin:0!important;min-height:100vh;background:radial-gradie
 .case-projects-summary:focus-visible{outline:2px solid var(--dash-blue);outline-offset:-3px;border-radius:10px}
 .case-projects-content{padding:14px 16px 16px}
 @media(max-width:640px){.case-projects-collapsible>.case-projects-summary{min-height:54px;padding:10px 12px}.case-projects-content{padding:12px}}
+
+
+/* Compact, left-aligned investigation notes */
+.graph-notes-panel{width:min(58%,680px);margin:12px auto 0 0;padding:11px 12px}
+.graph-notes-heading{margin-bottom:7px}
+.graph-notes-heading h3{font-size:12px}
+.graph-notes-label{margin-bottom:5px;font-size:9px}
+.graph-notes-panel textarea{min-height:54px;padding:8px 9px;font-size:10px}
+.graph-notes-actions{margin-top:6px;gap:7px}
+.graph-notes-actions span{font-size:9px}
+.graph-notes-actions button{padding:6px 9px;font-size:9px}
+.graph-notes-list{gap:5px;margin-top:8px}
+.graph-note-item{padding:8px;gap:4px 9px}
+.graph-note-item p{font-size:10px}
+@media(max-width:760px){.graph-notes-panel{width:100%;margin-top:10px;padding:10px}}
