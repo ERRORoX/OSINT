@@ -194,6 +194,7 @@
         checkbox.addEventListener("change",()=>{
           const selected=Array.from(selection.querySelectorAll("input:checked")).map(box=>chosen[Number(box.dataset.sourceIndex)]?.label).filter(Boolean);
           saveSourceSelection(selected);
+          renderSelected();
         });
         const name=document.createElement("span");
         name.textContent=label;
@@ -239,6 +240,7 @@
       renderSelected();
     });
     host.append(controls,selection,actions,linksHost);
+    renderSelected();
   };
   const persistGraph=async metadata=>{
     const phone=metadata.e164||metadata.international||"";
