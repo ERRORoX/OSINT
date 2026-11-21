@@ -183,6 +183,13 @@ class ModuleFrontendTests(unittest.TestCase):
 
 
 
+    def test_relationship_graph_supports_manual_relationship_creation(self):
+        script = (ROOT / "static" / "js" / "app-hub.js").read_text(encoding="utf-8")
+        self.assertIn("Создать связь между выбранными", script)
+        self.assertIn('fetch(API+"/graph/merge"', script)
+        page = (ROOT / "static" / "index.html").read_text(encoding="utf-8")
+        self.assertIn('data-graph-filter="phone"', page)
+
     def test_saved_material_archive_controls(self):
         page = (ROOT / "static" / "index.html").read_text(encoding="utf-8")
         script = (ROOT / "static" / "js" / "app-hub.js").read_text(encoding="utf-8")
