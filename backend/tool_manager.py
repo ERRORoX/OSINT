@@ -118,24 +118,30 @@ def _run_system_install(packages, timeout=1200):
         attempts = [command]
     else:
         attempts = []
-        sudo = shutil.which("sudo")
+        # Prefer desktop Polkit so KDE/GNOME can display a native
+        # administrator-authentication dialog.
         pkexec = shutil.which("pkexec")
-        if sudo:
-            attempts.append([sudo, "-n", *command])
+        sudo = shutil.which("sudo")
         if pkexec:
-            attempts.append([pkexec, *command])
+            attempts.append(("pkexec", [pkexec, *command]))
+        if sudo:
+            attempts.append(("sudo", [sudo, "-n", *command]))
         if not attempts:
-            return False, "Для установки системных пакетов нужен root, sudo или pkexec."
+            return False, "Не найден pkexec или sudo. Для системной установки нужны права администратора."
     last_output = ""
-    for attempt in attempts:
+    for auth_method, attempt in attempts:
         try:
+            # Keep the desktop session environment so the Polkit agent can
+            # display its native confirmation dialog.
+            child_env = {**os.environ, "DEBIAN_FRONTEND": "noninteractive"}
             proc = subprocess.run(attempt, cwd=str(ROOT), capture_output=True, text=True,
-                encoding="utf-8", errors="replace", timeout=timeout,
-                env={**os.environ, "DEBIAN_FRONTEND": "noninteractive"})
+                encoding="utf-8", errors="replace", timeout=timeout, env=child_env)
             last_output = (proc.stderr or proc.stdout or "").strip()[-3500:]
             if proc.returncode == 0:
-                return True, "Установлено через " + manager + ": " + ", ".join(safe_packages)
-            auth_error = any(s in last_output.lower() for s in ("a password is required", "authentication is required", "not authorized", "authorization required"))
+                return True, "Установлено через " + manager + " с подтверждением " + auth_method + ": " + ", ".join(safe_packages)
+            auth_error = any(s in last_output.lower() for s in ("a password is required", "authentication is required", "not authorized", "authorization required", "no authentication agent"))
+            if auth_method == "pkexec" and auth_error and sudo:
+                continue
             if not auth_error:
                 break
         except subprocess.TimeoutExpired:
