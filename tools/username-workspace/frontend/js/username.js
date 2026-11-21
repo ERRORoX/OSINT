@@ -185,6 +185,74 @@ async function runAll(username) {
   }
 }
 
+function getUsernameResultCards() {
+  return [...document.querySelectorAll('.tab-content .result-card')].map((card) => {
+    const tab = card.closest('.tab-content');
+    const platform = card.querySelector('.result-platform')?.textContent?.trim() || 'Профиль';
+    const link = card.querySelector('a.result-url[href]');
+    const category = card.querySelector('.result-category, .u-sub')?.textContent?.trim() || '';
+    const fields = [...card.querySelectorAll('.u-field')].map((row) => ({
+      key: row.querySelector('.u-key')?.textContent?.trim() || '',
+      value: row.querySelector('.u-val')?.textContent?.trim() || '',
+    })).filter((x) => x.key || x.value);
+    return { card, tool: (tab?.id || '').replace(/^tab-/, ''), platform, url: link?.href || '', category, fields, verification: 'Не подтверждено' };
+  }).filter((row) => row.url);
+}
+
+function refreshUsernameResultControls() {
+  const active = document.querySelector('.tab-content.visible');
+  const cards = [...(active?.querySelectorAll('.result-card') || [])];
+  const query = (document.getElementById('usernameResultSearch')?.value || '').trim().toLowerCase();
+  const category = document.getElementById('usernameResultCategory')?.value || '';
+  const sort = document.getElementById('usernameResultSort')?.value || 'default';
+  cards.forEach((card) => {
+    const text = card.textContent.toLowerCase();
+    const categoryText = card.querySelector('.result-category, .u-sub')?.textContent || '';
+    card.hidden = Boolean((query && !text.includes(query)) || (category && !categoryText.includes(category)));
+  });
+  if (sort !== 'default') {
+    active?.querySelectorAll('.results-grid').forEach((grid) => {
+      [...grid.querySelectorAll(':scope > .result-card')].sort((a, b) => {
+        const aa = a.querySelector('.result-platform')?.textContent?.trim() || '';
+        const bb = b.querySelector('.result-platform')?.textContent?.trim() || '';
+        return aa.localeCompare(bb, 'ru') * (sort === 'za' ? -1 : 1);
+      }).forEach((card) => grid.appendChild(card));
+    });
+  }
+  const visible = cards.filter((card) => !card.hidden).length;
+  const count = document.getElementById('usernameVisibleCount');
+  if (count) count.textContent = cards.length ? `Показано ${visible} из ${cards.length}` : 'В этой вкладке пока нет карточек';
+}
+
+function downloadUsernameExport(format) {
+  const rows = getUsernameResultCards();
+  if (!rows.length) { alert('Нет найденных профилей для экспорта.'); return; }
+  let content, mime, extension;
+  if (format === 'json') {
+    content = JSON.stringify({ exportedAt: new Date().toISOString(), note: 'Совпадения по username не подтверждают личность.', results: rows.map(({ card, ...row }) => row) }, null, 2);
+    mime = 'application/json;charset=utf-8'; extension = 'json';
+  } else {
+    const columns = ['tool', 'platform', 'url', 'category', 'verification'];
+    const safe = (value) => { let v = String(value ?? ''); if (/^[=+\\-@\\t\\r]/.test(v)) v = "'" + v; return '"' + v.replace(/"/g, '""') + '"'; };
+    content = [columns, ...rows.map((row) => columns.map((key) => row[key]))].map((line) => line.map(safe).join(',')).join('\\r\\n');
+    mime = 'text/csv;charset=utf-8'; extension = 'csv';
+  }
+  const blob = new Blob(['\\uFEFF', content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url; link.download = `username-results-${new Date().toISOString().slice(0, 10)}.${extension}`;
+  document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url);
+}
+
+function wireUsernameResultControls() {
+  document.getElementById('usernameResultSearch')?.addEventListener('input', refreshUsernameResultControls);
+  document.getElementById('usernameResultCategory')?.addEventListener('change', refreshUsernameResultControls);
+  document.getElementById('usernameResultSort')?.addEventListener('change', refreshUsernameResultControls);
+  document.getElementById('usernameExportJson')?.addEventListener('click', () => downloadUsernameExport('json'));
+  document.getElementById('usernameExportCsv')?.addEventListener('click', () => downloadUsernameExport('csv'));
+  document.getElementById('tabsNav')?.addEventListener('click', () => requestAnimationFrame(refreshUsernameResultControls));
+  refreshUsernameResultControls();
+}
 let searchInProgress = false;
 
 function wireSearch() {
@@ -245,6 +313,7 @@ function boot() {
   wireToolToggles();
   wireTabs();
   wireSearch();
+  wireUsernameResultControls();
 }
 
 boot();
