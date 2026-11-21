@@ -57,7 +57,7 @@ for _tool in _INTEGRATED_TOOLS:
 _TOOL_ORDER = [
     "anonsms", "instagram-bruter", "grabcam", "photo-search", "google-osint",
     "theharvester", "domain-search", "sherlock", "maigret", "subfinder",
-    "dnsx", "social-analyzer", "blackbird", "shodan", "ip-rdap",
+    "dnsx", "social-analyzer", "blackbird", "shodan", "ip-rdap", "phone-lookup",
 ]
 TOOLS: list[ToolBase] = [_TOOL_BY_ID[tool_id] for tool_id in _TOOL_ORDER if tool_id in _TOOL_BY_ID]
 
