@@ -330,7 +330,7 @@ async function loadSystemHealth(){
   const rows=[];
   rows.push('<div class="system-health-row '+(data.backend?.status==="ok"?"is-ok":"is-error")+'"><span>Backend / API</span><strong>'+(data.backend?.status==="ok"?"Работает":"Ошибка")+'</strong></div>');
   rows.push('<div class="system-health-row '+(ready===total?"is-ok":"is-warning")+'"><span>Зависимости инструментов</span><strong>'+ready+' из '+total+' готовы</strong></div>');
-  rows.push('<div class="system-health-row '+(moduleIssues.length?"is-error":"is-ok")+'"><span>Загрузка модулей</span><strong>'+((data.modules?.total||0)-moduleIssues.length)+' из '+(data.modules?.total||0)+' без ошибок</strong></div>');
+  rows.push('<div class="system-health-row '+(moduleIssues.length?"is-error":"is-ok")+'"><span>Загрузка модулей</span><strong>'+(moduleIssues.length?"Ошибок: "+moduleIssues.length:"Ошибок загрузки нет")+'</strong></div>');
   const freePct=Number(data.storage?.free_percent);
   rows.push('<div class="system-health-row '+(storageWarning?"is-warning":"is-ok")+'"><span>Свободное место</span><strong>'+(Number.isFinite(freePct)?freePct.toFixed(1)+"%":"Нет данных")+'</strong></div>');
   toolIssues.forEach(item=>{
