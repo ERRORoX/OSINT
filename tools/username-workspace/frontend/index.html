@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#060608">
   <title>Username — OSINT Panel</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect fill='%23060608' width='32' height='32' rx='4'/><text x='16' y='22' font-size='16' text-anchor='middle' fill='%2300ff88' font-family='monospace'>O</text></svg>">
-  <link rel="stylesheet" href="/modules/username-workspace/css/username.css?v=4.2.6">
+  <link rel="stylesheet" href="/modules/username-workspace/css/username.css?v=4.2.8">
   <link rel="stylesheet" href="/css/unified-workstation.css?v=4.5.0">
   <link rel="stylesheet" href="/css/panel-42-dashboard.css?v=4.2.20">
 </head>
@@ -256,6 +256,17 @@
       </div>
 
       <div class="username-graph-status" id="usernameGraphStatus" role="status" aria-live="polite" data-state="idle">Результаты поиска будут добавлены в граф связей активного расследования.</div>
+      <section class="username-results-tools" aria-label="Фильтры и экспорт результатов">
+        <div class="username-results-tools__top"><div><strong>НАЙДЕННЫЕ ПРОФИЛИ</strong><span>Фильтры применяются к открытой вкладке</span></div>
+          <div class="username-results-tools__exports"><button type="button" id="usernameExportJson">Экспорт JSON</button><button type="button" id="usernameExportCsv">Экспорт CSV</button></div></div>
+        <div class="username-results-tools__controls">
+          <label class="username-filter-search"><span class="sr-only">Поиск по результатам</span><input type="search" id="usernameResultSearch" placeholder="Фильтр по платформе, URL или категории…"></label>
+          <label><span class="sr-only">Категория</span><select id="usernameResultCategory"><option value="">Все категории</option><option value="Соцсети">Соцсети</option><option value="Разработка">Разработка</option><option value="Видео">Видео</option><option value="Форумы">Форумы</option><option value="Сервис">Сервисы</option><option value="Сайт">Другие сайты</option></select></label>
+          <label><span class="sr-only">Сортировка</span><select id="usernameResultSort"><option value="default">Порядок инструмента</option><option value="az">Платформа: А–Я</option><option value="za">Платформа: Я–А</option></select></label>
+          <span class="username-results-tools__count" id="usernameVisibleCount" aria-live="polite">Результаты ещё не загружены</span>
+        </div>
+        <p class="username-results-tools__notice">Найденный профиль — это совпадение по username, а не подтверждение личности. Проверяйте URL и сведения вручную.</p>
+      </section>
       <h2 class="username-tabs-heading">Результаты по инструментам</h2>
       <div class="tabs-nav" id="tabsNav" role="tablist" aria-label="Вкладки инструментов">
         <button class="tab-btn active-cyan" data-tab="sherlock" type="button">
@@ -309,7 +320,7 @@
   </footer>
   <script defer src="/js/header-env.js"></script>
   <script defer src="/js/header-ui.js"></script>
-  <script src="/modules/username-workspace/js/username.js?v=4.2.7" type="module"></script>
+  <script src="/modules/username-workspace/js/username.js?v=4.2.8" type="module"></script>
   <script defer src="/js/workspace.js?v=4.3.2"></script>
 </body>
 </html>
