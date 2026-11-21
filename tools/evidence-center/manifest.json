@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "id": "evidence-center",
+  "name": "Evidence Center",
+  "version": "1.0.0",
+  "category": "investigation",
+  "description": "Хранилище публичных источников, выдержек, заметок аналитика и SHA-256.",
+  "status": "integrated",
+  "enabled": true,
+  "entrypoints": {
+    "page_url": "/modules/evidence-center/",
+    "frontend": "tools/evidence-center/frontend/index.html",
+    "manifest_readme": "tools/evidence-center/README.md"
+  },
+  "dependencies": {
+    "python": [],
+    "system": [],
+    "optional": []
+  },
+  "capabilities": [
+    "persistent-evidence-storage",
+    "public-url-validation",
+    "source-provenance",
+    "analyst-notes",
+    "optional-sha256",
+    "evidence-edit-delete"
+  ]
+}
