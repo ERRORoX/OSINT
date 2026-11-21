@@ -307,35 +307,89 @@ def _write_graph(conn, graph, investigation_id=None):
     return {**stored, "updated_at": now, "investigation_id": target}
 
 
+def _node_identity(node):
+    """Return a stable, type-aware identity used to collapse duplicate entities."""
+    kind = str(node.get("type") or "").strip().lower()
+    label = str(node.get("label") or "").strip().casefold()
+    if kind == "domain":
+        label = label.rstrip(".")
+        if label.startswith("www."):
+            label = label[4:]
+    elif kind == "email":
+        label = label.strip()
+    return kind, label
+
+
+def _merge_node_details(existing, incoming):
+    """Preserve distinct provenance/details without repeating identical text."""
+    parts = []
+    for value in (existing, incoming):
+        for line in str(value or "").splitlines():
+            clean = line.strip()
+            if clean and clean not in parts:
+                parts.append(clean)
+    return "\\n".join(parts)[:1200]
+
+
 def merge_graph_data(payload, investigation_id=None):
     incoming = validate_graph_payload(payload)
     with get_db() as conn:
         current = _read_graph(conn, investigation_id)
-        nodes_by_id = {node["id"]: dict(node) for node in current["nodes"]}
+
+        # First collapse duplicates already stored in the investigation. This
+        # also repairs graphs created by older versions of the panel.
+        nodes_by_id = {}
+        id_map = {}
+        identity_to_id = {}
+        for raw in current["nodes"]:
+            node = dict(raw)
+            identity = _node_identity(node)
+            canonical_id = identity_to_id.get(identity)
+            if canonical_id:
+                canonical = nodes_by_id[canonical_id]
+                canonical["details"] = _merge_node_details(canonical.get("details"), node.get("details"))
+                id_map[node["id"]] = canonical_id
+            else:
+                identity_to_id[identity] = node["id"]
+                nodes_by_id[node["id"]] = node
+                id_map[node["id"]] = node["id"]
+
+        # Merge incoming nodes by semantic identity, not only by generated ID.
         for node in incoming["nodes"]:
-            old = nodes_by_id.get(node["id"])
-            if old:
-                old["label"] = node["label"]
-                if node["details"]:
-                    old["details"] = node["details"]
+            identity = _node_identity(node)
+            canonical_id = identity_to_id.get(identity)
+            if canonical_id:
+                old = nodes_by_id[canonical_id]
+                old["details"] = _merge_node_details(old.get("details"), node.get("details"))
+                if node["label"] and len(node["label"]) > len(old.get("label", "")):
+                    old["label"] = node["label"]
                 if node["x"] is not None:
                     old["x"] = node["x"]
                 if node["y"] is not None:
                     old["y"] = node["y"]
+                id_map[node["id"]] = canonical_id
             else:
                 position = len(nodes_by_id)
                 node["x"] = node["x"] or 50 + (position % 8) * 94
                 node["y"] = node["y"] or 55 + (position // 8) * 95
                 nodes_by_id[node["id"]] = node
+                identity_to_id[identity] = node["id"]
+                id_map[node["id"]] = node["id"]
 
-        edges = list(current["edges"])
-        edge_keys = {(e["source"], e["target"], e.get("label", "Связь")) for e in edges}
-        for edge in incoming["edges"]:
-            if edge["source"] not in nodes_by_id or edge["target"] not in nodes_by_id:
+        # Remap old and incoming edges to canonical nodes and deduplicate them.
+        edges = []
+        edge_keys = set()
+        for edge in list(current["edges"]) + incoming["edges"]:
+            source = id_map.get(edge["source"], edge["source"])
+            target = id_map.get(edge["target"], edge["target"])
+            if source == target:
+                continue
+            if source not in nodes_by_id or target not in nodes_by_id:
                 raise ValueError("Связь ссылается на узел, которого нет в графе.")
-            key = (edge["source"], edge["target"], edge["label"])
+            label = str(edge.get("label") or "Связь").strip() or "Связь"
+            key = (source, target, label.casefold())
             if key not in edge_keys:
-                edges.append(edge)
+                edges.append({"source": source, "target": target, "label": label})
                 edge_keys.add(key)
 
         nodes = list(nodes_by_id.values())
