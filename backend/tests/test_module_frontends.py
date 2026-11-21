@@ -402,7 +402,7 @@ class ModuleFrontendTests(unittest.TestCase):
         manifest = self._manifest("phone-lookup")
         self.assertIn('id="phone-export"', page)
         self.assertIn('id="phone-history"', page)
-        self.assertIn('id="ph-timezone"', page) if 'id="ph-timezone"' in page else self.assertIn('Часовые пояса', page)
+        self.assertIn('Возможные часовые пояса', page)
         self.assertIn("URL.createObjectURL", script)
         self.assertIn("sessionHistory", script)
         self.assertIn('fetch("/api/graph/merge"', script)
