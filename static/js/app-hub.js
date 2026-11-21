@@ -299,6 +299,57 @@ function wireFilters(){
   renderHubCards();
  }));
 }
+async function loadSystemHealth(){
+ const refresh=document.getElementById("system-health-refresh");
+ const checked=document.getElementById("system-health-checked");
+ const details=document.getElementById("system-health-details");
+ const state=document.getElementById("system-state");
+ const stateLabel=document.getElementById("system-state-label");
+ const backend=document.getElementById("backend-state");
+ const foot=document.getElementById("system-foot-label");
+ if(refresh)refresh.disabled=true;
+ if(checked)checked.textContent="Проверка…";
+ try{
+  const response=await fetch(API+"/system/health",{headers:{Accept:"application/json"},cache:"no-store"});
+  const data=await response.json();
+  if(!response.ok||!data.success)throw new Error(data.error||"Сервер вернул ошибку проверки");
+  const toolIssues=Array.isArray(data.tools?.issues)?data.tools.issues:[];
+  const moduleIssues=Array.isArray(data.modules?.issues)?data.modules.issues:[];
+  const storageWarning=data.storage?.status!=="ok";
+  const issueCount=toolIssues.length+moduleIssues.length+(storageWarning?1:0);
+  const healthy=issueCount===0;
+  if(state)state.textContent=healthy?"OK":"WARN";
+  if(stateLabel)stateLabel.textContent=healthy?"Все проверки пройдены":"Есть замечания";
+  if(backend)backend.textContent="Работает";
+  if(foot)foot.textContent=healthy?"Проверка завершена · критичных проблем нет":"Обнаружены компоненты, требующие внимания";
+  const ready=Number(data.tools?.ready||0),total=Number(data.tools?.total||0);
+  const railTools=document.getElementById("rail-tools");
+  const railModules=document.getElementById("rail-modules");
+  if(railTools)railTools.textContent=ready+" / "+total;
+  if(railModules)railModules.textContent=String(data.modules?.total??loadedNavigation.length);
+  const rows=[];
+  rows.push('<div class="system-health-row '+(data.backend?.status==="ok"?"is-ok":"is-error")+'"><span>Backend / API</span><strong>'+(data.backend?.status==="ok"?"Работает":"Ошибка")+'</strong></div>');
+  rows.push('<div class="system-health-row '+(ready===total?"is-ok":"is-warning")+'"><span>Зависимости инструментов</span><strong>'+ready+' из '+total+' готовы</strong></div>');
+  rows.push('<div class="system-health-row '+(moduleIssues.length?"is-error":"is-ok")+'"><span>Загрузка модулей</span><strong>'+((data.modules?.total||0)-moduleIssues.length)+' из '+(data.modules?.total||0)+' без ошибок</strong></div>');
+  const freePct=Number(data.storage?.free_percent);
+  rows.push('<div class="system-health-row '+(storageWarning?"is-warning":"is-ok")+'"><span>Свободное место</span><strong>'+(Number.isFinite(freePct)?freePct.toFixed(1)+"%":"Нет данных")+'</strong></div>');
+  toolIssues.forEach(item=>{
+   const missing=[...(item.missing_packages||[]),...(item.missing_binaries||[])];
+   rows.push('<div class="system-health-issue"><strong>'+escapeHtml(item.name||item.id)+'</strong><span>Не хватает: '+escapeHtml(missing.join(", ")||"проверьте зависимости")+'</span></div>');
+  });
+  moduleIssues.forEach(item=>rows.push('<div class="system-health-issue"><strong>'+escapeHtml(item.module_id||"Модуль")+'</strong><span>'+escapeHtml(item.message||item.code||"Ошибка загрузки")+'</span></div>'));
+  if(!issueCount)rows.push('<div class="system-health-empty">Все проверенные компоненты в норме.</div>');
+  if(details)details.innerHTML=rows.join("");
+  if(checked)checked.textContent="Проверено: "+new Date(data.checked_at||Date.now()).toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+ }catch(error){
+  if(state)state.textContent="OFF";
+  if(stateLabel)stateLabel.textContent="Проверка недоступна";
+  if(backend)backend.textContent="Нет ответа";
+  if(foot)foot.textContent="Не удалось получить отчёт мониторинга";
+  if(checked)checked.textContent="Ошибка проверки";
+  if(details)details.innerHTML='<div class="system-health-issue"><strong>Ошибка мониторинга</strong><span>'+escapeHtml(error.message||"Неизвестная ошибка")+'</span></div>';
+ }finally{if(refresh)refresh.disabled=false;}
+}
 function updateHubStatus(tools,backendAvailable=true){
  const toolCount=document.getElementById("metric-tools");
  const sectionCount=document.getElementById("metric-sections");
@@ -314,10 +365,10 @@ function updateHubStatus(tools,backendAvailable=true){
  if(categoryCount)categoryCount.textContent=String(new Set(HUB_CARDS.map(card=>card.category)).size);
  if(railTools)railTools.textContent=String(tools.length);
  if(railModules)railModules.textContent=loadedNavigation.length?String(loadedNavigation.length):"Нет данных";
- if(backend)backend.textContent=backendAvailable?"Доступен":"Недоступен";
- if(state)state.textContent=backendAvailable?"OK":"OFF";
- if(stateLabel)stateLabel.textContent=backendAvailable?"API доступен":"Нет связи";
- if(foot)foot.textContent=backendAvailable?"API отвечает · каталог инструментов загружен":"API недоступен · показан локальный каталог";
+ if(backend)backend.textContent=backendAvailable?"Проверяется":"Недоступен";
+ if(state)state.textContent=backendAvailable?"…":"OFF";
+ if(stateLabel)stateLabel.textContent=backendAvailable?"Полная проверка…":"Нет связи";
+ if(foot)foot.textContent=backendAvailable?"Выполняется проверка компонентов":"API недоступен · показан локальный каталог";
 }
 function formatEta(seconds){
  const safe=Math.max(0,Math.ceil(seconds));
@@ -996,6 +1047,9 @@ async function init(){
  renderNav(loadedTools);
  renderHubCards();
  updateHubStatus(loadedTools,toolsAvailable);
+ document.getElementById("system-health-refresh")?.addEventListener("click",loadSystemHealth);
+ await loadSystemHealth();
+ window.setInterval(loadSystemHealth,60000);
  if(!toolsAvailable)showInitNotice("Не удалось загрузить данные сервера. Локальный каталог остаётся доступен; проверьте подключение и попробуйте обновить страницу.");
 }
 init().catch(error=>showInitNotice("Ошибка главной страницы: "+(error?.message||"неизвестная ошибка")));
