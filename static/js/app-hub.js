@@ -658,7 +658,49 @@ async function graphWire(){
  const autoLayout=()=>{
   const nodes=graphData.nodes,edges=graphData.edges,count=nodes.length;
   if(!count)return;
+  const mode=document.getElementById("graph-layout-mode")?.value||"hierarchical";
   const byId=new Map(nodes.map(node=>[node.id,node]));
+  const normalizeAndRender=()=>{
+   const minX=Math.min(...nodes.map(node=>node.x)),minY=Math.min(...nodes.map(node=>node.y));
+   nodes.forEach(node=>{node.x=node.x-minX+180;node.y=node.y-minY+180;});
+   const maxX=Math.max(...nodes.map(node=>node.x)),maxY=Math.max(...nodes.map(node=>node.y));
+   svg.setAttribute("viewBox","0 0 "+Math.max(760,maxX+180)+" "+Math.max(420,maxY+180));
+   graphPan={x:0,y:0};graphScale=1;graphRender();graphFitView();
+  };
+  const sorted=nodes.slice().sort((a,b)=>a.type.localeCompare(b.type)||a.label.localeCompare(b.label,"ru"));
+  if(mode==="grid"){
+   const columns=Math.ceil(Math.sqrt(count));
+   sorted.forEach((node,index)=>{node.x=180+(index%columns)*210;node.y=180+Math.floor(index/columns)*145;});
+   normalizeAndRender();return;
+  }
+  if(mode==="circular"){
+   const radius=Math.max(240,count*27);
+   sorted.forEach((node,index)=>{const angle=2*Math.PI*index/count-Math.PI/2;node.x=radius+Math.cos(angle)*radius;node.y=radius+Math.sin(angle)*radius;});
+   normalizeAndRender();return;
+  }
+  if(mode==="organic"&&count<=240){
+   const radius=Math.max(250,count*20);
+   sorted.forEach((node,index)=>{const angle=2*Math.PI*index/count;node.x=radius+Math.cos(angle)*radius;node.y=radius+Math.sin(angle)*radius;});
+   const links=edges.map(edge=>[byId.get(edge.source),byId.get(edge.target)]).filter(pair=>pair[0]&&pair[1]);
+   const ideal=175;
+   for(let iteration=0;iteration<65;iteration++){
+    const fx=new Float64Array(count),fy=new Float64Array(count);
+    for(let i=0;i<count;i++)for(let k=i+1;k<count;k++){
+     const dx=nodes[i].x-nodes[k].x,dy=nodes[i].y-nodes[k].y,d2=dx*dx+dy*dy+1;
+     const force=Math.min(18,5200/d2),distance=Math.sqrt(d2),ux=dx/distance,uy=dy/distance;
+     fx[i]+=ux*force;fy[i]+=uy*force;fx[k]-=ux*force;fy[k]-=uy*force;
+    }
+    links.forEach(([left,right])=>{
+     const dx=right.x-left.x,dy=right.y-left.y,distance=Math.sqrt(dx*dx+dy*dy)||1;
+     const force=(distance-ideal)*.012,ux=dx/distance,uy=dy/distance;
+     const li=nodes.indexOf(left),ri=nodes.indexOf(right);
+     fx[li]+=ux*force;fy[li]+=uy*force;fx[ri]-=ux*force;fy[ri]-=uy*force;
+    });
+    const cooling=1-iteration/90;
+    nodes.forEach((node,index)=>{node.x+=Math.max(-9,Math.min(9,fx[index]*cooling));node.y+=Math.max(-9,Math.min(9,fy[index]*cooling));});
+   }
+   normalizeAndRender();return;
+  }
   const adjacency=new Map(nodes.map(node=>[node.id,new Set()]));
   edges.forEach(edge=>{
    if(!adjacency.has(edge.source)||!adjacency.has(edge.target))return;
@@ -712,12 +754,7 @@ async function graphWire(){
     });
    }
   });
-  const minX=Math.min(...nodes.map(node=>node.x)),minY=Math.min(...nodes.map(node=>node.y));
-  nodes.forEach(node=>{node.x=node.x-minX+180;node.y=node.y-minY+180;});
-  const maxX=Math.max(...nodes.map(node=>node.x)),maxY=Math.max(...nodes.map(node=>node.y));
-  svg.setAttribute("viewBox","0 0 "+Math.max(760,maxX+180)+" "+Math.max(420,maxY+180));
-  graphPan={x:0,y:0};graphScale=1;
-  graphRender();graphFitView();
+  normalizeAndRender();
  };
  const persistCurrent=async()=>{
   const saved=await requestGraph("PUT",graphData);
