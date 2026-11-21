@@ -91,6 +91,36 @@ class RelationshipGraphStoreTests(unittest.TestCase):
                 loaded_positions = {node["id"]: (node["x"], node["y"]) for node in loaded["nodes"]}
                 self.assertEqual(loaded_positions, positions)
 
+    def test_named_investigations_keep_graphs_isolated(self):
+        with tempfile.TemporaryDirectory() as directory:
+            db_path = str(Path(directory) / "graph.sqlite3")
+            with patch.object(graph_store, "get_db", lambda: _temporary_connection(db_path)):
+                first = graph_store.list_investigations()
+                self.assertEqual(len(first["items"]), 1)
+                first_id = first["active_id"]
+                graph_store.merge_graph_data({
+                    "nodes": [{"id": "domain:first", "type": "domain", "label": "first.example"}],
+                    "edges": [],
+                })
+                second = graph_store.create_investigation("Второе расследование")
+                second_id = second["id"]
+                self.assertNotEqual(first_id, second_id)
+                self.assertEqual(graph_store.get_graph_data()["nodes"], [])
+                graph_store.merge_graph_data({
+                    "nodes": [{"id": "domain:second", "type": "domain", "label": "second.example"}],
+                    "edges": [],
+                })
+                graph_store.activate_investigation(first_id)
+                first_graph = graph_store.get_graph_data()
+                self.assertEqual([node["id"] for node in first_graph["nodes"]], ["domain:first"])
+                graph_store.rename_investigation(first_id, "Переименованное расследование")
+                names = {item["id"]: item["name"] for item in graph_store.list_investigations()["items"]}
+                self.assertEqual(names[first_id], "Переименованное расследование")
+                graph_store.delete_investigation(second_id)
+                remaining = graph_store.list_investigations()
+                self.assertEqual(len(remaining["items"]), 1)
+                self.assertEqual(remaining["active_id"], first_id)
+
     def test_rejects_unknown_edge_endpoints(self):
         with tempfile.TemporaryDirectory() as directory:
             db_path = str(Path(directory) / "graph.sqlite3")
