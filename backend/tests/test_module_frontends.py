@@ -88,7 +88,7 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn('id="usernameGraphStatus"', page)
         self.assertIn("searchInProgress", script)
         self.assertIn('.username-graph-status[data-state="success"]', styles)
-        self.assertIn('username.js?v=4.2.4', page)
+        self.assertIn('username.js?v=4.2.5', page)
 
     def test_maigret_uses_managed_install_instead_of_broken_local_checkout(self):
         source = (ROOT / "tools" / "maigret" / "backend" / "tool.py").read_text(encoding="utf-8")
@@ -108,12 +108,13 @@ class ModuleFrontendTests(unittest.TestCase):
         styles = (ROOT / "tools" / "username-workspace" / "frontend" / "css" / "username.css").read_text(encoding="utf-8")
         self.assertIn('class="username-overview"', page)
         self.assertIn(".username-overview__steps", styles)
-        self.assertIn("username.js?v=4.2.4", page)
+        self.assertIn("username.js?v=4.2.5", page)
 
     def test_username_frontend_uses_only_canonical_asset_paths(self):
         js = (ROOT / "tools" / "username-workspace" / "frontend" / "js" / "username.js").read_text(encoding="utf-8")
         self.assertNotIn("/username/js/", js)
-        self.assertIn("/modules/username-workspace/js/username-output.js", js)
+        self.assertIn('import("./username-output.js")', js)
+        self.assertIn("await rendererReady", js)
 
     def test_grabcam_demo_requires_clicks_and_does_not_upload(self):
         demo = (ROOT / "tools" / "grabcam" / "demo" / "index.html").read_text(encoding="utf-8")
