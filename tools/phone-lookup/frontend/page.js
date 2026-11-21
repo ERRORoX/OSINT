@@ -33,6 +33,40 @@
     $("ph-flag").textContent=flagFor(m.region);value("ph-valid",m.valid?"✓ Номер соответствует плану нумерации":"⚠ Не подтверждён");
     showDetails(m);
     renderPublicChecks(m);
+    renderAutoSearch(report.public_search);
+  };
+  const renderAutoSearch=data=>{
+    const host=$("ph-auto-search-result");
+    if(!host)return;
+    host.replaceChildren();
+    if(!data){
+      const note=document.createElement("span");note.textContent="Автопоиск не запускался.";host.append(note);return;
+    }
+    const message=document.createElement("p");message.className="ph-auto-message";message.textContent=data.message||"Проверка завершена.";host.append(message);
+    if(!data.configured){
+      const note=document.createElement("span");note.className="ph-auto-note";note.textContent="Google Search API не настроен на сервере.";host.append(note);return;
+    }
+    const statuses=document.createElement("div");statuses.className="ph-auto-statuses";
+    (data.services||[]).forEach(service=>{
+      const item=document.createElement("div");item.className="ph-auto-status";
+      const label=document.createElement("strong");label.textContent=service.name;
+      const state=document.createElement("span");
+      state.textContent=service.status==="found"?"Найдены публичные страницы ("+service.count+")":service.status==="no_public_results"?"Публичных результатов нет": "Ошибка проверки";
+      state.dataset.state=service.status;
+      item.append(label,state);statuses.append(item);
+    });
+    host.append(statuses);
+    const results=document.createElement("div");results.className="ph-auto-results";
+    (data.results||[]).forEach(entry=>{
+      const card=document.createElement("article");card.className="ph-auto-result";
+      const title=document.createElement("strong");title.textContent=entry.title||"Публичная страница";
+      const snippet=document.createElement("p");snippet.textContent=entry.snippet||"";
+      const source=document.createElement("small");source.textContent=entry.source||"Google";
+      const link=document.createElement("a");link.href=entry.url;link.target="_blank";link.rel="noopener noreferrer";link.textContent="Открыть источник ↗";
+      card.append(source,title,snippet,link);results.append(card);
+    });
+    if(!results.children.length){const note=document.createElement("span");note.className="ph-auto-note";note.textContent="Google не вернул публичных совпадений по этим запросам.";results.append(note);}
+    host.append(results);
   };
   const renderPublicChecks=metadata=>{
     const host=$("ph-public-links");
@@ -60,6 +94,8 @@
         ["X / Twitter","https://www.google.com/search?q=",exact+" site:x.com OR site:twitter.com"],
         ["LinkedIn","https://www.google.com/search?q=",exact+" site:linkedin.com"],
         ["Telegram · публичные страницы","https://www.google.com/search?q=",exact+" site:t.me"],
+        ["WhatsApp · публичные упоминания","https://www.google.com/search?q=",exact+" (site:wa.me OR site:whatsapp.com)"],
+        ["imo · публичные упоминания","https://www.google.com/search?q=",exact+" (site:imo.im OR site:imoapp.com)"],
         ["YouTube","https://www.google.com/search?q=",exact+" site:youtube.com"],
         ["Reddit","https://www.google.com/search?q=",exact+" site:reddit.com"],
         ["GitHub · публичные страницы","https://www.google.com/search?q=",exact+" site:github.com"],
@@ -196,11 +232,11 @@
     const current=++requestId;submit.disabled=true;copy.disabled=true;exportBtn.disabled=true;lastReport=null;
     setStatus("Проверка локальной базы нумерации…","loading");empty.style.display="block";result.classList.remove("is-visible");
     try{
-      const response=await fetch("/api/tools/phone-lookup/run",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({phone})});
+      const response=await fetch("/api/tools/phone-lookup/run",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({phone,search_public:true})});
       const data=await response.json().catch(()=>({}));
       if(!response.ok||!data.success)throw new Error(data.error||"Не удалось проверить номер.");
       if(current!==requestId)return;
-      lastReport={metadata:data.metadata||{},output:data.output||"",input:phone};
+      lastReport={metadata:data.metadata||{},output:data.output||"",input:phone,public_search:data.public_search||null};
       render(lastReport);copy.disabled=false;exportBtn.disabled=false;
       sessionHistory=sessionHistory.filter(item=>item.number!==lastReport.metadata.e164);
       sessionHistory.push({number:lastReport.metadata.e164||phone,input:phone,report:lastReport,time:new Date().toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"})});
