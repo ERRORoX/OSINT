@@ -405,25 +405,7 @@ function showInitNotice(message){
 const GRAPH_STORAGE_KEY="osint-panel-graph-data-v1";
 const GRAPH_TYPES=["person","domain","ip","email","organization"];
 const GRAPH_TYPE_LABELS={person:"Человек",domain:"Домен",ip:"IP-адрес",email:"Email",organization:"Организация"};
-const GRAPH_DEMO={
- nodes:[
-  {id:"p1",type:"person",label:"Демо-объект 01",details:"Вымышленная сущность для демонстрации интерфейса.",x:365,y:190},
-  {id:"d1",type:"domain",label:"example.test",details:"Зарезервированный тестовый домен.",x:175,y:85},
-  {id:"i1",type:"ip",label:"192.0.2.10",details:"Тестовый IP-адрес из документационного диапазона.",x:565,y:80},
-  {id:"e1",type:"email",label:"analyst@example.test",details:"Демонстрационный адрес электронной почты.",x:150,y:305},
-  {id:"o1",type:"organization",label:"Demo Org",details:"Вымышленная организация.",x:570,y:305},
-  {id:"i2",type:"ip",label:"198.51.100.24",details:"Тестовый IP-адрес из документационного диапазона.",x:365,y:365}
- ],
- edges:[
-  {source:"p1",target:"d1",label:"упоминается рядом"},
-  {source:"d1",target:"i1",label:"пример DNS-связи"},
-  {source:"p1",target:"e1",label:"пример контакта"},
-  {source:"p1",target:"o1",label:"пример связи"},
-  {source:"o1",target:"i2",label:"пример инфраструктуры"},
-  {source:"d1",target:"e1",label:"демо-связь"}
- ]
-};
-let graphData=GRAPH_DEMO,graphScale=1,graphPan={x:0,y:0},graphSelected=null,graphDrag=null;
+let graphData={nodes:[],edges:[]},graphScale=1,graphPan={x:0,y:0},graphSelected=null,graphSelectedIds=new Set(),graphDrag=null;
 function graphReadLocal(){try{const value=JSON.parse(localStorage.getItem(GRAPH_STORAGE_KEY)||"null");return value&&Array.isArray(value.nodes)&&Array.isArray(value.edges)?value:null;}catch{return null;}}
 function graphValidate(value){
  if(!value||!Array.isArray(value.nodes)||!Array.isArray(value.edges))throw new Error("Ожидаются массивы nodes и edges.");
@@ -462,17 +444,44 @@ function graphRender(){
   graphSvg("circle",{r:node.type==="person"?17:13,class:"graph-node-core type-"+node.type},group);
   const short=GRAPH_TYPE_LABELS[node.type].toUpperCase();const type=graphSvg("text",{x:0,y:35,class:"graph-node-type","text-anchor":"middle"},group);type.textContent=short;
   const label=graphSvg("text",{x:0,y:49,class:"graph-node-label","text-anchor":"middle"},group);label.textContent=node.label.length>23?node.label.slice(0,21)+"…":node.label;
-  group.addEventListener("click",()=>graphSelect(node.id));
-  group.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();graphSelect(node.id);}});
-  group.addEventListener("pointerdown",event=>{if(event.button!==0)return;event.preventDefault();event.stopPropagation();const point=graphPointerPosition(svg,event);graphDrag={kind:"node",id:node.id,x:point.x,y:point.y,moved:false};svg.setPointerCapture(event.pointerId);});
+  if(graphSelectedIds.has(node.id))group.classList.add("is-group-selected");
+  group.addEventListener("click",event=>{
+   if(event.shiftKey||event.ctrlKey||event.metaKey){
+    if(graphSelectedIds.has(node.id))graphSelectedIds.delete(node.id);else graphSelectedIds.add(node.id);
+    graphSelected=node.id;graphRender();graphSelect(node.id);
+   }else{
+    graphSelectedIds.clear();graphSelectedIds.add(node.id);graphSelect(node.id);
+   }
+  });
+  group.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();graphSelectedIds.clear();graphSelectedIds.add(node.id);graphSelect(node.id);}});
+  group.addEventListener("pointerdown",event=>{
+   if(event.button!==0)return;
+   event.preventDefault();event.stopPropagation();
+   if(!graphSelectedIds.has(node.id)){graphSelectedIds.clear();graphSelectedIds.add(node.id);}
+   const point=graphPointerPosition(svg,event),ids=[...graphSelectedIds];
+   const positions=ids.map(id=>{const item=graphData.nodes.find(entry=>entry.id===id);return item?{id,x:item.x,y:item.y}:null;}).filter(Boolean);
+   graphDrag={kind:"node",ids,positions,x:point.x,y:point.y,moved:false};
+   svg.setPointerCapture(event.pointerId);
+  });
  });
  const empty=document.getElementById("graph-empty-state");if(empty)empty.hidden=visible.length>0;
  const summary=document.getElementById("graph-summary");if(summary)summary.textContent=visible.length+" узлов · "+graphData.edges.filter(edge=>visibleIds.has(edge.source)&&visibleIds.has(edge.target)).length+" связей";
  graphApplyTransform();
 }
 function graphSelect(id){
- graphSelected=id;const node=graphData.nodes.find(item=>item.id===id),panel=document.getElementById("graph-node-details");if(!panel||!node)return;
- panel.replaceChildren();const type=document.createElement("span");type.className="graph-detail-type";type.textContent=GRAPH_TYPE_LABELS[node.type].toUpperCase();const title=document.createElement("strong");title.textContent=node.label;const description=document.createElement("p");description.textContent=node.details||"Дополнительное описание не указано.";const related=document.createElement("small");const edges=graphData.edges.filter(edge=>edge.source===id||edge.target===id);related.textContent="Связей: "+edges.length;panel.append(type,title,description,related);graphRender();
+ graphSelected=id;
+ const node=graphData.nodes.find(item=>item.id===id),panel=document.getElementById("graph-node-details");
+ if(!panel||!node)return;
+ panel.replaceChildren();
+ const type=document.createElement("span");type.className="graph-detail-type";type.textContent=GRAPH_TYPE_LABELS[node.type].toUpperCase();
+ const title=document.createElement("strong");title.textContent=node.label;
+ const description=document.createElement("p");description.textContent=node.details||"Дополнительное описание не указано.";
+ const related=document.createElement("small");const edges=graphData.edges.filter(edge=>edge.source===id||edge.target===id);related.textContent="Связей: "+edges.length;
+ const remove=document.createElement("button");remove.type="button";remove.className="graph-delete-node";remove.textContent="Удалить выбранный объект";
+ remove.addEventListener("click",()=>document.dispatchEvent(new CustomEvent("graph:delete-node",{detail:{id}})));
+ const groupInfo=document.createElement("small");groupInfo.className="graph-group-hint";groupInfo.textContent="Shift + щелчок — добавить или убрать объект из группы. Перетаскивайте выбранные объекты вместе.";
+ panel.append(type,title,description,related,remove,groupInfo);
+ graphRender();
 }
 function graphResetView(){graphScale=1;graphPan={x:0,y:0};graphApplyTransform();}
 function graphFitView(){
@@ -515,21 +524,15 @@ async function graphWire(){
    if(status)status.textContent="Старые локальные данные перенесены в постоянное хранилище.";
   }catch(error){if(status)status.textContent="Не удалось перенести локальные данные: "+(error.message||"ошибка");}
  }
- const setMode=value=>{
-  if(value==="demo"){
-   graphData=GRAPH_DEMO;
-   if(badge)badge.textContent="ДЕМО-ДАННЫЕ";
-  }else{
-   graphData=serverGraph.nodes.length?serverGraph:(legacy||{nodes:[],edges:[]});
-   if(badge)badge.textContent=serverGraph.nodes.length?"ПОСТОЯННОЕ ХРАНИЛИЩЕ":(legacy&&legacy.nodes.length?"ЛОКАЛЬНЫЕ ДАННЫЕ":"НЕТ ДАННЫХ");
-   if(status&&!serverGraph.nodes.length)status.textContent="Постоянный граф пока пуст. Запусти анализ домена — найденные связи появятся здесь автоматически.";
-  }
-  graphSelected=null;
-  graphFitView();
-  graphRender();
+ const setMode=()=>{
+  graphData=serverGraph.nodes.length?serverGraph:(legacy||{nodes:[],edges:[]});
+  graphSelected=null;graphSelectedIds.clear();
+  if(badge)badge.textContent=serverGraph.nodes.length?"ПОСТОЯННОЕ ХРАНИЛИЩЕ":"НЕТ ДАННЫХ";
+  if(status&&!serverGraph.nodes.length)status.textContent="Постоянный граф пока пуст. Запусти анализ — найденные сущности появятся здесь автоматически.";
+  graphFitView();graphRender();
  };
  const refreshServerGraph=async()=>{
-  if(mode?.value!=="local")return;
+  
   try{
    const loaded=await requestGraph("GET");
    const fresh=graphValidate(loaded);
@@ -613,10 +616,7 @@ async function graphWire(){
   serverUpdatedAt=saved.updated_at||null;
   if(badge&&mode?.value==="local")badge.textContent="ПОСТОЯННОЕ ХРАНИЛИЩЕ";
  };
- if(mode){
-  mode.value="local";
-  mode.addEventListener("change",()=>setMode(mode.value));
- }
+
  window.addEventListener("focus",refreshServerGraph);
  window.addEventListener("pageshow",refreshServerGraph);
  document.addEventListener("visibilitychange",()=>{if(!document.hidden)refreshServerGraph();});
@@ -624,8 +624,7 @@ async function graphWire(){
  document.getElementById("graph-auto-layout")?.addEventListener("click",async()=>{
   if(!graphData.nodes.length){if(status)status.textContent="В графе пока нет узлов для расположения.";return;}
   autoLayout();
-  if(mode?.value==="local"){try{await persistCurrent();if(status)status.textContent="Расположение узлов обновлено и сохранено."; }catch(error){if(status)status.textContent="Не удалось сохранить расположение: "+(error.message||"ошибка");}}
-  else if(status)status.textContent="Демо-граф автоматически упорядочен.";
+  try{await persistCurrent();if(status)status.textContent="Расположение узлов обновлено и сохранено.";}catch(error){if(status)status.textContent="Не удалось сохранить расположение: "+(error.message||"ошибка");}
  });
  document.getElementById("graph-zoom-in")?.addEventListener("click",()=>{graphScale=Math.min(2.5,graphScale*1.2);graphApplyTransform();});
  document.getElementById("graph-zoom-out")?.addEventListener("click",()=>{graphScale=Math.max(.035,graphScale/1.2);graphApplyTransform();});
@@ -645,32 +644,59 @@ async function graphWire(){
  window.addEventListener("resize",()=>{if(graphPanel?.classList.contains("graph-fullscreen"))graphFitView();});
  svg.addEventListener("wheel",event=>{event.preventDefault();graphScale=Math.max(.035,Math.min(2.5,graphScale*(event.deltaY<0?1.1:.9)));graphApplyTransform();},{passive:false});
  svg.addEventListener("pointerdown",event=>{if(event.button!==0)return;if(event.target===svg||event.target.id==="graph-viewport"||event.target.id==="graph-edges"){event.preventDefault();const point=graphPointerPosition(svg,event);graphDrag={kind:"pan",x:point.x,y:point.y,moved:false};svg.setPointerCapture(event.pointerId);}});
- svg.addEventListener("pointermove",event=>{if(!graphDrag)return;const point=graphPointerPosition(svg,event),dx=point.x-graphDrag.x,dy=point.y-graphDrag.y;graphDrag.x=point.x;graphDrag.y=point.y;if(Math.abs(dx)+Math.abs(dy)>.5)graphDrag.moved=true;if(graphDrag.kind==="pan"){graphPan.x+=dx;graphPan.y+=dy;graphApplyTransform();}else{const node=graphData.nodes.find(item=>item.id===graphDrag.id);if(node){node.x=Math.max(-100000,Math.min(100000,node.x+dx/graphScale));node.y=Math.max(-100000,Math.min(100000,node.y+dy/graphScale));graphRender();}}});
- const stop=async()=>{const wasNodeDrag=graphDrag?.kind==="node"&&graphDrag?.moved;graphDrag=null;if(wasNodeDrag&&mode?.value==="local"){try{await persistCurrent();}catch(error){if(status)status.textContent="Не удалось сохранить расположение узлов: "+(error.message||"ошибка");}}};
+ svg.addEventListener("pointermove",event=>{
+  if(!graphDrag)return;
+  const point=graphPointerPosition(svg,event),dx=point.x-graphDrag.x,dy=point.y-graphDrag.y;
+  graphDrag.x=point.x;graphDrag.y=point.y;
+  if(Math.abs(dx)+Math.abs(dy)>.5)graphDrag.moved=true;
+  if(graphDrag.kind==="pan"){graphPan.x+=dx;graphPan.y+=dy;graphApplyTransform();}
+  else{
+   (graphDrag.positions||[]).forEach(position=>{
+    const node=graphData.nodes.find(item=>item.id===position.id);
+    if(node){node.x=Math.max(-100000,Math.min(100000,node.x+dx/graphScale));node.y=Math.max(-100000,Math.min(100000,node.y+dy/graphScale));}
+   });
+   graphRender();
+  }
+ });
+ const stop=async()=>{const wasNodeDrag=graphDrag?.kind==="node"&&graphDrag?.moved;graphDrag=null;if(wasNodeDrag){try{await persistCurrent();if(status)status.textContent="Положение объектов сохранено.";}catch(error){if(status)status.textContent="Не удалось сохранить расположение узлов: "+(error.message||"ошибка");}}};
  svg.addEventListener("pointerup",stop);svg.addEventListener("pointercancel",stop);svg.addEventListener("lostpointercapture",()=>{graphDrag=null;});
+ document.addEventListener("graph:delete-node",async event=>{
+  const id=event.detail?.id,node=graphData.nodes.find(item=>item.id===id);
+  if(!node)return;
+  if(!window.confirm("Удалить объект «"+node.label+"» и все его связи?"))return;
+  const next={nodes:graphData.nodes.filter(item=>item.id!==id),edges:graphData.edges.filter(edge=>edge.source!==id&&edge.target!==id)};
+  try{
+   const saved=await requestGraph("PUT",next);
+   serverGraph=graphValidate(saved);serverUpdatedAt=saved.updated_at||null;graphData=serverGraph;
+   graphSelected=null;graphSelectedIds.clear();
+   const panel=document.getElementById("graph-node-details");
+   if(panel)panel.innerHTML='<span class="graph-detail-type">ОБЪЕКТ НЕ ВЫБРАН</span><strong>Выберите узел на карте</strong><p>Здесь появятся тип сущности, описание и связанные объекты.</p>';
+   graphRender();if(status)status.textContent="Объект и его связи удалены из расследования.";
+  }catch(error){if(status)status.textContent="Не удалось удалить объект: "+(error.message||"ошибка");}
+ });
  document.getElementById("graph-import-button")?.addEventListener("click",async()=>{
   try{
    const parsed=graphValidate(JSON.parse(input?.value||""));
    const saved=await requestGraph("PUT",parsed);
    serverGraph=graphValidate(saved);serverUpdatedAt=saved.updated_at||null;
-   if(mode)mode.value="local";setMode("local");
+   setMode();
    if(status)status.textContent="Импортировано в постоянное хранилище: "+parsed.nodes.length+" узлов, "+parsed.edges.length+" связей.";
   }catch(error){if(status)status.textContent="Ошибка: "+(error.message||"неверный JSON");}
  });
  document.getElementById("graph-export-button")?.addEventListener("click",()=>{
-  const data=mode?.value==="demo"?GRAPH_DEMO:graphData;
+  const data=graphData;
   const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download="osint-relationship-graph.json";link.click();URL.revokeObjectURL(url);if(status)status.textContent="JSON подготовлен для экспорта.";
  });
  document.getElementById("graph-clear-button")?.addEventListener("click",async()=>{
-  if(mode?.value==="demo"){if(status)status.textContent="Переключись на «Мои расследования», чтобы очистить сохранённый граф.";return;}
+
   try{
    const cleared=await requestGraph("DELETE");
    serverGraph=graphValidate(cleared);serverUpdatedAt=null;localStorage.removeItem(GRAPH_STORAGE_KEY);
    setMode("local");if(status)status.textContent="Постоянный граф очищен на сервере.";
   }catch(error){if(status)status.textContent="Не удалось очистить граф: "+(error.message||"ошибка");}
  });
- if(input&&!input.value)input.value=JSON.stringify({nodes:[{id:"n1",type:"domain",label:"example.org",details:"Описание объекта"}],edges:[]},null,2);
- setMode(mode?.value||"local");
+
+ setMode();
 }
 
 async function init(){
