@@ -15,7 +15,7 @@ class CentralRegistryTests(unittest.TestCase):
         expected = {
             "anonsms", "instagram-bruter", "grabcam", "photo-search", "google-osint",
             "theharvester", "domain-search", "sherlock", "maigret", "subfinder",
-            "dnsx", "social-analyzer", "blackbird", "shodan", "ip-rdap",
+            "dnsx", "social-analyzer", "blackbird", "shodan", "ip-rdap", "phone-lookup",
         }
         actual = {tool.tool_id for tool in TOOLS}
         self.assertEqual(actual, expected)
