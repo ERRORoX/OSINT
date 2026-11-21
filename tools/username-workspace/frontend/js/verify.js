@@ -36,7 +36,7 @@ export function wireVerifyInPane(pane) {
           badge.classList.add("is-bad");
           badge.title = r.soft_404 ? "Сайт вернул страницу-заглушку (soft 404)." : "Сервер сообщил, что страница не найдена.";
         } else if (r.hint === "blocked" || [401, 403, 429].includes(Number(r.status))) {
-          badge.textContent = `${r.status || 'Блокировка}`;
+          badge.textContent = `${r.status || "Блокировка"}`;
           badge.classList.add("is-warn");
           badge.title = "Сайт ограничил проверку. Существование профиля неизвестно.";
         } else if (r.hint === "reachable_unconfirmed" || r.ok) {
