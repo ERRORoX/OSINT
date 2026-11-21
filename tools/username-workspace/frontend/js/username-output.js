@@ -104,6 +104,19 @@ function platformFromHost(host) {
   return h || "Ссылка";
 }
 
+function isRootDomainUrl(url) {
+  try {
+    const parsed = new URL(url);
+    return !parsed.pathname.replace(/\\/+$/, "") && !parsed.search && !parsed.hash;
+  } catch {
+    return false;
+  }
+}
+
+function urlActionLabel(url) {
+  return isRootDomainUrl(url) ? "Открыть сайт · профиль не найден" : "Открыть найденную страницу";
+}
+
 function shortUrlLabel(url) {
   try {
     const u = new URL(url);
@@ -376,7 +389,7 @@ export function renderUsernameTabPane(container, { tabId, output, success }) {
                   </div>
                 </div>
               </div>
-              <a href="${escapeHtml(b.url)}" class="result-url" target="_blank" rel="noopener noreferrer">${escapeHtml(shortUrlLabel(b.url))} ↗</a>
+              <a href="${escapeHtml(b.url)}" class="result-url" target="_blank" rel="noopener noreferrer" aria-label="${escapeHtml(urlActionLabel(b.url))}">${escapeHtml(shortUrlLabel(b.url))} ↗</a><span class="u-url-kind">${escapeHtml(urlActionLabel(b.url))}</span>
               <div class="u-meta-row">
                 ${renderVerifyBadge()}
               </div>
@@ -441,9 +454,9 @@ export function renderUsernameTabPane(container, { tabId, output, success }) {
         .map((r) => {
           const cls = "found";
           const dotCls = "found status-dot-green";
-          const urlLine = `<a href="${escapeHtml(r.url)}" class="result-url" target="_blank" rel="noopener noreferrer">${escapeHtml(
+          const urlLine = `<a href="${escapeHtml(r.url)}" class="result-url" target="_blank" rel="noopener noreferrer" aria-label="${escapeHtml(urlActionLabel(r.url))}">${escapeHtml(
             shortUrlLabel(r.url)
-          )} ↗</a>`;
+          )} ↗</a><span class="u-url-kind">${escapeHtml(urlActionLabel(r.url))}</span>`;
           const verify = ` data-verify-url="${escapeHtml(r.url)}"`;
           return `
             <div class="result-card ${cls} card-appear"${verify}>
@@ -540,14 +553,14 @@ export function renderUsernameTabPane(container, { tabId, output, success }) {
   const gridHtml = entries
     .map(
       (e) => `
-    <div class="result-card found card-appear">
+    <div class="result-card found card-appear" data-verify-url="${escapeHtml(e.url)}">
       <div class="result-card-top">
         <div class="result-card-left">
           <div class="result-dot found status-dot-green"></div>
           <span class="result-platform">${escapeHtml(e.platform)}</span>
         </div>
       </div>
-      <a href="${escapeHtml(e.url)}" class="result-url" target="_blank" rel="noopener noreferrer">${escapeHtml(shortUrlLabel(e.url))} ↗</a>
+      <a href="${escapeHtml(e.url)}" class="result-url" target="_blank" rel="noopener noreferrer" aria-label="${escapeHtml(urlActionLabel(e.url))}">${escapeHtml(shortUrlLabel(e.url))} ↗</a><span class="u-url-kind">${escapeHtml(urlActionLabel(e.url))}</span>
       <div class="u-meta-row">${renderVerifyBadge()}</div>
       <div class="result-category">${escapeHtml(e.category)} · ${escapeHtml(e.host)}</div>
     </div>`
