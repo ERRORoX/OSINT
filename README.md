@@ -65,21 +65,19 @@ cd OSINT
 
 (Если репозиторий уже склонирован — перейдите в его каталог.)
 
-### Шаг 2 — подготовить Python и запустить панель
+### Шаг 2 — установить зависимости и запустить панель
 
-В Kali Linux / Debian рекомендуется отдельное окружение:
+В Kali Linux / Debian можно выполнить установку одной командой:
 
 ```bash
-sudo apt update
-sudo apt install -y python3 python3-venv python3-pip
-python3 -m venv venv
+bash install.sh
 source venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
 python run.py
 ```
 
-При следующих запусках достаточно перейти в каталог проекта, активировать окружение командой `source venv/bin/activate` и выполнить `python run.py`.
+Установщик создаёт виртуальное окружение, устанавливает Python-зависимости и проверяет основные модули. Дополнительные системные утилиты устанавливаются по запросу: `bash install.sh --with-optional`. Подробности — в [руководстве по установке](docs/INSTALLATION_RU.md).
+
+При следующих запусках перейди в каталог проекта, активируй окружение командой `source venv/bin/activate` и выполни `python run.py`.
 
 ### Шаг 3 — открыть в браузере
 
