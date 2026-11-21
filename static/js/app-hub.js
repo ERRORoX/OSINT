@@ -22,8 +22,6 @@ const HUB_CARDS=[
  {id:"photo-search",href:"/photo/",title:"Фото OSINT",desc:"Проверка метаданных EXIF, хешей и доступных сведений об изображении.",category:"media",icon:"▧"},
  {id:"grabcam",href:"/p/grabcam/",title:"GrabCam",desc:"Демонстрация получения снимка только после явного разрешения пользователя.",category:"media",icon:"◉"},
  {id:"ai-agent",href:"/p/ai-agent/",title:"ИИ-помощник",desc:"Помощь в планировании и анализе результатов OSINT.",category:"analysis",icon:"✳"},
- {id:"history",href:"/p/history/",title:"История операций",desc:"Просмотр прошлых запусков и сохранённых результатов.",category:"workspace",icon:"◷"},
- {id:"settings",href:"/p/settings/",title:"Настройки и API",desc:"Локальная конфигурация подключённых сервисов.",category:"workspace",icon:"⚙"}
 ];
 let activeFilter="all";
 let loadedTools=[];
@@ -69,7 +67,6 @@ function renderNav(tools){
   {label:"ИДЕНТИФИКАТОРЫ",ids:["username-tools","google-osint"],cards:["username-tools","google-osint"]},
   {label:"МЕДИА",ids:["photo-search","grabcam"],cards:["photo-search","grabcam"]},
   {label:"АНАЛИЗ",ids:["ai-agent"],cards:["ai-agent"]},
-  {label:"РАБОЧЕЕ МЕСТО",ids:["history","settings"],cards:["history","settings"]}
  ];
  const cardById=new Map(HUB_CARDS.map(card=>[card.id,card]));
  const workspaceHrefs={
@@ -89,7 +86,7 @@ function renderNav(tools){
   if(links)chunks.push('<div class="sidebar-group"><div class="sidebar-group-label">'+group.label+'</div>'+links+'</div>');
  });
  const known=new Set(groups.flatMap(group=>group.ids));
- const extras=tools.filter(tool=>!known.has(tool.id)&&!["instagram-bruter","anonsms","formgrab","grabcam"].includes(tool.id));
+ const extras=tools.filter(tool=>!known.has(tool.id)&&!["instagram-bruter","anonsms","formgrab","grabcam","history","settings","admin"].includes(tool.id));
  if(extras.length)chunks.push('<div class="sidebar-group"><div class="sidebar-group-label">ДОПОЛНИТЕЛЬНО</div>'+extras.map(tool=>makeLink(tool.id,tool.name,"/p/"+encodeURIComponent(tool.id)+"/", "◈")).join("")+'</div>');
  nav.innerHTML=chunks.join("");
  nav.querySelectorAll(".tool-link").forEach(link=>{
