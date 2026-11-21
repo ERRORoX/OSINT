@@ -2,9 +2,9 @@
   "schema_version": 1,
   "id": "phone-lookup",
   "name": "Phone Number Intelligence",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "category": "identity",
-  "description": "Проверка международного номера: формат, страна, код вызова, тип линии и сведения о номерном диапазоне.",
+  "description": "Расширенный пассивный анализ телефонного номера: страна, регион, тип линии, оператор диапазона, часовые пояса и экспорт отчёта.",
   "status": "integrated",
   "enabled": true,
   "entrypoints": {
@@ -15,7 +15,9 @@
     "tool_class": "ToolPhoneLookup"
   },
   "dependencies": {
-    "python": ["phonenumbers"],
+    "python": [
+      "phonenumbers"
+    ],
     "system": [],
     "optional": []
   },
@@ -23,10 +25,17 @@
     "international-phone-number-parse",
     "phone-number-format-validation",
     "country-calling-code",
-    "number-type-metadata"
+    "number-type-metadata",
+    "country-name-metadata",
+    "geographic-description-metadata",
+    "carrier-range-metadata",
+    "timezone-metadata",
+    "json-report-export",
+    "relationship-graph-persistence"
   ],
   "notes": [
-    "Работает локально на библиотеке phonenumbers; внешний поиск владельца не выполняется.",
-    "Не определяет абонента, адрес, GPS-местоположение или текущую SIM-карту."
+    "Локальная база libphonenumber; внешний поиск владельца не выполняется.",
+    "Не определяет абонента, адрес, GPS-местоположение, активность SIM-карты или аккаунты.",
+    "Оператор может отражать исходный диапазон и не учитывать перенос номера."
   ]
 }
