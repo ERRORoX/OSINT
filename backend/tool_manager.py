@@ -153,6 +153,12 @@ def _run_system_install(packages, timeout=1200):
 
 def install_missing_tools():
     initial = inspect_tools()
+    # Install all missing OS packages in one privileged transaction so the
+    # desktop authentication dialog appears only once per user action.
+    all_system_packages = sorted({p for row in initial for p in row.get("missing_system_packages", [])})
+    system_install_ok, system_install_message = (True, "")
+    if all_system_packages:
+        system_install_ok, system_install_message = _run_system_install(all_system_packages)
     results = []
     for row in initial:
         messages = []
@@ -183,9 +189,8 @@ def install_missing_tools():
                 messages.append(str(exc)[:1800])
 
         if row.get("missing_system_packages"):
-            ok, message = _run_system_install(row["missing_system_packages"])
-            messages.append(message)
-            if not ok:
+            messages.append(system_install_message)
+            if not system_install_ok:
                 action = "failed"
             elif action == "none":
                 action = "installed"
