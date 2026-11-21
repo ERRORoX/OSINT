@@ -40,7 +40,7 @@ export function wireVerifyInPane(pane) {
           badge.classList.add("is-warn");
           badge.title = "Сайт ограничил проверку. Существование профиля неизвестно.";
         } else if (r.hint === "reachable_unconfirmed" || r.ok) {
-          badge.textContent = `${r.status || 200} · не подтверждён`;
+          badge.textContent = `${r.status || 200} · профиль не подтверждён`;
           badge.classList.add("is-warn");
           badge.title = r.redirected_to_root
             ? "Ссылка перенаправила на главную страницу сайта. Профиль не подтверждён."
