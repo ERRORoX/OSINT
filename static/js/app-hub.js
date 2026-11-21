@@ -454,8 +454,8 @@ function showInitNotice(message){
 
 // Interactive relationship graph — homepage only. Demo entities are fictional examples.
 const GRAPH_STORAGE_KEY="osint-panel-graph-data-v1";
-const GRAPH_TYPES=["person","domain","ip","email","organization"];
-const GRAPH_TYPE_LABELS={person:"Человек",domain:"Домен",ip:"IP-адрес",email:"Email",organization:"Организация"};
+const GRAPH_TYPES=["person","domain","ip","email","organization","phone"];
+const GRAPH_TYPE_LABELS={person:"Человек",domain:"Домен",ip:"IP-адрес",email:"Email",organization:"Организация",phone:"Телефон"};
 let graphData={nodes:[],edges:[]},graphScale=1,graphPan={x:0,y:0},graphSelected=null,graphSelectedIds=new Set(),graphDrag=null;
 function graphReadLocal(){try{const value=JSON.parse(localStorage.getItem(GRAPH_STORAGE_KEY)||"null");return value&&Array.isArray(value.nodes)&&Array.isArray(value.edges)?value:null;}catch{return null;}}
 function graphValidate(value){
