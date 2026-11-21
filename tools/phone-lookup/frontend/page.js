@@ -40,49 +40,101 @@
     host.replaceChildren();
     const number=String(metadata.e164||metadata.international||"").trim();
     if(!number){const note=document.createElement("span");note.textContent="Нет нормализованного номера для поиска.";host.append(note);return;}
-    const makeGroup=(title,items)=>{
+    const exact='"'+number+'"';
+    const reputation=exact+' (спам OR мошенничество OR нежелательный звонок OR scam OR spam OR robocall)';
+    const groups=[
+      {title:"Общий поиск",items:[
+        ["Google","https://www.google.com/search?q=",exact],
+        ["Bing","https://www.bing.com/search?q=",exact],
+        ["DuckDuckGo","https://duckduckgo.com/?q=",exact]
+      ]},
+      {title:"Публичные упоминания в соцсетях",items:[
+        ["Instagram","https://www.google.com/search?q=",exact+" site:instagram.com"],
+        ["Facebook","https://www.google.com/search?q=",exact+" site:facebook.com"],
+        ["VK","https://www.google.com/search?q=",exact+" site:vk.com"],
+        ["TikTok","https://www.google.com/search?q=",exact+" site:tiktok.com"],
+        ["X / Twitter","https://www.google.com/search?q=",exact+" site:x.com OR site:twitter.com"],
+        ["LinkedIn","https://www.google.com/search?q=",exact+" site:linkedin.com"],
+        ["Telegram · публичные страницы","https://www.google.com/search?q=",exact+" site:t.me"],
+        ["YouTube","https://www.google.com/search?q=",exact+" site:youtube.com"]
+      ]},
+      {title:"Жалобы и деловые упоминания",items:[
+        ["Google · жалобы","https://www.google.com/search?q=",reputation],
+        ["Bing · жалобы","https://www.bing.com/search?q=",reputation],
+        ["DuckDuckGo · жалобы","https://duckduckgo.com/?q=",reputation],
+        ["Публичные бизнес-упоминания","https://www.google.com/search?q=",exact+" (контакты OR телефон OR контакты компании OR contact)"]
+      ]}
+    ];
+    const controls=document.createElement("div");
+    controls.className="ph-source-controls";
+    const hint=document.createElement("span");
+    hint.className="ph-source-hint";
+    hint.textContent="Отметь источники, которые хочешь проверить, затем сформируй список ссылок.";
+    controls.append(hint);
+    const selection=document.createElement("div");
+    selection.className="ph-source-selection";
+    const linksHost=document.createElement("div");
+    linksHost.className="ph-selected-links";
+    const chosen=[];
+    groups.forEach((group,groupIndex)=>{
       const section=document.createElement("section");
       section.className="ph-link-group";
       const heading=document.createElement("strong");
       heading.className="ph-link-heading";
-      heading.textContent=title;
-      const links=document.createElement("div");
-      links.className="ph-link-items";
-      items.forEach(([label,base,query])=>{
+      heading.textContent=group.title;
+      section.append(heading);
+      const options=document.createElement("div");
+      options.className="ph-source-options";
+      group.items.forEach(([label,base,query],itemIndex)=>{
+        const id="ph-source-"+groupIndex+"-"+itemIndex;
+        const wrapper=document.createElement("label");
+        wrapper.className="ph-source-option";
+        const checkbox=document.createElement("input");
+        checkbox.type="checkbox";
+        checkbox.value=String(chosen.length);
+        checkbox.dataset.sourceIndex=String(chosen.length);
+        const name=document.createElement("span");
+        name.textContent=label;
+        chosen.push({label,base,query});
+        wrapper.append(checkbox,name);
+        options.append(wrapper);
+      });
+      section.append(options);
+      selection.append(section);
+    });
+    const actions=document.createElement("div");
+    actions.className="ph-source-actions";
+    const build=document.createElement("button");
+    build.type="button";
+    build.className="ph-source-build";
+    build.textContent="Сформировать выбранные проверки";
+    const clear=document.createElement("button");
+    clear.type="button";
+    clear.className="ph-source-clear";
+    clear.textContent="Снять отметки";
+    actions.append(build,clear);
+    const renderSelected=()=>{
+      linksHost.replaceChildren();
+      const checked=Array.from(selection.querySelectorAll("input:checked"));
+      if(!checked.length){const note=document.createElement("span");note.className="ph-source-hint";note.textContent="Источники не выбраны.";linksHost.append(note);return;}
+      checked.forEach(box=>{
+        const item=chosen[Number(box.dataset.sourceIndex)];
+        if(!item)return;
         const link=document.createElement("a");
-        link.href=base+encodeURIComponent(query||('"'+number+'"'));
+        link.href=item.base+encodeURIComponent(item.query);
         link.target="_blank";
         link.rel="noopener noreferrer";
-        link.textContent=label;
-        link.setAttribute("aria-label",label+" — поиск публичных упоминаний номера");
-        links.append(link);
+        link.textContent="Открыть: "+item.label+" ↗";
+        link.setAttribute("aria-label",item.label+" — поиск публичных упоминаний номера");
+        linksHost.append(link);
       });
-      section.append(heading,links);
-      host.append(section);
     };
-    const exact='"'+number+'"';
-    const reputation=exact+' (спам OR мошенничество OR нежелательный звонок OR scam OR spam OR robocall)';
-    makeGroup("Общий поиск",[
-      ["Google","https://www.google.com/search?q=",exact],
-      ["Bing","https://www.bing.com/search?q=",exact],
-      ["DuckDuckGo","https://duckduckgo.com/?q=",exact]
-    ]);
-    makeGroup("Публичные упоминания в соцсетях",[
-      ["Instagram","https://www.google.com/search?q=",exact+" site:instagram.com"],
-      ["Facebook","https://www.google.com/search?q=",exact+" site:facebook.com"],
-      ["VK","https://www.google.com/search?q=",exact+" site:vk.com"],
-      ["TikTok","https://www.google.com/search?q=",exact+" site:tiktok.com"],
-      ["X / Twitter","https://www.google.com/search?q=",exact+" site:x.com OR site:twitter.com"],
-      ["LinkedIn","https://www.google.com/search?q=",exact+" site:linkedin.com"],
-      ["Telegram · публичные страницы","https://www.google.com/search?q=",exact+" site:t.me"],
-      ["YouTube","https://www.google.com/search?q=",exact+" site:youtube.com"]
-    ]);
-    makeGroup("Жалобы и репутация номера",[
-      ["Google · жалобы","https://www.google.com/search?q=",reputation],
-      ["Bing · жалобы","https://www.bing.com/search?q=",reputation],
-      ["DuckDuckGo · жалобы","https://duckduckgo.com/?q=",reputation],
-      ["Публичные бизнес-упоминания","https://www.google.com/search?q=",exact+" (контакты OR телефон OR контакты компании OR contact)"]
-    ]);
+    build.addEventListener("click",renderSelected);
+    clear.addEventListener("click",()=>{
+      selection.querySelectorAll("input").forEach(box=>box.checked=false);
+      renderSelected();
+    });
+    host.append(controls,selection,actions,linksHost);
   };
   const persistGraph=async metadata=>{
     const phone=metadata.e164||metadata.international||"";
