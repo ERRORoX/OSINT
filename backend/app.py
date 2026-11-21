@@ -24,6 +24,7 @@ _IP_RDAP_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "ip-rdap", "fronten
 _PHONE_LOOKUP_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "phone-lookup", "frontend")
 _PERSON_INTELLIGENCE_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "person-intelligence", "frontend")
 _EVIDENCE_CENTER_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "evidence-center", "frontend")
+_INVESTIGATION_WORKSPACE_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "investigation-workspace", "frontend")
 _DOMAIN_WORKSPACE_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "domain-workspace", "frontend")
 _PHOTO_WORKSPACE_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "photo-workspace", "frontend")
 _USERNAME_WORKSPACE_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "username-workspace", "frontend")
@@ -947,6 +948,18 @@ def ip_rdap_module_assets(filename):
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
     return response
+
+
+@app.route("/modules/investigation-workspace/", methods=["GET"])
+def investigation_workspace_module_page():
+    response = send_from_directory(_INVESTIGATION_WORKSPACE_FRONTEND_DIR, "index.html")
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return response
+
+
+@app.route("/modules/investigation-workspace/<path:filename>", methods=["GET"])
+def investigation_workspace_module_assets(filename):
+    return send_from_directory(_INVESTIGATION_WORKSPACE_FRONTEND_DIR, filename)
 
 
 @app.route("/modules/evidence-center/", methods=["GET"])
