@@ -454,7 +454,7 @@ function graphRender(){
  const visible=graphVisibleNodes(),visibleIds=new Set(visible.map(node=>node.id));
  graphData.edges.forEach(edge=>{if(!visibleIds.has(edge.source)||!visibleIds.has(edge.target))return;const a=graphData.nodes.find(node=>node.id===edge.source),b=graphData.nodes.find(node=>node.id===edge.target);if(!a||!b)return;
   const related=graphSelected&&(edge.source===graphSelected||edge.target===graphSelected);graphSvg("line",{x1:a.x,y1:a.y,x2:b.x,y2:b.y,class:"graph-edge-line"+(related?" is-related":"")},edgesLayer);
-  const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;const label=graphSvg("text",{x:mx,y:my-7,class:"graph-edge-label","text-anchor":"middle"},edgesLayer);label.textContent=edge.label;
+  if(graphData.edges.length<=35||related){const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;const label=graphSvg("text",{x:mx,y:my-7,class:"graph-edge-label","text-anchor":"middle"},edgesLayer);label.textContent=edge.label;}
  });
  visible.forEach(node=>{
   const group=graphSvg("g",{class:"graph-node"+(graphSelected===node.id?" is-selected":""),transform:"translate("+node.x+" "+node.y+")",tabindex:"0",role:"button","aria-label":GRAPH_TYPE_LABELS[node.type]+": "+node.label,"data-node-id":node.id},nodesLayer);
