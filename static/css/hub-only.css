@@ -815,3 +815,15 @@ body.dashboard-page{margin:0!important;min-height:100vh;background:radial-gradie
 .graph-note-item{padding:8px;gap:4px 9px}
 .graph-note-item p{font-size:10px}
 @media(max-width:760px){.graph-notes-panel{width:100%;margin-top:10px;padding:10px}}
+
+
+/* Admin dropdown: keep settings entry visible and clearly actionable. */
+.topbar-actions{position:relative}
+.user-menu{z-index:1200;min-width:238px;padding:6px}
+.user-menu .admin-settings-link{display:grid;grid-template-columns:28px minmax(0,1fr) 14px;align-items:center;gap:9px;padding:10px;border:1px solid transparent}
+.user-menu .admin-settings-link:hover{border-color:rgba(65,139,255,.24);background:rgba(24,67,120,.38)}
+.admin-settings-icon{width:28px;height:28px;display:grid;place-items:center;border:1px solid rgba(65,139,255,.28);border-radius:8px;background:rgba(24,76,143,.2);color:#8dbbff;font-size:15px}
+.admin-settings-link span:nth-child(2){display:flex;flex-direction:column;gap:3px;min-width:0}
+.admin-settings-link strong{font-size:11px;color:#e4efff}
+.admin-settings-link small{font-size:9px;color:#8199b9;white-space:normal}
+.admin-settings-arrow{color:#7096c8;font-size:13px}
