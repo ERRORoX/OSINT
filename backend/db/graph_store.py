@@ -19,7 +19,190 @@ def _ensure_table(conn):
             updated_at TEXT NOT NULL
         )
     """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS investigations (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+    """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS investigation_graphs (
+            investigation_id TEXT PRIMARY KEY REFERENCES investigations(id) ON DELETE CASCADE,
+            graph_json TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+    """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS investigation_settings (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            active_investigation_id TEXT
+        )
+    """)
+    # Migrate the legacy single graph into a named investigation once.
+    count = conn.execute("SELECT COUNT(*) AS total FROM investigations").fetchone()["total"]
+    if not count:
+        now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        legacy = conn.execute(
+            "SELECT graph_json, updated_at FROM relationship_graph WHERE id = 1"
+        ).fetchone()
+        import uuid
+        investigation_id = uuid.uuid4().hex
+        conn.execute(
+            "INSERT INTO investigations (id, name, created_at, updated_at) VALUES (?, ?, ?, ?)",
+            (investigation_id, "Моё расследование", now, now),
+        )
+        graph_json = legacy["graph_json"] if legacy else json.dumps({"nodes": [], "edges": []})
+        graph_updated = legacy["updated_at"] if legacy else now
+        conn.execute(
+            "INSERT INTO investigation_graphs (investigation_id, graph_json, updated_at) VALUES (?, ?, ?)",
+            (investigation_id, graph_json, graph_updated),
+        )
+        conn.execute(
+            "INSERT INTO investigation_settings (id, active_investigation_id) VALUES (1, ?)"
+            " ON CONFLICT(id) DO UPDATE SET active_investigation_id = excluded.active_investigation_id",
+            (investigation_id,),
+        )
+    else:
+        active = conn.execute(
+            "SELECT active_investigation_id FROM investigation_settings WHERE id = 1"
+        ).fetchone()
+        if not active or not active["active_investigation_id"]:
+            first = conn.execute("SELECT id FROM investigations ORDER BY created_at, id LIMIT 1").fetchone()
+            if first:
+                conn.execute(
+                    "INSERT INTO investigation_settings (id, active_investigation_id) VALUES (1, ?)"
+                    " ON CONFLICT(id) DO UPDATE SET active_investigation_id = excluded.active_investigation_id",
+                    (first["id"],),
+                )
+        conn.execute("""
+            INSERT OR IGNORE INTO investigation_graphs (investigation_id, graph_json, updated_at)
+            SELECT id, ?, updated_at FROM investigations
+        """, (json.dumps({"nodes": [], "edges": []}),))
 
+
+def _active_investigation_id(conn):
+    _ensure_table(conn)
+    row = conn.execute(
+        "SELECT active_investigation_id FROM investigation_settings WHERE id = 1"
+    ).fetchone()
+    return row["active_investigation_id"] if row else None
+
+
+def _read_graph(conn, investigation_id=None):
+    _ensure_table(conn)
+    target = investigation_id or _active_investigation_id(conn)
+    row = conn.execute(
+        "SELECT graph_json, updated_at FROM investigation_graphs WHERE investigation_id = ?",
+        (target,),
+    ).fetchone()
+    if not row:
+        return {"nodes": [], "edges": [], "updated_at": None, "investigation_id": target}
+    try:
+        graph = json.loads(row["graph_json"])
+    except (TypeError, ValueError):
+        graph = {"nodes": [], "edges": []}
+    return {
+        "nodes": graph.get("nodes", []) if isinstance(graph, dict) else [],
+        "edges": graph.get("edges", []) if isinstance(graph, dict) else [],
+        "updated_at": row["updated_at"],
+        "investigation_id": target,
+    }
+
+
+def list_investigations():
+    with get_db() as conn:
+        _ensure_table(conn)
+        active_id = _active_investigation_id(conn)
+        rows = conn.execute("""
+            SELECT i.id, i.name, i.created_at, i.updated_at,
+                   COALESCE(json_array_length(g.graph_json, '$.nodes'), 0) AS node_count,
+                   COALESCE(json_array_length(g.graph_json, '$.edges'), 0) AS edge_count
+            FROM investigations i
+            LEFT JOIN investigation_graphs g ON g.investigation_id = i.id
+            ORDER BY i.updated_at DESC, i.created_at DESC
+        """).fetchall()
+        return {
+            "active_id": active_id,
+            "items": [{
+                "id": row["id"], "name": row["name"],
+                "created_at": row["created_at"], "updated_at": row["updated_at"],
+                "node_count": row["node_count"], "edge_count": row["edge_count"],
+            } for row in rows],
+        }
+
+
+def create_investigation(name):
+    import uuid
+    clean_name = str(name or "").strip()
+    if not clean_name or len(clean_name) > 100:
+        raise ValueError("Название расследования должно содержать 1–100 символов.")
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    investigation_id = uuid.uuid4().hex
+    with get_db() as conn:
+        _ensure_table(conn)
+        conn.execute(
+            "INSERT INTO investigations (id, name, created_at, updated_at) VALUES (?, ?, ?, ?)",
+            (investigation_id, clean_name, now, now),
+        )
+        conn.execute(
+            "INSERT INTO investigation_graphs (investigation_id, graph_json, updated_at) VALUES (?, ?, ?)",
+            (investigation_id, json.dumps({"nodes": [], "edges": []}), now),
+        )
+        conn.execute(
+            "UPDATE investigation_settings SET active_investigation_id = ? WHERE id = 1",
+            (investigation_id,),
+        )
+        return {"id": investigation_id, "name": clean_name, "created_at": now, "updated_at": now,
+                "node_count": 0, "edge_count": 0, "active_id": investigation_id}
+
+
+def activate_investigation(investigation_id):
+    with get_db() as conn:
+        _ensure_table(conn)
+        exists = conn.execute("SELECT id FROM investigations WHERE id = ?", (investigation_id,)).fetchone()
+        if not exists:
+            raise ValueError("Расследование не найдено.")
+        conn.execute("UPDATE investigation_settings SET active_investigation_id = ? WHERE id = 1", (investigation_id,))
+        return _read_graph(conn, investigation_id)
+
+
+def rename_investigation(investigation_id, name):
+    clean_name = str(name or "").strip()
+    if not clean_name or len(clean_name) > 100:
+        raise ValueError("Название расследования должно содержать 1–100 символов.")
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    with get_db() as conn:
+        _ensure_table(conn)
+        result = conn.execute(
+            "UPDATE investigations SET name = ?, updated_at = ? WHERE id = ?",
+            (clean_name, now, investigation_id),
+        )
+        if not result.rowcount:
+            raise ValueError("Расследование не найдено.")
+        return {"id": investigation_id, "name": clean_name, "updated_at": now}
+
+
+def delete_investigation(investigation_id):
+    with get_db() as conn:
+        _ensure_table(conn)
+        ids = [row["id"] for row in conn.execute("SELECT id FROM investigations ORDER BY created_at, id").fetchall()]
+        if investigation_id not in ids:
+            raise ValueError("Расследование не найдено.")
+        if len(ids) <= 1:
+            raise ValueError("Нельзя удалить последнее расследование. Создайте другое перед удалением.")
+        conn.execute("DELETE FROM investigation_graphs WHERE investigation_id = ?", (investigation_id,))
+        conn.execute("DELETE FROM investigations WHERE id = ?", (investigation_id,))
+        active_id = _active_investigation_id(conn)
+        if active_id == investigation_id:
+            next_id = next(item for item in ids if item != investigation_id)
+            conn.execute("UPDATE investigation_settings SET active_investigation_id = ? WHERE id = 1", (next_id,))
+        return {"deleted_id": investigation_id, "active_id": _active_investigation_id(conn)}
+
+
+def _touch_investigation(conn, investigation_id, updated_at):
+    conn.execute("UPDATE investigations SET updated_at = ? WHERE id = ?", (updated_at, investigation_id))
 
 def validate_graph_payload(payload):
     if not isinstance(payload, dict):
@@ -97,28 +280,32 @@ def _read_graph(conn):
     }
 
 
-def get_graph_data():
+def get_graph_data(investigation_id=None):
     with get_db() as conn:
-        return _read_graph(conn)
+        return _read_graph(conn, investigation_id)
 
 
-def _write_graph(conn, graph):
-    updated_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+def _write_graph(conn, graph, investigation_id=None):
+    target = investigation_id or _active_investigation_id(conn)
+    if not target:
+        raise ValueError("Нет активного расследования.")
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
     stored = {"nodes": graph["nodes"], "edges": graph["edges"]}
-    conn.execute(
-        """INSERT INTO relationship_graph (id, graph_json, updated_at)
-           VALUES (1, ?, ?)
-           ON CONFLICT(id) DO UPDATE SET graph_json = excluded.graph_json,
-                                         updated_at = excluded.updated_at""",
-        (json.dumps(stored, ensure_ascii=False), updated_at),
+    result = conn.execute(
+        """INSERT INTO investigation_graphs (investigation_id, graph_json, updated_at)
+           VALUES (?, ?, ?)
+           ON CONFLICT(investigation_id) DO UPDATE SET graph_json = excluded.graph_json,
+                                                       updated_at = excluded.updated_at""",
+        (target, json.dumps(stored, ensure_ascii=False), now),
     )
-    return {**stored, "updated_at": updated_at}
+    _touch_investigation(conn, target, now)
+    return {**stored, "updated_at": now, "investigation_id": target}
 
 
-def merge_graph_data(payload):
+def merge_graph_data(payload, investigation_id=None):
     incoming = validate_graph_payload(payload)
     with get_db() as conn:
-        current = _read_graph(conn)
+        current = _read_graph(conn, investigation_id)
         nodes_by_id = {node["id"]: dict(node) for node in current["nodes"]}
         for node in incoming["nodes"]:
             old = nodes_by_id.get(node["id"])
@@ -149,25 +336,25 @@ def merge_graph_data(payload):
         nodes = list(nodes_by_id.values())
         if len(nodes) > _MAX_NODES or len(edges) > _MAX_EDGES:
             raise ValueError("После объединения превышен лимит графа.")
-        return _write_graph(conn, {"nodes": nodes, "edges": edges})
+        return _write_graph(conn, {"nodes": nodes, "edges": edges}, current["investigation_id"])
 
 
-def replace_graph_data(payload):
+def replace_graph_data(payload, investigation_id=None):
     graph = validate_graph_payload(payload)
     ids = {node["id"] for node in graph["nodes"]}
     if any(edge["source"] not in ids or edge["target"] not in ids for edge in graph["edges"]):
         raise ValueError("Связь ссылается на неизвестный узел.")
     with get_db() as conn:
+        current = _read_graph(conn, investigation_id)
         nodes = []
         for index, node in enumerate(graph["nodes"]):
             node["x"] = node["x"] or 50 + (index % 8) * 94
             node["y"] = node["y"] or 55 + (index // 8) * 95
             nodes.append(node)
-        return _write_graph(conn, {"nodes": nodes, "edges": graph["edges"]})
+        return _write_graph(conn, {"nodes": nodes, "edges": graph["edges"]}, current["investigation_id"])
 
 
-def clear_graph_data():
+def clear_graph_data(investigation_id=None):
     with get_db() as conn:
-        _ensure_table(conn)
-        conn.execute("DELETE FROM relationship_graph WHERE id = 1")
-    return {"nodes": [], "edges": [], "updated_at": None}
+        current = _read_graph(conn, investigation_id)
+        return _write_graph(conn, {"nodes": [], "edges": []}, current["investigation_id"])
