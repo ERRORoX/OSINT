@@ -63,11 +63,14 @@ function buildUsernameGraphPayload(username, rows) {
   const personId = addNode("person", username, provenance);
   const mergedOutput = successful.map((row) => row.out || "").join("\n");
   const profilesByHost = new Map();
-  for (const match of mergedOutput.matchAll(/https?:\\/\\/[^\\s<>"'\\])}]+/gi)) {
+  for (const token of mergedOutput.split(/\\s+/)) {
+    const candidate = token.replace(/[),.;]+$/, "");
+    if (!candidate.toLowerCase().startsWith("http://") && !candidate.toLowerCase().startsWith("https://")) continue;
     try {
-      const profileUrl = new URL(match[0].replace(/[),.;]+$/, ""));
-      const host = profileUrl.hostname.toLowerCase().replace(/^www\\./, "");
-      if (!host || !host.includes(".") || /^\\d{1,3}(?:\\.\\d{1,3}){3}$/.test(host)) continue;
+      const profileUrl = new URL(candidate);
+      const rawHost = profileUrl.hostname.toLowerCase();
+      const host = rawHost.startsWith("www.") ? rawHost.slice(4) : rawHost;
+      if (!host || !host.includes(".")) continue;
       const cleanUrl = profileUrl.toString();
       const list = profilesByHost.get(host) || [];
       if (!list.includes(cleanUrl)) list.push(cleanUrl);
