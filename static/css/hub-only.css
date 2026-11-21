@@ -827,3 +827,23 @@ body.dashboard-page{margin:0!important;min-height:100vh;background:radial-gradie
 .admin-settings-link strong{font-size:11px;color:#e4efff}
 .admin-settings-link small{font-size:9px;color:#8199b9;white-space:normal}
 .admin-settings-arrow{color:#7096c8;font-size:13px}
+
+
+/* Balanced notes + live graph composition panel. */
+.graph-workspace-bottom{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(250px,.85fr);gap:12px;align-items:stretch;margin-top:12px}
+.graph-workspace-bottom .graph-notes-panel{width:100%;max-width:none;margin:0;min-width:0}
+.graph-composition-panel{min-width:0;padding:11px 12px;border:1px solid rgba(73,132,207,.2);border-radius:10px;background:linear-gradient(145deg,rgba(10,25,46,.92),rgba(5,14,28,.92))}
+.graph-composition-live{padding:3px 6px;border:1px solid rgba(35,196,145,.22);border-radius:5px;color:#63d8b0;font-size:8px;letter-spacing:.08em}
+.graph-composition-total{display:flex;align-items:baseline;gap:7px;padding:7px 0 9px;border-bottom:1px solid rgba(91,145,220,.13)}
+.graph-composition-total strong{font-size:25px;line-height:1;color:#e5f0ff;font-weight:650}
+.graph-composition-total span{font-size:9px;color:#8299b8}
+.graph-composition-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:9px}
+.graph-composition-grid>div{display:grid;grid-template-columns:7px minmax(0,1fr) auto;align-items:center;gap:6px;padding:7px;border:1px solid rgba(91,145,220,.11);border-radius:6px;background:rgba(4,12,25,.3)}
+.graph-composition-grid>div>span:nth-child(2){font-size:9px;color:#91a8c7}
+.graph-composition-grid strong{font-size:10px;color:#dceaff;font-variant-numeric:tabular-nums}
+.graph-stat-dot{width:6px;height:6px;border-radius:50%;background:#8b9bb2}
+.graph-stat-dot.person{background:#6ca8ff}.graph-stat-dot.domain{background:#49d5c0}.graph-stat-dot.ip{background:#b18aff}.graph-stat-dot.email{background:#e8b65c}.graph-stat-dot.organization{background:#ec8298}.graph-stat-dot.phone{background:#8bcf75}
+.graph-composition-footer{display:flex;justify-content:space-between;align-items:center;margin-top:9px;padding-top:8px;border-top:1px solid rgba(91,145,220,.13);font-size:9px;color:#8299b8}
+.graph-composition-footer strong{font-size:12px;color:#dceaff}
+.graph-composition-hint{margin:8px 0 0;color:#7188a7;font-size:8px;line-height:1.4}
+@media(max-width:760px){.graph-workspace-bottom{grid-template-columns:1fr}.graph-workspace-bottom .graph-notes-panel{width:100%}}
