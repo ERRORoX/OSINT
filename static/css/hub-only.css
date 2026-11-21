@@ -574,3 +574,7 @@ body.dashboard-page{margin:0!important;min-height:100vh;background:radial-gradie
 .graph-layout-select select{max-width:150px;padding:7px 9px;border:1px solid rgba(77,154,218,.28);border-radius:7px;background:#0a1b2d;color:#c9e6ff;font:inherit;font-size:9px}
 .graph-investigation-controls select:focus-visible,.graph-layout-select select:focus-visible{outline:2px solid #53bfff;outline-offset:2px}
 @media(max-width:760px){.graph-layout-select{flex:1 1 100%}.graph-layout-select select{flex:1;max-width:none}}
+
+.graph-context-section{padding:8px 8px 4px;color:#57c6ee;font-size:7px;font-weight:900;letter-spacing:.13em;border-top:1px solid rgba(90,143,196,.18);margin-top:4px}
+.graph-context-menu button[data-transform]{border-left:2px solid rgba(57,184,224,.45);padding-left:10px}
+.graph-context-menu button[data-transform]:hover{border-left-color:#5ddcff}
