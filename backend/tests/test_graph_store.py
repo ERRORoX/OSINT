@@ -153,6 +153,48 @@ class RelationshipGraphStoreTests(unittest.TestCase):
                 self.assertEqual(len(remaining["items"]), 1)
                 self.assertEqual(remaining["active_id"], first_id)
 
+    def test_preserves_valid_provenance_and_rejects_unsafe_source_urls(self):
+        with tempfile.TemporaryDirectory() as directory:
+            db_path = str(Path(directory) / "graph.sqlite3")
+            with patch.object(graph_store, "get_db", lambda: _temporary_connection(db_path)):
+                saved = graph_store.merge_graph_data({
+                    "nodes": [{
+                        "id": "domain:evidence", "type": "domain", "label": "evidence.example",
+                        "provenance": {
+                            "source": "Passive DNS", "tool_id": "dnsx",
+                            "source_url": "https://example.org/report",
+                            "observed_at": "2026-11-21T10:00:00Z",
+                            "confidence": 0.875, "evidence": "A record observed",
+                        },
+                    }],
+                    "edges": [{
+                        "source": "domain:evidence", "target": "ip:evidence",
+                        "label": "DNS A",
+                        "provenance": {"source": "DNS response", "source_url": "javascript:alert(1)", "confidence": 5},
+                    }],
+                }) if False else None
+                # Add both endpoints before creating a relationship.
+                saved = graph_store.merge_graph_data({
+                    "nodes": [
+                        {"id": "domain:evidence", "type": "domain", "label": "evidence.example",
+                         "provenance": {"source": "Passive DNS", "tool_id": "dnsx",
+                                        "source_url": "https://example.org/report",
+                                        "observed_at": "2026-11-21T10:00:00Z",
+                                        "confidence": 0.875, "evidence": "A record observed"}},
+                        {"id": "ip:evidence", "type": "ip", "label": "203.0.113.8"},
+                    ],
+                    "edges": [{"source": "domain:evidence", "target": "ip:evidence", "label": "DNS A",
+                               "provenance": {"source": "DNS response", "source_url": "javascript:alert(1)", "confidence": 5}}],
+                })
+                node = next(item for item in saved["nodes"] if item["id"] == "domain:evidence")
+                edge = saved["edges"][0]
+                self.assertEqual(node["provenance"]["source"], "Passive DNS")
+                self.assertEqual(node["provenance"]["source_url"], "https://example.org/report")
+                self.assertEqual(node["provenance"]["confidence"], 0.875)
+                self.assertNotIn("source_url", edge["provenance"])
+                self.assertNotIn("confidence", edge["provenance"])
+                self.assertEqual(graph_store.get_graph_data()["nodes"][0]["provenance"]["tool_id"], "dnsx")
+
     def test_accepts_phone_entity_type(self):
         with tempfile.TemporaryDirectory() as directory:
             db_path = str(Path(directory) / "graph.sqlite3")
