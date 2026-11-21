@@ -93,7 +93,7 @@ class PhoneLookupSearchTests(unittest.TestCase):
                     result = PHONE_MODULE._search_public_web("+12025550123")
         self.assertEqual(result["provider"], "Brave Search")
         self.assertEqual(result["status"], "provider_error")
-        self.assertEqual(urlopen.call_count, 7)
+        self.assertEqual(urlopen.call_count, 15)
 
 
 
