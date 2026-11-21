@@ -279,19 +279,28 @@ function applyReport(rep) {
   render();
 }
 
-function normalizeDomain(s) {
-  if (!s || typeof s !== "string") return "";
-  let t = s.trim().toLowerCase();
-  if (t.startsWith("https://")) t = t.slice(8);
-  else if (t.startsWith("http://")) t = t.slice(7);
-  const slash = t.indexOf("/");
-  if (slash !== -1) t = t.slice(0, slash);
-  if (t.startsWith("www.")) t = t.slice(4);
-  return t;
+function normalizeDomain(value) {
+  if (typeof value !== "string" || !value.trim()) return "";
+  const raw = value.trim();
+  try {
+    const parsed = new URL(raw.includes("://") ? raw : "https://" + raw);
+    if (!["http:", "https:"].includes(parsed.protocol) || parsed.username || parsed.password) return "";
+    return parsed.hostname.toLowerCase().replace(/\\.$/, "").replace(/^www\\./, "");
+  } catch (_) {
+    return "";
+  }
+}
+
+function isValidDomain(value) {
+  const host = normalizeDomain(value);
+  if (!host || host.length > 253 || !host.includes(".")) return false;
+  const labels = host.split(".");
+  return labels.every(label => label.length > 0 && label.length <= 63 &&
+    /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(label)) && labels[labels.length - 1].length >= 2;
 }
 
 async function apiRun(toolId, params) {
-  const res = await fetch(`${API}/tools/${toolId}/run`, {
+  const res = await fetch(`${API}/tools/${encodeURIComponent(toolId)}/run`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(params || {}),
@@ -775,7 +784,19 @@ function readUiSelection() {
 
 async function runAll() {
   readUiSelection();
-  if (!domain.trim()) return;
+  const domainInput = document.getElementById("domainInput");
+  if (!domain || !isValidDomain(domain)) {
+    if (domainInput) {
+      domainInput.setCustomValidity("Введите корректный домен, например example.com");
+      domainInput.reportValidity();
+      domainInput.focus();
+    }
+    return;
+  }
+  if (domainInput) {
+    domainInput.setCustomValidity("");
+    domainInput.value = domain;
+  }
   if (selectedTools.size === 0) {
     alert("Отметьте хотя бы один инструмент.");
     return;
