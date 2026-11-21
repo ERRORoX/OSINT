@@ -37,7 +37,7 @@ from flask_cors import CORS
 from datetime import datetime, timezone, timedelta
 
 from db import init_db, save_run, get_run_history, get_last_successful_run, delete_run, clear_runs
-from db.graph_store import (get_graph_data, merge_graph_data, replace_graph_data, clear_graph_data, list_investigations, create_investigation, activate_investigation, rename_investigation, delete_investigation)
+from db.graph_store import (get_graph_data, merge_graph_data, replace_graph_data, clear_graph_data, list_investigations, create_investigation, activate_investigation, rename_investigation, delete_investigation, list_investigation_notes, create_investigation_note, delete_investigation_note)
 from tools import get_all_tools, get_tool, run_tool
 from tools.tool_formgrab import add_capture, get_captures, get_grab_page_html, get_or_create_token
 from settings_keys import get_keys_for_api, save_keys_from_api, load_env_into_os
@@ -1028,6 +1028,26 @@ def api_investigation_item(investigation_id):
         return jsonify(result)
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
+
+
+@app.route("/api/investigations/notes", methods=["GET", "POST"])
+def api_investigation_notes():
+    """List or create notes attached to the active investigation."""
+    try:
+        if request.method == "GET":
+            return jsonify(list_investigation_notes(request.args.get("investigation_id")))
+        data = request.get_json(silent=True) or {}
+        return jsonify(create_investigation_note(data.get("content"), data.get("investigation_id"))), 201
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
+@app.route("/api/investigations/notes/<note_id>", methods=["DELETE"])
+def api_investigation_note_item(note_id):
+    try:
+        return jsonify(delete_investigation_note(note_id, request.args.get("investigation_id")))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 404
 
 
 @app.route("/api/graph", methods=["GET", "PUT", "DELETE"])
