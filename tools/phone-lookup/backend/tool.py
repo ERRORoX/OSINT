@@ -2,8 +2,68 @@
 from __future__ import annotations
 
 from typing import Any
+import json
+import os
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
 
 from tools.base import ToolBase
+
+
+def _search_public_web(e164: str) -> dict[str, Any]:
+    """Search only public indexed pages via an explicitly configured Google CSE."""
+    api_key = os.environ.get("GOOGLE_CSE_API_KEY", "").strip()
+    engine_id = os.environ.get("GOOGLE_CSE_CX", "").strip()
+    if not api_key or not engine_id:
+        return {
+            "configured": False,
+            "status": "not_configured",
+            "message": "Автопоиск не настроен: добавьте GOOGLE_CSE_API_KEY и GOOGLE_CSE_CX на сервере. Поиск по закрытым аккаунтам не выполняется.",
+            "services": [],
+            "results": [],
+        }
+
+    digits = "".join(ch for ch in e164 if ch.isdigit())
+    queries = [
+        ("Google · общий публичный поиск", f'"{e164}" OR "{digits}"'),
+        ("WhatsApp · публичные упоминания", f'"{e164}" OR "{digits}" (site:wa.me OR site:whatsapp.com)'),
+        ("Telegram · публичные страницы", f'"{e164}" OR "{digits}" site:t.me'),
+        ("imo · публичные упоминания", f'"{e164}" OR "{digits}" (site:imo.im OR site:imoapp.com)'),
+    ]
+    services = []
+    results = []
+    for label, query in queries:
+        try:
+            params = urlencode({"key": api_key, "cx": engine_id, "q": query, "num": 5})
+            request = Request(
+                "https://www.googleapis.com/customsearch/v1?" + params,
+                headers={"Accept": "application/json", "User-Agent": "OSINT-Panel-PhoneLookup/1.0"},
+            )
+            with urlopen(request, timeout=8) as response:
+                payload = json.loads(response.read(1_000_000).decode("utf-8"))
+            items = payload.get("items") or []
+            found = []
+            for item in items[:5]:
+                link = str(item.get("link") or "")
+                if not link.startswith(("https://", "http://")):
+                    continue
+                found.append({
+                    "title": str(item.get("title") or "Без заголовка")[:240],
+                    "url": link[:2000],
+                    "snippet": str(item.get("snippet") or "")[:600],
+                    "source": label,
+                })
+            results.extend(found)
+            services.append({"name": label, "status": "found" if found else "no_public_results", "count": len(found)})
+        except Exception as exc:
+            services.append({"name": label, "status": "error", "count": 0, "message": type(exc).__name__})
+    return {
+        "configured": True,
+        "status": "completed",
+        "message": "Проверены только публично индексируемые страницы. Нулевой результат не означает, что аккаунта нет.",
+        "services": services,
+        "results": results[:20],
+    }
 
 
 class ToolPhoneLookup(ToolBase):
@@ -126,7 +186,10 @@ class ToolPhoneLookup(ToolBase):
             "Данные оператора и географии относятся к плану нумерации и не доказывают фактическое использование номера.",
             "Источник: локальная база метаданных libphonenumber.",
         ]
-        return {"success": True, "output": "\n".join(lines), "metadata": metadata}
+        report = {"success": True, "output": "\n".join(lines), "metadata": metadata}
+        if params.get("search_public") is True:
+            report["public_search"] = _search_public_web(e164)
+        return report
 
 
 __all__ = ["ToolPhoneLookup"]
