@@ -486,3 +486,13 @@
 .domain-standalone .spinner{animation:spin 0.8s linear infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
 
+
+
+/* Domain workspace: compact standalone header and stable content sizing */
+.domain-standalone .osint-header{position:relative;z-index:20}
+.domain-standalone .osint-header-inner{min-height:54px;padding-top:7px;padding-bottom:7px}
+.domain-standalone .osint-title p{display:none}
+.domain-standalone .app-body,.domain-standalone .osint-body{min-height:0}
+.domain-standalone .main{min-width:0}
+.domain-standalone .search-section{padding:12px 0}
+.domain-standalone #mainArea{min-width:0;overflow-wrap:anywhere}
