@@ -26,39 +26,30 @@
     <div class="particle" style="left:94%;bottom:-5px;--duration:15s;--delay:7.0s"></div>
   </div>
 
-  <header class="osint-header app-header">
-    <div class="osint-header-inner scan-line">
-      <div class="osint-logo" aria-hidden="true">
-        <a href="/" style="color:inherit;display:flex" title="На главную">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="6"></circle>
-            <circle cx="12" cy="12" r="2"></circle>
-          </svg>
+  <header class="topbar domain-topbar">
+    <a class="domain-topbar-brand" href="/" aria-label="OSINT Panel — главная">
+      <span class="domain-brand-mark" aria-hidden="true">◈</span>
+      <span class="domain-brand-copy"><strong>OSINT <b>Panel</b></strong><small>DOMAIN INTELLIGENCE</small></span>
+    </a>
+    <div class="topbar-actions domain-topbar-actions">
+      <span class="domain-run-badges" aria-label="Статус анализа">
+        <span class="badge badge-amber pulse" id="badgeRunning" style="display:none">0 активны</span>
+        <span class="badge badge-done" id="badgeDone" style="display:none">0/5</span>
+      </span>
+      <span class="topbar-indicator" title="Локальная панель"><i></i><span>LOCAL</span></span>
+      <button class="user-button" type="button" id="btn-user-menu" aria-expanded="false" aria-haspopup="true" aria-controls="user-menu">
+        <span class="user-avatar" aria-hidden="true">A</span>
+        <span class="user-meta"><strong>Admin</strong><small>Локальный профиль</small></span>
+        <span class="user-chevron" aria-hidden="true">⌄</span>
+      </button>
+      <div class="user-menu" id="user-menu" hidden>
+        <a href="/p/settings/" class="admin-settings-link" data-tool-id="settings" aria-label="Открыть настройки и API">
+          <span class="admin-settings-icon" aria-hidden="true">⚙</span>
+          <span><strong>Настройки</strong><small>API-ключи и параметры панели</small></span>
+          <span class="admin-settings-arrow" aria-hidden="true">→</span>
         </a>
       </div>
-      <div class="osint-title">
-        <h1><a href="/" style="text-decoration:none;color:inherit"><span class="accent">OSINT</span><span class="dim">Panel</span></a></h1>
-        <p>◆ Разведка по открытым источникам | домены, username, email, утечки | Python + UI</p>
-      </div>
-      <div class="app-header-right">
-        <div class="photo-header-actions" aria-label="Статус выполнения">
-          <span class="badge badge-amber pulse" id="badgeRunning" style="display:none">0 активны</span>
-          <span class="badge badge-done" id="badgeDone" style="display:none">0/5</span>
-        </div>
-        <span class="app-header-system" id="header-system">ОС: —</span>
-        <div class="app-header-user" id="header-user">
-          <button type="button" class="app-header-user-btn" aria-expanded="false" aria-haspopup="true" id="btn-user-menu">
-            <span class="app-header-user-icon" aria-hidden="true"></span>
-            <span class="app-header-user-name">Admin</span>
-            <span class="app-header-user-chevron" aria-hidden="true"></span>
-          </button>
-          <div class="app-header-user-menu" id="user-menu" hidden>
-            <a href="/p/settings/" class="app-header-user-menu-item" data-tool-id="settings">API ключи</a>
-          </div>
-        </div>
-      </div>
     </div>
-    <!-- Разделы навигации убраны: рабочая область доменного анализа без общей полосы вкладок. -->
   </header>
 
   <div class="app-body osint-body">
@@ -75,10 +66,10 @@
     <span class="footer-hint">Разведка в открытых источниках — домены, email, соцсети</span>
   </footer>
 
-  <script defer src="/js/header-env.js"></script>
-  <script defer src="/js/header-ui.js"></script>
-  <script defer src="./js/domain.js?v=4.2.21"></script>
-  <script defer src="/js/workspace.js?v=4.3.1"></script>
+  
+  <script defer src="/js/header-ui.js?v=4.2.22"></script>
+  <script defer src="./js/domain.js?v=4.2.22"></script>
+  <script defer src="/js/workspace.js?v=4.3.2"></script>
 </body>
 </html>
 
