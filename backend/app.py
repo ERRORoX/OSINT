@@ -5,6 +5,7 @@ import io
 import json
 import os
 import platform
+import shutil
 import sys
 import threading
 import uuid
@@ -1501,6 +1502,56 @@ def api_tools_dependencies():
         return jsonify({"success": True, "tools": inspect_tools()})
     except Exception as exc:
         app.logger.exception("Tool dependency manager failed")
+        return jsonify({"success": False, "error": str(exc)}), 500
+
+
+@app.route("/api/system/health", methods=["GET"])
+def api_system_health():
+    """Локальная диагностика backend, зависимостей инструментов, модулей и диска."""
+    try:
+        tool_rows = inspect_tools()
+        tool_issues = [
+            row for row in tool_rows
+            if row.get("status") != "ready"
+            or row.get("missing_packages")
+            or row.get("missing_binaries")
+        ]
+        module_issues = get_runtime_module_issues()
+        try:
+            module_total = len(get_navigation_modules())
+        except Exception:
+            module_total = 0
+        disk = shutil.disk_usage(_PROJECT_ROOT)
+        free_percent = (disk.free / disk.total * 100) if disk.total else 0
+        storage_status = "ok" if free_percent >= 10 else "warning"
+        return jsonify({
+            "success": True,
+            "status": "healthy" if not tool_issues and not module_issues and storage_status == "ok" else "degraded",
+            "checked_at": datetime.now(timezone.utc).isoformat(),
+            "backend": {
+                "status": "ok",
+                "python_version": platform.python_version(),
+                "platform": platform.platform(),
+                "process_id": os.getpid(),
+            },
+            "tools": {
+                "total": len(tool_rows),
+                "ready": len(tool_rows) - len(tool_issues),
+                "issues": tool_issues,
+            },
+            "modules": {
+                "total": module_total,
+                "issues": module_issues,
+            },
+            "storage": {
+                "status": storage_status,
+                "free_bytes": disk.free,
+                "total_bytes": disk.total,
+                "free_percent": round(free_percent, 2),
+            },
+        })
+    except Exception as exc:
+        app.logger.exception("System health check failed")
         return jsonify({"success": False, "error": str(exc)}), 500
 
 
