@@ -66,7 +66,8 @@ def _system_packages(manifest, tool_id):
     manager, _, _ = _package_manager()
     if not manager:
         return requested
-    return [PACKAGE_NAMES.get(name, {}).get(manager, name) for name in requested]
+    package_manager_key = "apt" if manager == "apt-get" else manager
+    return [PACKAGE_NAMES.get(name, {}).get(package_manager_key, name) for name in requested]
 
 
 def inspect_tools():
