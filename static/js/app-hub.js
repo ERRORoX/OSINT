@@ -40,6 +40,7 @@ function applyNavigationModules(items){
  const cardIdMap={"domain-workspace":"domain-tools","username-workspace":"username-tools","photo-workspace":"photo-search"};
  const categoryMap={domain:"recon",network:"recon",identity:"identity",photo:"media",education:"media",utility:"analysis",workspace:"workspace"};
  items.forEach(module=>{
+  if(["history","settings","admin"].includes(module.id))return;
   const cardId=cardIdMap[module.id]||module.id;
   const existing=HUB_CARDS.find(card=>card.id===cardId);
   if(existing){
