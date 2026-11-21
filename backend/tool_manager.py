@@ -113,9 +113,9 @@ def _run_system_install(packages, timeout=1200):
     command = [executable, *suffix, *safe_packages]
     if manager == "brew":
         # Homebrew normally installs into the current user's prefix; never use sudo.
-        attempts = [command]
+        attempts = [("brew", command)]
     elif hasattr(os, "geteuid") and os.geteuid() == 0:
-        attempts = [command]
+        attempts = [("root", command)]
     else:
         attempts = []
         # Prefer desktop Polkit so KDE/GNOME can display a native
