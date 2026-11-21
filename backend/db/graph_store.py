@@ -1,6 +1,7 @@
 """Persistent relationship graph storage backed by the panel's SQLite database."""
 import json
 import re
+from urllib.parse import urlparse
 from datetime import datetime, timezone
 
 from .database import get_db
@@ -227,6 +228,30 @@ def delete_investigation(investigation_id):
 def _touch_investigation(conn, investigation_id, updated_at):
     conn.execute("UPDATE investigations SET updated_at = ? WHERE id = ?", (updated_at, investigation_id))
 
+def _clean_provenance(raw):
+    """Validate compact, non-executable evidence metadata for graph entities."""
+    if not isinstance(raw, dict):
+        return {}
+    result = {}
+    for key, limit in (("source", 120), ("tool_id", 80), ("observed_at", 80), ("evidence", 1000)):
+        value = raw.get(key)
+        if isinstance(value, str) and value.strip():
+            result[key] = value.strip()[:limit]
+    source_url = raw.get("source_url")
+    if isinstance(source_url, str) and source_url.strip():
+        candidate = source_url.strip()[:1000]
+        parsed = urlparse(candidate)
+        if parsed.scheme in {"http", "https"} and parsed.netloc:
+            result["source_url"] = candidate
+    try:
+        confidence = float(raw.get("confidence"))
+        if 0 <= confidence <= 1:
+            result["confidence"] = round(confidence, 3)
+    except (TypeError, ValueError):
+        pass
+    return result
+
+
 def validate_graph_payload(payload):
     if not isinstance(payload, dict):
         raise ValueError("Ожидается JSON-объект с nodes и edges.")
@@ -264,6 +289,7 @@ def validate_graph_payload(payload):
             "type": kind,
             "label": label,
             "details": str(raw.get("details") or "")[:1200],
+            "provenance": _clean_provenance(raw.get("provenance")),
             "x": max(-100000, min(100000, x)) if x else None,
             "y": max(25, min(12000, y)) if y else None,
         })
@@ -281,7 +307,7 @@ def validate_graph_payload(payload):
         key = (source, target, label)
         if key not in edge_seen:
             edge_seen.add(key)
-            edges.append({"source": source, "target": target, "label": label or "Связь"})
+            edges.append({"source": source, "target": target, "label": label or "Связь", "provenance": _clean_provenance(raw.get("provenance"))})
     return {"nodes": nodes, "edges": edges}
 
 
@@ -348,6 +374,8 @@ def merge_graph_data(payload, investigation_id=None):
             if canonical_id:
                 canonical = nodes_by_id[canonical_id]
                 canonical["details"] = _merge_node_details(canonical.get("details"), node.get("details"))
+                if node.get("provenance"):
+                    canonical["provenance"] = {**canonical.get("provenance", {}), **node["provenance"]}
                 id_map[node["id"]] = canonical_id
             else:
                 identity_to_id[identity] = node["id"]
@@ -361,6 +389,8 @@ def merge_graph_data(payload, investigation_id=None):
             if canonical_id:
                 old = nodes_by_id[canonical_id]
                 old["details"] = _merge_node_details(old.get("details"), node.get("details"))
+                if node.get("provenance"):
+                    old["provenance"] = {**old.get("provenance", {}), **node["provenance"]}
                 if node["label"] and len(node["label"]) > len(old.get("label", "")):
                     old["label"] = node["label"]
                 if node["x"] is not None:
@@ -389,7 +419,7 @@ def merge_graph_data(payload, investigation_id=None):
             label = str(edge.get("label") or "Связь").strip() or "Связь"
             key = (source, target, label.casefold())
             if key not in edge_keys:
-                edges.append({"source": source, "target": target, "label": label})
+                edges.append({"source": source, "target": target, "label": label, "provenance": dict(edge.get("provenance") or {})})
                 edge_keys.add(key)
 
         nodes = list(nodes_by_id.values())
