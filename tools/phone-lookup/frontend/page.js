@@ -61,9 +61,11 @@
       const card=document.createElement("article");card.className="ph-auto-result";
       const title=document.createElement("strong");title.textContent=entry.title||"Публичная страница";
       const snippet=document.createElement("p");snippet.textContent=entry.snippet||"";
-      const source=document.createElement("small");source.textContent=entry.source||data.provider_label||"Публичный веб-поиск";
+      const source=document.createElement("small");source.textContent=(entry.source||data.provider_label||"Публичный веб-поиск")+" · "+(entry.domain||"домен не определён");
+      const confidence=document.createElement("small");confidence.textContent="Достоверность: "+(entry.confidence||"низкая")+" · "+(entry.confidence_reason||"Требуется ручная проверка");
+      const observed=document.createElement("small");observed.textContent="Обнаружено: "+(entry.retrieved_at||data.retrieved_at||"время не указано");
       const link=document.createElement("a");link.href=entry.url;link.target="_blank";link.rel="noopener noreferrer";link.textContent="Открыть источник ↗";
-      card.append(source,title,snippet,link);results.append(card);
+      card.append(source,title,snippet,confidence,observed,link);results.append(card);
     });
     if(!results.children.length){const note=document.createElement("span");note.className="ph-auto-note";note.textContent=(data.provider_label||"Поисковый провайдер")+" не вернул публичных совпадений по этим запросам.";results.append(note);}
     host.append(results);
@@ -314,12 +316,14 @@
         });
         (report.results||[]).forEach(item=>{
           const card=document.createElement("article");card.className="ph-auto-result";
-          const source=document.createElement("small");source.textContent=item.source||"Публичный веб";
+          const source=document.createElement("small");source.textContent=(item.source||"Публичный веб")+" · "+(item.domain||"домен не определён");
+          const confidence=document.createElement("small");confidence.textContent="Достоверность: "+(item.confidence||"низкая")+" · "+(item.confidence_reason||"Требуется ручная проверка");
+          const observed=document.createElement("small");observed.textContent="Обнаружено: "+(item.retrieved_at||report.retrieved_at||"время не указано");
           const title=document.createElement("strong");title.textContent=item.title||"Публичная страница";
           const snippet=document.createElement("p");snippet.textContent=item.snippet||"";
           const note=document.createElement("small");note.textContent=item.match_type||"Не подтверждённое совпадение";
           const link=document.createElement("a");link.href=item.url;link.target="_blank";link.rel="noopener noreferrer";link.textContent="Открыть профиль / источник ↗";
-          card.append(source,title,snippet,note,link);personResults.append(card);
+          card.append(source,title,snippet,note,confidence,observed,link);personResults.append(card);
         });
         if(!(report.results||[]).length){const note=document.createElement("p");note.textContent="Публичные совпадения не найдены. Это не означает, что у человека нет профиля.";personResults.append(note);}
         const privacy=document.createElement("small");privacy.textContent=report.privacy_note||"Проверяются только публичные страницы.";personResults.append(privacy);
