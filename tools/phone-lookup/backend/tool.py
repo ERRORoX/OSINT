@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any
 import json
 import os
+import time
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
@@ -49,10 +50,18 @@ def _search_public_web(e164: str) -> dict[str, Any]:
     services: list[dict[str, Any]] = []
     results: list[dict[str, str]] = []
     seen_urls: set[str] = set()
+    brave_min_interval = 1.0  # Conservative default until the API exposes the account limit.
+    last_brave_request = 0.0
 
     for label, query in queries:
         try:
             if provider == "Brave Search":
+                now = time.monotonic()
+                if last_brave_request:
+                    wait = brave_min_interval - (now - last_brave_request)
+                    if wait > 0:
+                        time.sleep(wait)
+                last_brave_request = time.monotonic()
                 params = urlencode({"q": query, "count": 5, "safesearch": "moderate"})
                 request = Request(
                     "https://api.search.brave.com/res/v1/web/search?" + params,
@@ -64,6 +73,14 @@ def _search_public_web(e164: str) -> dict[str, Any]:
                 )
                 with urlopen(request, timeout=12) as response:
                     payload = json.loads(response.read(1_000_000).decode("utf-8"))
+                    headers = getattr(response, "headers", {})
+                    limit = headers.get("X-RateLimit-Limit") if hasattr(headers, "get") else None
+                    if limit:
+                        try:
+                            requests_per_second = max(0.1, float(str(limit).split(",")[0].strip()))
+                            brave_min_interval = 1.0 / requests_per_second
+                        except (TypeError, ValueError):
+                            pass
                 items = (payload.get("web") or {}).get("results") or []
                 title_key, snippet_key = "title", "description"
             else:
