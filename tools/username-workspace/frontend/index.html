@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#060608">
   <title>Username — OSINT Panel</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect fill='%23060608' width='32' height='32' rx='4'/><text x='16' y='22' font-size='16' text-anchor='middle' fill='%2300ff88' font-family='monospace'>O</text></svg>">
-  <link rel="stylesheet" href="/modules/username-workspace/css/username.css?v=4.2.3">
+  <link rel="stylesheet" href="/modules/username-workspace/css/username.css?v=4.2.4">
   <link rel="stylesheet" href="/css/unified-workstation.css?v=4.5.0">
   <link rel="stylesheet" href="/css/panel-42-dashboard.css?v=4.2.20">
 </head>
@@ -85,7 +85,16 @@
           </button>
         </div>
 
-        <div class="username-tool-toggles" aria-label="Включение модулей">
+        <section class="username-overview" aria-label="Этапы поиска">
+        <div class="username-overview__title"><span>SEARCH PIPELINE</span><span>OSINT / USERNAME</span></div>
+        <div class="username-overview__steps">
+          <div><b>01</b><span>Выбор модулей</span></div><i></i>
+          <div><b>02</b><span>Поиск профилей</span></div><i></i>
+          <div><b>03</b><span>Проверка результатов</span></div><i></i>
+          <div><b>04</b><span>Связи в расследовании</span></div>
+        </div>
+      </section>
+      <div class="username-tool-toggles" aria-label="Включение модулей">
           <div class="username-tool-toggles__head">
             <span class="username-tool-toggles__label">Модули</span>
             <div class="username-tool-toggles__bulk">
@@ -300,7 +309,7 @@
   </footer>
   <script defer src="/js/header-env.js"></script>
   <script defer src="/js/header-ui.js"></script>
-  <script src="/modules/username-workspace/js/username.js?v=4.2.3" type="module"></script>
+  <script src="/modules/username-workspace/js/username.js?v=4.2.4" type="module"></script>
   <script defer src="/js/workspace.js?v=4.3.2"></script>
 </body>
 </html>
