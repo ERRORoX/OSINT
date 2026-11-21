@@ -49,6 +49,12 @@ jobs:
       - name: Test integrated module runtime
         run: python -m unittest discover -s backend/tests -p "test_module_runtime.py" -v
 
+      - name: Check Phone Lookup JavaScript syntax
+        run: node --check tools/phone-lookup/frontend/page.js
+
+      - name: Test Phone Lookup module
+        run: python tools/phone-lookup/tests/test_tool.py -v
+
       - name: Test Photo Search module
         run: python tools/photo-search/tests/test_tool.py -v
 
