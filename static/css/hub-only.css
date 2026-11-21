@@ -592,3 +592,6 @@ body.dashboard-page{margin:0!important;min-height:100vh;background:radial-gradie
 .system-health-issue{display:grid;gap:3px;padding:7px 9px;border-left:2px solid #e5a84f;background:rgba(130,82,20,.1);font-size:10px;overflow-wrap:anywhere}
 .system-health-issue strong{color:#f3c77f}.system-health-issue span,.system-health-empty{color:#91a6c4;line-height:1.45}
 .system-health-empty{padding:7px 9px;font-size:10px}
+
+/* Phone entity type in the investigation graph */
+.graph-node-core.type-phone{fill:#123d55;stroke:#59c7e8;stroke-width:2.5}
