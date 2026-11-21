@@ -3,7 +3,7 @@
   "id": "evidence-center",
   "name": "Evidence Center",
   "version": "1.0.0",
-  "category": "investigation",
+  "category": "workspace",
   "description": "Хранилище публичных источников, выдержек, заметок аналитика и SHA-256.",
   "status": "integrated",
   "enabled": true,
