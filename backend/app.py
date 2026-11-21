@@ -1096,9 +1096,39 @@ def _verify_one(url: str, timeout_sec: float = 6.0) -> dict:
         ms = int((datetime.now().timestamp() - t0) * 1000)
         code = int(getattr(r, "status_code", 0) or 0)
         final = str(getattr(r, "url", u) or u)
-        ok = 200 <= code < 400
-        hint = "ok" if ok else ("blocked" if code in {401, 403, 429} else "not_found" if code == 404 else "http_error")
-        return {"url": u, "ok": ok, "status": code, "final_url": final, "latency_ms": ms, "hint": hint}
+        # HTTP 200 only proves that a page responded. Many platforms return
+        # soft-404 pages or generic landing pages for nonexistent usernames.
+        body = str(getattr(r, "text", "") or "")[:12000].lower()
+        soft_404_markers = (
+            "page not found", "user not found", "profile not found",
+            "account not found", "this page does not exist",
+            "the page you are looking for", "couldn't find this user",
+            "could not find this user", "такой страницы нет",
+            "пользователь не найден", "страница не найдена",
+        )
+        soft_404 = code == 200 and any(marker in body for marker in soft_404_markers)
+        try:
+            original = urlparse(u)
+            resolved = urlparse(final)
+            redirected_to_root = bool(
+                original.path.strip("/") and not resolved.path.strip("/")
+                and (original.hostname or "").lower() == (resolved.hostname or "").lower()
+            )
+        except Exception:
+            redirected_to_root = False
+        if code == 404 or soft_404:
+            verdict = "not_found"
+        elif code in {401, 403, 429}:
+            verdict = "blocked"
+        elif 200 <= code < 400:
+            verdict = "reachable_unconfirmed"
+        else:
+            verdict = "http_error"
+        return {
+            "url": u, "ok": verdict == "reachable_unconfirmed", "status": code,
+            "final_url": final, "latency_ms": ms, "hint": verdict,
+            "soft_404": soft_404, "redirected_to_root": redirected_to_root,
+        }
     except requests.Timeout:
         return {"url": u, "ok": False, "error": "timeout"}
     except requests.RequestException as e:
