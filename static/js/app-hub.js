@@ -308,8 +308,12 @@ async function loadSystemHealth(){
  if(refresh)refresh.disabled=true;
  if(checked)checked.textContent="Проверка…";
  try{
-  const response=await fetch(API+"/system/health",{headers:{Accept:"application/json"},cache:"no-store"});
+  const requestStarted=performance.now();
+   const response=await fetch(API+"/system/health",{headers:{Accept:"application/json"},cache:"no-store"});
   const data=await response.json();
+   const apiLatency=Math.max(0,Math.round(performance.now()-requestStarted));
+   const latencyEl=document.getElementById("system-api-latency");
+   if(latencyEl)latencyEl.textContent=apiLatency+" мс";
   if(!response.ok||!data.success)throw new Error(data.error||"Сервер вернул ошибку проверки");
   const toolIssues=Array.isArray(data.tools?.issues)?data.tools.issues:[];
   const moduleIssues=Array.isArray(data.modules?.issues)?data.modules.issues:[];
@@ -325,6 +329,13 @@ async function loadSystemHealth(){
   const railModules=document.getElementById("rail-modules");
   if(railTools)railTools.textContent=ready+" / "+total;
   if(railModules)railModules.textContent=String(data.modules?.total??loadedNavigation.length);
+   const pythonVersion=document.getElementById("system-python-version");
+   if(pythonVersion)pythonVersion.textContent=data.backend?.python_version||"—";
+   const diskFree=document.getElementById("system-disk-free");
+   if(diskFree){
+    const freeBytes=Number(data.storage?.free_bytes);
+    diskFree.textContent=Number.isFinite(freeBytes)?(freeBytes/1024/1024/1024).toFixed(1)+" ГБ":"—";
+   }
   const rows=[];
   rows.push('<div class="system-health-row '+(data.backend?.status==="ok"?"is-ok":"is-error")+'"><span>Backend / API</span><strong>'+(data.backend?.status==="ok"?"Работает":"Ошибка")+'</strong></div>');
   rows.push('<div class="system-health-row '+(ready===total?"is-ok":"is-warning")+'"><span>Зависимости инструментов</span><strong>'+ready+' из '+total+' готовы</strong></div>');
