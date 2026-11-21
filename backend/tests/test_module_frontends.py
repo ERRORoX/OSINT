@@ -96,6 +96,12 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn('"pip", "install"', source)
         self.assertIn('cwd=_ROOT', source)
         self.assertNotIn('cwd=run_cwd', source)
+        defaults = ROOT / "tools" / "maigret" / "maigret" / "resources" / "settings.json"
+        self.assertTrue(defaults.is_file(), "Maigret must ship a usable default settings.json")
+        config = json.loads(defaults.read_text(encoding="utf-8"))
+        self.assertEqual(config["sites_db_path"], "resources/data.json")
+        self.assertIn("retries_count", config)
+        self.assertIn("max_connections", config)
 
     def test_blackbird_installs_requirements_before_launch(self):
         source = (ROOT / "tools" / "blackbird" / "backend" / "tool.py").read_text(encoding="utf-8")
