@@ -58,7 +58,7 @@ def validate_graph_payload(payload):
             "type": kind,
             "label": label,
             "details": str(raw.get("details") or "")[:1200],
-            "x": max(25, min(730, x)) if x else None,
+            "x": max(-100000, min(100000, x)) if x else None,
             "y": max(25, min(12000, y)) if y else None,
         })
 
