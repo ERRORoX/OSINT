@@ -685,6 +685,18 @@ function graphSelect(id){
  const title=document.createElement("strong");title.textContent=node.label;
  const identity=document.createElement("small");identity.className="graph-detail-id";identity.textContent="ID: "+node.id;
  const description=document.createElement("p");description.textContent=node.details||"Дополнительное описание не указано.";
+ const provenance=node.provenance&&typeof node.provenance==="object"?node.provenance:{};
+ const evidence=document.createElement("div");evidence.className="graph-evidence";
+ const evidenceTitle=document.createElement("small");evidenceTitle.textContent="ИСТОЧНИКИ И ДОКАЗАТЕЛЬСТВА";evidence.append(evidenceTitle);
+ const evidenceRows=[];
+ if(provenance.source)evidenceRows.push("Источник: "+provenance.source);
+ if(provenance.tool_id)evidenceRows.push("Инструмент: "+provenance.tool_id);
+ if(provenance.observed_at)evidenceRows.push("Зафиксировано: "+provenance.observed_at);
+ if(typeof provenance.confidence==="number")evidenceRows.push("Уверенность: "+Math.round(provenance.confidence*100)+"%");
+ if(provenance.evidence)evidenceRows.push("Основание: "+provenance.evidence);
+ evidenceRows.forEach(value=>{const line=document.createElement("p");line.textContent=value;evidence.append(line);});
+ if(provenance.source_url){try{const u=new URL(provenance.source_url);if(["http:","https:"].includes(u.protocol)){const link=document.createElement("a");link.href=u.href;link.target="_blank";link.rel="noopener noreferrer";link.textContent="Открыть источник";evidence.append(link);}}catch(_){}}
+ if(!evidenceRows.length&&!provenance.source_url){const empty=document.createElement("small");empty.textContent="Метаданные источника пока не добавлены.";evidence.append(empty);}
  const edges=graphData.edges.filter(edge=>edge.source===id||edge.target===id);
  const related=document.createElement("small");related.textContent="Связей: "+edges.length;
  const neighbors=document.createElement("div");neighbors.className="graph-neighbor-list";
@@ -739,7 +751,7 @@ function graphSelect(id){
  remove.addEventListener("click",()=>document.dispatchEvent(new CustomEvent("graph:delete-node",{detail:{id}})));
  actions.append(copy,remove);
  const groupInfo=document.createElement("small");groupInfo.className="graph-group-hint";groupInfo.textContent="Shift + щелчок — выбрать несколько узлов. Перетаскивайте выбранные узлы вместе. Правый клик — действия.";
- panel.append(type,title,identity,description,related,neighbors,actions,groupInfo);
+ panel.append(type,title,identity,description,evidence,related,neighbors,actions,groupInfo);
  graphRender();
 }
 function graphResetView(){graphScale=1;graphPan={x:0,y:0};graphApplyTransform();}
