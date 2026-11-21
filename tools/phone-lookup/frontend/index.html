@@ -19,6 +19,15 @@
 .ph-result-empty{display:block}.ph-result-ready{display:none}.ph-result-ready.is-visible{display:block}.ph-side-copy{color:#91a8bd;font-size:.77rem;line-height:1.7;padding:16px 18px}.ph-side-copy ul{padding-left:18px;margin:9px 0}.ph-side-copy li{margin:6px 0}.ph-raw{display:none;margin:0;padding:16px 18px;white-space:pre-wrap;overflow-wrap:anywhere;color:#b9cde0;background:#08111b;border-top:1px solid var(--ph-line);font:.76rem/1.7 ui-monospace,monospace}.ph-raw.open{display:block}
 @media(max-width:760px){.ph-grid{grid-template-columns:1fr}.phone-page{width:calc(100% - 20px);margin:12px auto 36px}.ph-search{flex-direction:column}.ph-btn{min-height:48px}.phone-hero:after{right:-75px;top:35%}}
 @media(max-width:430px){.ph-metrics{grid-template-columns:1fr 1fr;padding:0 12px 14px}.ph-overview{padding:17px}.ph-detail{grid-template-columns:1fr;gap:4px}.ph-detail strong{text-align:left}.ph-card-head{padding:13px}.ph-actions{width:100%}}
+
+.ph-public-checks{margin:0 18px 20px;padding:15px;border:1px solid #28445d;border-radius:12px;background:linear-gradient(145deg,#0d1c2b,#09131e)}
+.ph-public-checks>strong{display:block;margin-top:7px;color:#e1effd;font-size:.9rem}
+.ph-public-checks p{margin:7px 0 12px;color:#8fa7bd;font-size:.75rem;line-height:1.6}
+.ph-public-links{display:flex;flex-wrap:wrap;gap:8px}
+.ph-public-links a{display:inline-flex;align-items:center;gap:6px;padding:8px 10px;border:1px solid #2b4962;border-radius:8px;background:#102238;color:#a9d7f7;text-decoration:none;font-size:.75rem;font-weight:650}
+.ph-public-links a:hover{border-color:#62c2ff;color:#e5f6ff}
+.ph-public-links span{color:#7890a7;font-size:.75rem}
+@media(max-width:430px){.ph-public-checks{margin:0 12px 14px;padding:12px}}
 </style></head>
 <body>
 <header class="osint-header app-header"><div class="osint-header-inner scan-line"><div class="osint-logo"><a href="/" style="color:inherit;text-decoration:none">◎</a></div><div class="osint-title"><h1><a href="/" style="text-decoration:none;color:inherit"><span class="accent">OSINT</span><span class="dim">Panel</span></a></h1><p>Phone Number Intelligence · Пассивный анализ</p></div></div></header>
@@ -44,18 +53,24 @@
 <div class="ph-metric"><span>Регион нумерации</span><strong id="ph-region">—</strong></div><div class="ph-metric"><span>Оператор диапазона</span><strong id="ph-carrier">—</strong></div>
 </div>
 <div class="ph-details" id="ph-details"></div>
+<section class="ph-public-checks" aria-labelledby="ph-public-title">
+<div class="ph-eyebrow">OPEN WEB / REPUTATION ONLY</div>
+<strong id="ph-public-title">Публичная репутация номера</strong>
+<p>Откройте поиск по публичным сообщениям о спаме, мошенничестве и нежелательных звонках. Поиск выполняется на выбранном сайте; результаты не подтверждают личность владельца.</p>
+<div class="ph-public-links" id="ph-public-links"><span>Ссылки появятся после проверки номера.</span></div>
+</section>
 <pre class="ph-raw" id="ph-raw"></pre>
 </div>
 </section>
 <aside class="ph-card">
 <div class="ph-card-head"><div><div class="ph-eyebrow">INTELLIGENCE SCOPE</div><strong>ЧТО МОЖНО УЗНАТЬ</strong></div></div>
-<div class="ph-side-copy"><b style="color:#dceaf7">Публичные технические данные</b><ul><li>Международный и национальный формат</li><li>Страна и код телефонного плана</li><li>Регион и тип номера</li><li>Справочный оператор исходного диапазона</li><li>Возможные часовые пояса</li><li>Статус валидности по базе нумерации</li></ul><div class="ph-note"><b>Чего этот анализ не показывает:</b> ФИО владельца, адрес проживания, GPS, текущее местоположение, активность SIM-карты или аккаунты в мессенджерах. Оператор может отличаться после переноса номера.</div></div>
+<div class="ph-side-copy"><b style="color:#dceaf7">Публичные технические данные</b><ul><li>Международный и национальный формат</li><li>Страна и код телефонного плана</li><li>Регион и тип номера</li><li>Справочный оператор исходного диапазона</li><li>Возможные часовые пояса</li><li>Статус валидности по базе нумерации</li><li>Публичные жалобы на спам и мошеннические звонки</li></ul><div class="ph-note"><b>Чего этот анализ не показывает:</b> ФИО владельца, адрес проживания, GPS, текущее местоположение, активность SIM-карты или аккаунты в мессенджерах. Оператор может отличаться после переноса номера.</div></div>
 <div class="ph-card-head" style="border-top:1px solid var(--ph-line)"><div><div class="ph-eyebrow">SESSION</div><strong>ПОСЛЕДНИЕ ПРОВЕРКИ</strong></div><button class="ph-chip" id="phone-history-clear" type="button">Очистить</button></div>
 <div class="ph-history-list" id="phone-history"><div class="ph-empty" style="padding:12px">В этой сессии проверок пока нет.</div></div>
 </aside>
 </div>
 <section class="ph-section ph-note"><b>Методология и точность.</b> Результаты формируются локальной библиотекой libphonenumber и её справочными данными. Валидность означает соответствие известному плану нумерации, но не подтверждает, что номер активен или кому-либо принадлежит. Географическое описание может быть неполным для мобильных и неперсональных номеров. Результат сохраняется в граф расследований только как телефонный узел с техническими метаданными.</section>
 </main>
-<footer class="app-footer"><span><a href="/" style="color:inherit;text-decoration:none">OSINT Panel</a></span><span class="footer-hint">Phone Number Intelligence · 2.0.0</span></footer>
-<script src="/modules/phone-lookup/page.js?v=2.0.0" defer></script><script defer src="/js/workspace.js?v=4.3.2"></script>
+<footer class="app-footer"><span><a href="/" style="color:inherit;text-decoration:none">OSINT Panel</a></span><span class="footer-hint">Phone Number Intelligence · 2.1.0</span></footer>
+<script src="/modules/phone-lookup/page.js?v=2.1.0" defer></script><script defer src="/js/workspace.js?v=4.3.2"></script>
 </body></html>
