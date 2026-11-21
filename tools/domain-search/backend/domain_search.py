@@ -25,7 +25,7 @@ except ImportError:
 def _normalize_domain(domain: str) -> str:
     """Extract and normalize a hostname from a domain or HTTP(S) URL."""
     raw = str(domain or "").strip()
-    if not raw:
+    if not raw or any(char.isspace() for char in raw):
         return ""
     candidate = raw if "://" in raw else "//" + raw
     try:
