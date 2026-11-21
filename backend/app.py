@@ -21,6 +21,7 @@ _PROJECT_ROOT = os.path.dirname(_BACKEND_DIR)
 _GRABCAM_PANEL_DIR = os.path.join(_PROJECT_ROOT, "tools", "grabcam", "panel")
 _GRABCAM_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "grabcam", "frontend")
 _IP_RDAP_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "ip-rdap", "frontend")
+_PHONE_LOOKUP_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "phone-lookup", "frontend")
 _DOMAIN_WORKSPACE_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "domain-workspace", "frontend")
 _PHOTO_WORKSPACE_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "photo-workspace", "frontend")
 _USERNAME_WORKSPACE_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, "tools", "username-workspace", "frontend")
@@ -938,6 +939,20 @@ def ip_rdap_module_assets(filename):
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
+    return response
+
+
+@app.route("/modules/phone-lookup/", methods=["GET"])
+def phone_lookup_module_page():
+    response = send_from_directory(_PHONE_LOOKUP_FRONTEND_DIR, "index.html")
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return response
+
+
+@app.route("/modules/phone-lookup/<path:filename>", methods=["GET"])
+def phone_lookup_module_assets(filename):
+    response = send_from_directory(_PHONE_LOOKUP_FRONTEND_DIR, filename)
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     return response
 
 
