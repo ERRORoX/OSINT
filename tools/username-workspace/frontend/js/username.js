@@ -18,6 +18,75 @@ const renderTabCard = createTabRenderer({ getRenderer: () => renderUsernameTabPa
 const SKIP_MSG =
   "Инструмент выключен в списке модулей выше. Отметьте его и нажмите «Запуск выбранных», чтобы выполнить.";
 
+function graphStableId(type, value) {
+  let hash = 2166136261;
+  const source = String(value || "").trim().toLowerCase();
+  for (let i = 0; i < source.length; i += 1) {
+    hash ^= source.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return type + ":" + (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+function buildUsernameGraphPayload(username, rows) {
+  const successful = (rows || []).filter((row) => row && row.ok);
+  if (!successful.length) return { nodes: [], edges: [] };
+  const nodes = [], edges = [], known = new Set();
+  const addNode = (type, label, details) => {
+    const clean = String(label || "").trim().slice(0, 180);
+    if (!clean) return null;
+    const id = graphStableId(type, clean);
+    if (!known.has(id)) {
+      known.add(id);
+      nodes.push({ id, type, label: clean, details: String(details || "").slice(0, 1200) });
+    }
+    return id;
+  };
+  const addEdge = (source, target, label) => {
+    if (!source || !target || source === target) return;
+    if (!edges.some((edge) => edge.source === source && edge.target === target && edge.label === label)) edges.push({ source, target, label });
+  };
+  const sourceNames = successful.map((row) => row.toolName || row.toolId).filter(Boolean);
+  const provenance = "Username OSINT · Источники: " + sourceNames.join(", ");
+  const personId = addNode("person", username, provenance);
+  const mergedOutput = successful.map((row) => row.out || "").join("\n");
+  const hosts = new Set();
+  for (const match of mergedOutput.matchAll(/https?:\/\/[^\s<>"'\])}]+/gi)) {
+    try {
+      const host = new URL(match[0]).hostname.toLowerCase().replace(/^www\./, "");
+      if (host && host.includes(".") && !/^\d{1,3}(?:\.\d{1,3}){3}$/.test(host)) hosts.add(host);
+    } catch (_) {}
+  }
+  hosts.forEach((host) => {
+    const id = addNode("domain", host, "Публичный профиль найден при поиске " + username + ". " + provenance);
+    addEdge(personId, id, "профиль на платформе");
+  });
+  const emails = new Set(mergedOutput.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi) || []);
+  emails.forEach((email) => {
+    const id = addNode("email", email.toLowerCase(), "Email обнаружен в результатах поиска " + username + ". " + provenance);
+    addEdge(personId, id, "email в результатах");
+  });
+  const ips = new Set(mergedOutput.match(/(?<![\w.])(?:25[0-5]|2[0-4]\d|1?\d?\d)(?:\.(?:25[0-5]|2[0-4]\d|1?\d?\d)){3}(?![\w.])/g) || []);
+  ips.forEach((ip) => {
+    const id = addNode("ip", ip, "IP обнаружен в результатах поиска " + username + ". " + provenance);
+    addEdge(personId, id, "IP в результатах");
+  });
+  return { nodes, edges };
+}
+
+async function persistUsernameGraph(username, rows) {
+  const graph = buildUsernameGraphPayload(username, rows);
+  if (!graph.nodes.length) return { nodes: 0, edges: 0 };
+  const response = await fetch("/api/graph/merge", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(graph),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || "Не удалось сохранить результаты в граф.");
+  return { nodes: graph.nodes.length, edges: graph.edges.length };
+}
+
 async function runAll(username) {
   const enabled = getEnabledTools();
   const enabledSet = new Set(enabled.map((t) => t.tab));
@@ -62,7 +131,7 @@ async function runAll(username) {
             sec > 0 ? `Через ${sec.toFixed(sec >= 10 ? 1 : 2)} с — неуспешное завершение` : "Завершено с ошибкой";
           setProgressState(card, { mode: "error", pct: 100, status: errLine });
         }
-        return { ok, out, stats };
+        return { toolId: t.id, toolName: t.title, ok, out, stats };
       } catch (e) {
         renderTabCard(t.tab, t.title, e.message || "Ошибка", false);
         setTabHit(t.tab, 0);
@@ -85,7 +154,25 @@ async function runAll(username) {
     selectedTotal: enabled.length,
     wallSeconds,
   });
+  const graphStatus = document.getElementById("usernameGraphStatus");
+  if (graphStatus) {
+    if (!okTools) {
+      graphStatus.textContent = "В граф ничего не добавлено: нет успешных результатов.";
+      graphStatus.dataset.state = "warning";
+    } else {
+      try {
+        const saved = await persistUsernameGraph(username, rows);
+        graphStatus.textContent = "Граф обновлён: добавлено " + saved.nodes + " сущностей и " + saved.edges + " связей в активное расследование.";
+        graphStatus.dataset.state = "success";
+      } catch (error) {
+        graphStatus.textContent = "Поиск завершён, но граф не обновлён: " + (error.message || "ошибка сохранения");
+        graphStatus.dataset.state = "error";
+      }
+    }
+  }
 }
+
+let searchInProgress = false;
 
 function wireSearch() {
   const btn = document.getElementById("searchBtn");
@@ -93,6 +180,7 @@ function wireSearch() {
   if (!btn || !input) return;
 
   async function go() {
+    if (searchInProgress) return;
     const q = (input.value || "").trim();
     if (!q) {
       input.focus();
@@ -116,11 +204,15 @@ function wireSearch() {
     document.querySelectorAll(".tab-content").forEach((t) => t.classList.remove("visible"));
     document.getElementById("tab-sherlock")?.classList.add("visible");
 
+    searchInProgress = true;
     btn.disabled = true;
     btn.setAttribute("aria-busy", "true");
+    const graphStatus = document.getElementById("usernameGraphStatus");
+    if (graphStatus) { graphStatus.textContent = "Ожидание результатов…"; graphStatus.dataset.state = "running"; }
     try {
       await runAll(q);
     } finally {
+      searchInProgress = false;
       btn.disabled = false;
       btn.removeAttribute("aria-busy");
     }
