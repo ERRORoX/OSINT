@@ -11,60 +11,116 @@ from tools.base import ToolBase
 
 
 def _search_public_web(e164: str) -> dict[str, Any]:
-    """Search only public indexed pages via an explicitly configured Google CSE."""
-    api_key = os.environ.get("GOOGLE_CSE_API_KEY", "").strip()
+    """Search public indexed pages through Brave Search or legacy Google CSE."""
+    brave_key = os.environ.get("BRAVE_SEARCH_API_KEY", "").strip()
+    google_key = os.environ.get("GOOGLE_CSE_API_KEY", "").strip()
     engine_id = os.environ.get("GOOGLE_CSE_CX", "").strip()
-    if not api_key or not engine_id:
+
+    if brave_key:
+        provider = "Brave Search"
+        provider_key = brave_key
+    elif google_key and engine_id:
+        provider = "Google Custom Search"
+        provider_key = google_key
+    else:
         return {
             "configured": False,
             "status": "not_configured",
-            "message": "Автопоиск не настроен: добавьте GOOGLE_CSE_API_KEY и GOOGLE_CSE_CX на сервере. Поиск по закрытым аккаунтам не выполняется.",
+            "provider": None,
+            "provider_label": "Публичный веб-поиск",
+            "message": (
+                "Автопоиск не настроен. Добавьте BRAVE_SEARCH_API_KEY на сервере "
+                "(рекомендуется) либо GOOGLE_CSE_API_KEY и GOOGLE_CSE_CX для старой интеграции."
+            ),
             "services": [],
             "results": [],
         }
 
     digits = "".join(ch for ch in e164 if ch.isdigit())
     queries = [
-        ("Google · общий публичный поиск", f'"{e164}" OR "{digits}"'),
+        ("Общий публичный поиск", f'"{e164}" OR "{digits}"'),
         ("WhatsApp · публичные упоминания", f'"{e164}" OR "{digits}" (site:wa.me OR site:whatsapp.com)'),
         ("Telegram · публичные страницы", f'"{e164}" OR "{digits}" site:t.me'),
         ("imo · публичные упоминания", f'"{e164}" OR "{digits}" (site:imo.im OR site:imoapp.com)'),
+        ("Социальные сети · публичные страницы", f'"{e164}" OR "{digits}" (site:instagram.com OR site:facebook.com OR site:vk.com OR site:tiktok.com OR site:x.com OR site:linkedin.com)'),
+        ("Спам · публичные жалобы", f'"{e164}" OR "{digits}" (spam OR scam OR мошенничество OR спам OR нежелательный звонок)'),
+        ("Бизнес · публичные контакты", f'"{e164}" OR "{digits}" (company OR business OR контакты OR компания OR телефон)'),
     ]
-    services = []
-    results = []
+    services: list[dict[str, Any]] = []
+    results: list[dict[str, str]] = []
+    seen_urls: set[str] = set()
+
     for label, query in queries:
         try:
-            params = urlencode({"key": api_key, "cx": engine_id, "q": query, "num": 5})
-            request = Request(
-                "https://www.googleapis.com/customsearch/v1?" + params,
-                headers={"Accept": "application/json", "User-Agent": "OSINT-Panel-PhoneLookup/1.0"},
-            )
-            with urlopen(request, timeout=8) as response:
-                payload = json.loads(response.read(1_000_000).decode("utf-8"))
-            items = payload.get("items") or []
-            found = []
+            if provider == "Brave Search":
+                params = urlencode({"q": query, "count": 5, "safesearch": "moderate"})
+                request = Request(
+                    "https://api.search.brave.com/res/v1/web/search?" + params,
+                    headers={
+                        "Accept": "application/json",
+                        "X-Subscription-Token": provider_key,
+                        "User-Agent": "OSINT-Panel-PhoneLookup/2.6",
+                    },
+                )
+                with urlopen(request, timeout=12) as response:
+                    payload = json.loads(response.read(1_000_000).decode("utf-8"))
+                items = (payload.get("web") or {}).get("results") or []
+                title_key, snippet_key = "title", "description"
+            else:
+                params = urlencode({
+                    "key": provider_key, "cx": engine_id, "q": query, "num": 5,
+                })
+                request = Request(
+                    "https://www.googleapis.com/customsearch/v1?" + params,
+                    headers={"Accept": "application/json", "User-Agent": "OSINT-Panel-PhoneLookup/2.6"},
+                )
+                with urlopen(request, timeout=12) as response:
+                    payload = json.loads(response.read(1_000_000).decode("utf-8"))
+                items = payload.get("items") or []
+                title_key, snippet_key = "title", "snippet"
+
+            found = 0
             for item in items[:5]:
-                link = str(item.get("link") or "")
-                if not link.startswith(("https://", "http://")):
+                link = str(item.get("url") or item.get("link") or "").strip()
+                if not link.startswith(("https://", "http://")) or link in seen_urls:
                     continue
-                found.append({
-                    "title": str(item.get("title") or "Без заголовка")[:240],
+                seen_urls.add(link)
+                results.append({
+                    "title": str(item.get(title_key) or "Без заголовка")[:240],
                     "url": link[:2000],
-                    "snippet": str(item.get("snippet") or "")[:600],
+                    "snippet": str(item.get(snippet_key) or "")[:600],
                     "source": label,
                 })
-            results.extend(found)
-            services.append({"name": label, "status": "found" if found else "no_public_results", "count": len(found)})
+                found += 1
+            services.append({
+                "name": label,
+                "status": "found" if found else "no_public_results",
+                "count": found,
+            })
         except Exception as exc:
-            services.append({"name": label, "status": "error", "count": 0, "message": type(exc).__name__})
+            # Keep credentials and provider response bodies out of user-facing errors.
+            code = getattr(exc, "code", None)
+            services.append({
+                "name": label,
+                "status": "error",
+                "count": 0,
+                "message": f"HTTP {code}" if isinstance(code, int) else type(exc).__name__,
+            })
+
+    found_total = len(results)
     return {
         "configured": True,
-        "status": "completed",
-        "message": "Проверены только публично индексируемые страницы. Нулевой результат не означает, что аккаунта нет.",
+        "status": "completed" if any(s["status"] != "error" for s in services) else "provider_error",
+        "provider": provider,
+        "provider_label": provider,
+        "message": (
+            f"Провайдер: {provider}. Выполнено {len(queries)} поисковых направлений; "
+            f"найдено {found_total} уникальных публичных страниц. "
+            "Результаты не подтверждают принадлежность номера человеку или наличие частного аккаунта."
+        ),
         "services": services,
-        "results": results[:20],
+        "results": results[:30],
     }
-
 
 class ToolPhoneLookup(ToolBase):
     @property
