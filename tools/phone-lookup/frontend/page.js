@@ -68,12 +68,41 @@
     if(!results.children.length){const note=document.createElement("span");note.className="ph-auto-note";note.textContent="Google не вернул публичных совпадений по этим запросам.";results.append(note);}
     host.append(results);
   };
+  const SOURCE_SELECTION_KEY="phone-lookup-selected-sources-v1";
+  const readSavedSourceSelection=()=>{
+    try{const value=JSON.parse(localStorage.getItem(SOURCE_SELECTION_KEY)||"[]");return Array.isArray(value)?value:[];}catch(_){return [];}
+  };
+  const saveSourceSelection=labels=>{
+    try{localStorage.setItem(SOURCE_SELECTION_KEY,JSON.stringify(labels));}catch(_){}
+  };
   const renderPublicChecks=metadata=>{
     const host=$("ph-public-links");
     if(!host)return;
     host.replaceChildren();
     const number=String(metadata.e164||metadata.international||"").trim();
     if(!number){const note=document.createElement("span");note.textContent="Нет нормализованного номера для поиска.";host.append(note);return;}
+    const digits=number.replace(/\\D/g,"");
+    const direct=document.createElement("section");
+    direct.className="ph-direct-messengers";
+    const directTitle=document.createElement("strong");
+    directTitle.className="ph-link-heading";
+    directTitle.textContent="Открыть номер в мессенджере";
+    const directHint=document.createElement("span");
+    directHint.className="ph-source-hint";
+    directHint.textContent="Ссылки передают номер в приложение. Результат зависит от настроек приватности и наличия аккаунта.";
+    const directLinks=document.createElement("div");
+    directLinks.className="ph-direct-links";
+    const addDirectLink=(label,url,noteText)=>{
+      const item=document.createElement("div");item.className="ph-direct-item";
+      const link=document.createElement("a");link.href=url;link.textContent=label;link.target="_blank";link.rel="noopener noreferrer";
+      const note=document.createElement("small");note.textContent=noteText;
+      item.append(link,note);directLinks.append(item);
+    };
+    addDirectLink("WhatsApp ↗","https://wa.me/"+digits,"Откроет чат, если номер зарегистрирован и доступен в WhatsApp.");
+    addDirectLink("Telegram ↗","tg://resolve?phone="+digits,"Попытка открыть профиль по номеру; Telegram может скрыть пользователя настройками приватности.");
+    addDirectLink("imo — поиск публичных упоминаний ↗","https://www.google.com/search?q="+encodeURIComponent('"'+number+'" (site:imo.im OR site:imoapp.com)'),"У imo нет подтверждённой универсальной публичной ссылки для открытия профиля по номеру.");
+    direct.append(directTitle,directHint,directLinks);
+    host.append(direct);
     const exact='"'+number+'"';
     const reputation=exact+' (спам OR мошенничество OR нежелательный звонок OR scam OR spam OR robocall)';
     const groups=[
@@ -161,6 +190,11 @@
         checkbox.type="checkbox";
         checkbox.value=String(chosen.length);
         checkbox.dataset.sourceIndex=String(chosen.length);
+        checkbox.checked=readSavedSourceSelection().includes(label);
+        checkbox.addEventListener("change",()=>{
+          const selected=Array.from(selection.querySelectorAll("input:checked")).map(box=>chosen[Number(box.dataset.sourceIndex)]?.label).filter(Boolean);
+          saveSourceSelection(selected);
+        });
         const name=document.createElement("span");
         name.textContent=label;
         chosen.push({label,base,query});
@@ -184,6 +218,7 @@
     const renderSelected=()=>{
       linksHost.replaceChildren();
       const checked=Array.from(selection.querySelectorAll("input:checked"));
+      saveSourceSelection(checked.map(box=>chosen[Number(box.dataset.sourceIndex)]?.label).filter(Boolean));
       if(!checked.length){const note=document.createElement("span");note.className="ph-source-hint";note.textContent="Источники не выбраны.";linksHost.append(note);return;}
       checked.forEach(box=>{
         const item=chosen[Number(box.dataset.sourceIndex)];
@@ -200,6 +235,7 @@
     build.addEventListener("click",renderSelected);
     clear.addEventListener("click",()=>{
       selection.querySelectorAll("input").forEach(box=>box.checked=false);
+      saveSourceSelection([]);
       renderSelected();
     });
     host.append(controls,selection,actions,linksHost);
