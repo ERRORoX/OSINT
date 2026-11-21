@@ -1,1 +1,41 @@
-{"schema_version":1,"id":"person-intelligence","name":"Person Intelligence","version":"1.0.0","category":"identity","description":"Бесплатный поиск по ФИО: локальные варианты написания и ссылки на публичные поисковые источники.","status":"integrated","enabled":true,"entrypoints":{"page_url":"/modules/person-intelligence/","frontend":"tools/person-intelligence/frontend/index.html","manifest_readme":"tools/person-intelligence/README.md"},"dependencies":{"python":[],"system":[],"optional":[]},"capabilities":["offline-name-variant-generation","cyrillic-latin-transliteration","public-web-search-links","public-social-page-search","public-document-search","optional-public-search-api","source-provenance-review"],"notes":["Генерация вариантов ФИО выполняется локально и не требует API-ключей.","Поисковые ссылки используют публичные поисковые системы и не требуют установки дополнительных пакетов.","Автоматический поиск требует уже настроенного Brave Search API через Phone Intelligence.","Maigret и Sherlock предназначены для поиска по известному username, а не для поиска по ФИО.","Не используются закрытые аккаунты, приватные контактные базы или сырые дампы утечек.","Совпадение по имени не подтверждает личность; проверяйте первоисточники и несколько независимых признаков."]}
+{
+  "schema_version": 1,
+  "id": "person-intelligence",
+  "name": "Person Intelligence",
+  "version": "2.0.0",
+  "category": "identity",
+  "description": "Поиск по ФИО с вариантами написания, публичными источниками и передачей подтверждаемых находок в Graph и Evidence Center.",
+  "status": "integrated",
+  "enabled": true,
+  "entrypoints": {
+    "page_url": "/modules/person-intelligence/",
+    "frontend": "tools/person-intelligence/frontend/index.html",
+    "manifest_readme": "tools/person-intelligence/README.md"
+  },
+  "dependencies": {
+    "python": [],
+    "system": [],
+    "optional": []
+  },
+  "capabilities": [
+    "offline-name-variant-generation",
+    "cyrillic-latin-transliteration",
+    "public-web-search-links",
+    "public-social-page-search",
+    "public-document-search",
+    "optional-public-search-api",
+    "source-provenance-review",
+    "expanded-name-variants",
+    "public-source-to-graph",
+    "public-source-to-evidence",
+    "source-confidence-review"
+  ],
+  "notes": [
+    "Генерация вариантов ФИО выполняется локально и не требует API-ключей.",
+    "Поисковые ссылки используют публичные поисковые системы и не требуют установки дополнительных пакетов.",
+    "Автоматический поиск требует уже настроенного Brave Search API через Phone Intelligence.",
+    "Maigret и Sherlock предназначены для поиска по известному username, а не для поиска по ФИО.",
+    "Не используются закрытые аккаунты, приватные контактные базы или сырые дампы утечек.",
+    "Совпадение по имени не подтверждает личность; проверяйте первоисточники и несколько независимых признаков."
+  ]
+}
