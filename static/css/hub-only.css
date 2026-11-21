@@ -457,3 +457,34 @@ body.dashboard-page{margin:0!important;min-height:100vh;background:radial-gradie
 #graph-auto-layout{border-color:rgba(62,163,235,.42);background:linear-gradient(135deg,rgba(25,94,158,.5),rgba(14,54,91,.5));color:#d4eaff}
 #graph-auto-layout:hover{background:linear-gradient(135deg,rgba(37,119,194,.62),rgba(18,71,116,.62));border-color:#63baff}
 @media(max-width:560px){.graph-zoom-controls{flex-wrap:wrap}.graph-zoom-controls button{min-height:32px}}
+
+
+/* Relationship graph: spacious canvas and fullscreen investigation mode */
+#graph-fullscreen{border-color:rgba(66,185,218,.42);background:rgba(18,91,126,.28);color:#8fe5ff}
+#graph-fullscreen:hover{border-color:#58c8ed;background:rgba(18,115,153,.38);color:#e5fbff}
+.graph-fullscreen-active{overflow:hidden!important}
+.graph-workspace.graph-fullscreen{
+ position:fixed!important;inset:10px!important;z-index:9999!important;
+ width:auto!important;height:auto!important;max-width:none!important;max-height:none!important;
+ min-height:0!important;margin:0!important;padding:18px!important;box-sizing:border-box!important;
+ overflow:auto!important;border:1px solid rgba(77,166,238,.5)!important;
+ border-radius:14px!important;background:radial-gradient(ellipse at 50% 35%,rgba(16,77,145,.24),transparent 68%),#06101d!important;
+ box-shadow:0 24px 90px rgba(0,0,0,.78),0 0 0 1px rgba(58,146,226,.12)!important;
+}
+.graph-workspace.graph-fullscreen .graph-canvas-wrap{
+ flex:1 1 auto!important;min-height:320px!important;height:auto!important;
+}
+.graph-workspace.graph-fullscreen .interactive-relationship-graph{
+ width:100%!important;height:100%!important;min-height:320px!important;
+}
+.graph-workspace.graph-fullscreen .graph-heading h2{font-size:19px}
+.graph-workspace.graph-fullscreen .graph-node-label{font-size:11px}
+.graph-workspace.graph-fullscreen .graph-detail{grid-template-columns:auto minmax(0,1fr);align-items:center;column-gap:14px}
+.graph-workspace.graph-fullscreen .graph-detail p{grid-column:2}
+.graph-workspace.graph-fullscreen .graph-import{flex:0 0 auto}
+@media(max-width:760px){
+ .graph-workspace.graph-fullscreen{inset:5px!important;padding:10px!important}
+ .graph-workspace.graph-fullscreen .graph-toolbar{align-items:flex-start}
+ .graph-workspace.graph-fullscreen .graph-canvas-wrap{min-height:260px!important}
+ .graph-workspace.graph-fullscreen .interactive-relationship-graph{min-height:260px!important}
+}
