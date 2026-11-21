@@ -35,7 +35,7 @@ from flask_cors import CORS
 from datetime import datetime, timezone, timedelta
 
 from db import init_db, save_run, get_run_history, get_last_successful_run, delete_run, clear_runs
-from db.graph_store import get_graph_data, merge_graph_data, replace_graph_data, clear_graph_data
+from db.graph_store import (get_graph_data, merge_graph_data, replace_graph_data, clear_graph_data, list_investigations, create_investigation, activate_investigation, rename_investigation, delete_investigation)
 from tools import get_all_tools, get_tool, run_tool
 from tools.tool_formgrab import add_capture, get_captures, get_grab_page_html, get_or_create_token
 from settings_keys import get_keys_for_api, save_keys_from_api, load_env_into_os
@@ -978,6 +978,39 @@ def api_navigation_list():
 def api_tools_list():
     """Список доступных инструментов."""
     return jsonify(get_all_tools())
+
+
+@app.route("/api/investigations", methods=["GET", "POST"])
+def api_investigations():
+    if request.method == "GET":
+        return jsonify(list_investigations())
+    data = request.get_json(silent=True) or {}
+    try:
+        return jsonify(create_investigation(data.get("name"))), 201
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
+@app.route("/api/investigations/<investigation_id>/activate", methods=["POST"])
+def api_activate_investigation(investigation_id):
+    try:
+        graph = activate_investigation(investigation_id)
+        return jsonify({"graph": graph, "investigations": list_investigations()})
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 404
+
+
+@app.route("/api/investigations/<investigation_id>", methods=["PATCH", "DELETE"])
+def api_investigation_item(investigation_id):
+    data = request.get_json(silent=True) or {}
+    try:
+        if request.method == "PATCH":
+            return jsonify(rename_investigation(investigation_id, data.get("name")))
+        result = delete_investigation(investigation_id)
+        result["investigations"] = list_investigations()
+        return jsonify(result)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
 
 
 @app.route("/api/graph", methods=["GET", "PUT", "DELETE"])
