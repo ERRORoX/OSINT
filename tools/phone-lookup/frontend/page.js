@@ -17,7 +17,11 @@
       ["Описание региона",metadata.geographic_description],
       ["Часовые пояса",(metadata.time_zones||[]).join(", ")],
       ["Расширение",metadata.extension],
+      ["Значащая часть номера",metadata.national_significant_number],
+      ["Источник кода страны",metadata.country_code_source],
+      ["Код типа номера",metadata.number_type_code],
       ["Причина проверки",metadata.possible_reason],
+      ["Статус плана нумерации",metadata.is_valid?"Номер соответствует известному диапазону":"Не подтверждён"],
       ["Источник данных","Локальная база libphonenumber"]
     ];
     rows.forEach(([label,val])=>{if(val===undefined||val===null||val===""||(Array.isArray(val)&&!val.length))return;const row=document.createElement("div"),name=document.createElement("span"),data=document.createElement("strong");row.className="ph-detail";name.textContent=label;data.textContent=Array.isArray(val)?val.join(", "):String(val);row.append(name,data);host.append(row);});
@@ -28,6 +32,29 @@
     value("ph-type",m.number_type);value("ph-region",m.region);value("ph-carrier",m.carrier);
     $("ph-flag").textContent=flagFor(m.region);value("ph-valid",m.valid?"✓ Номер соответствует плану нумерации":"⚠ Не подтверждён");
     showDetails(m);
+    renderPublicChecks(m);
+  };
+  const renderPublicChecks=metadata=>{
+    const host=$("ph-public-links");
+    if(!host)return;
+    host.replaceChildren();
+    const number=String(metadata.e164||metadata.international||"").trim();
+    if(!number){const note=document.createElement("span");note.textContent="Нет нормализованного номера для поиска.";host.append(note);return;}
+    const query='"'+number+'" (спам OR мошенничество OR нежелательный звонок OR scam OR spam OR robocall)';
+    const sources=[
+      ["Google","https://www.google.com/search?q="],
+      ["Bing","https://www.bing.com/search?q="],
+      ["DuckDuckGo","https://duckduckgo.com/?q="]
+    ];
+    sources.forEach(([label,base])=>{
+      const link=document.createElement("a");
+      link.href=base+encodeURIComponent(query);
+      link.target="_blank";
+      link.rel="noopener noreferrer";
+      link.textContent=label+" · жалобы";
+      link.setAttribute("aria-label",label+" — поиск публичных жалоб на спам и мошенничество по номеру");
+      host.append(link);
+    });
   };
   const persistGraph=async metadata=>{
     const phone=metadata.e164||metadata.international||"";
