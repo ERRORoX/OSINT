@@ -298,6 +298,7 @@ export function initPanel(container) {
         <label>${escapeHtml(k.label)}</label>
         <div class="key-input-wrap">
           <input type="password" name="${escapeHtml(k.id)}" placeholder="${k.isSet ? "Ключ сохранён · пустое поле оставит его без изменений" : "Введите ключ"}" autocomplete="new-password" spellcheck="false">
+          <span class="settings-key-state ${k.isSet ? "is-set" : "is-empty"}">${k.isSet ? "НАСТРОЕН" : "НЕ ЗАДАН"}</span>
           <button type="button" class="btn-help" aria-expanded="false" data-key-id="${escapeHtml(k.id)}">Помощь</button>
         </div>
         <div class="help-block" id="help-${escapeHtml(k.id)}" role="region">
