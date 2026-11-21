@@ -10,6 +10,7 @@ export function wireVerifyInPane(pane) {
 
     btn.disabled = true;
     btn.textContent = "Проверяю…";
+    cards.forEach((c) => { const badge = c.querySelector("[data-verify-badge]"); if (badge) { badge.textContent = "Проверка…"; badge.title = ""; } });
     try {
       const res = await fetch("/api/verify/links", {
         method: "POST",
@@ -30,15 +31,24 @@ export function wireVerifyInPane(pane) {
           badge.textContent = "—";
           continue;
         }
-        if (r.ok) {
-          badge.textContent = `${r.status || 200}`;
-          badge.classList.add("is-ok");
-        } else if (r.status) {
-          badge.textContent = `${r.status}`;
-          badge.classList.add(r.status === 404 ? "is-bad" : "is-warn");
-        } else {
-          badge.textContent = String(r.error || "err");
+        if (r.hint === "not_found" || r.status === 404 || r.soft_404) {
+          badge.textContent = "Не найден";
+          badge.classList.add("is-bad");
+          badge.title = r.soft_404 ? "Сайт вернул страницу-заглушку (soft 404)." : "Сервер сообщил, что страница не найдена.";
+        } else if (r.hint === "blocked" || [401, 403, 429].includes(Number(r.status))) {
+          badge.textContent = `${r.status || 'Блокировка}`;
           badge.classList.add("is-warn");
+          badge.title = "Сайт ограничил проверку. Существование профиля неизвестно.";
+        } else if (r.hint === "reachable_unconfirmed" || r.ok) {
+          badge.textContent = `${r.status || 200} · не подтверждён`;
+          badge.classList.add("is-warn");
+          badge.title = r.redirected_to_root
+            ? "Ссылка перенаправила на главную страницу сайта. Профиль не подтверждён."
+            : "Страница отвечает, но HTTP 200 не доказывает существование профиля.";
+        } else {
+          badge.textContent = String(r.error || r.hint || "Не проверено");
+          badge.classList.add("is-warn");
+          badge.title = r.detail || "Не удалось надёжно проверить ссылку.";
         }
       }
     } catch (e) {
