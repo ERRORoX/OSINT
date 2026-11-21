@@ -125,34 +125,63 @@ def _search_public_web(e164: str) -> dict[str, Any]:
         "services": services, "results": results[:100],
     }
 
+def _person_name_variants(name: str) -> list[str]:
+    """Generate conservative Cyrillic/Latin variants locally."""
+    translit = {"а":"a","б":"b","в":"v","г":"g","д":"d","е":"e","ё":"yo","ж":"zh","з":"z","и":"i","й":"y","к":"k","л":"l","м":"m","н":"n","о":"o","п":"p","р":"r","с":"s","т":"t","у":"u","ф":"f","х":"kh","ц":"ts","ч":"ch","ш":"sh","щ":"shch","ъ":"","ы":"y","ь":"","э":"e","ю":"yu","я":"ya","ғ":"gh","ӣ":"i","қ":"q","ӯ":"u","ҳ":"h","ҷ":"j"}
+    def latin(value: str) -> str:
+        return "".join(translit.get(char, char) for char in value.lower())
+    words = name.split()
+    candidates = [name, latin(name)]
+    if len(words) >= 2:
+        reversed_name = " ".join(reversed(words))
+        candidates.extend([reversed_name, latin(reversed_name)])
+    if len(words) == 3:
+        reordered = " ".join((words[0], words[2], words[1]))
+        candidates.extend([reordered, latin(reordered)])
+    result, seen = [], set()
+    for item in candidates:
+        cleaned = " ".join(item.split()).strip()
+        if cleaned and cleaned.casefold() not in seen:
+            seen.add(cleaned.casefold())
+            result.append(cleaned)
+    return result[:6]
+
+
 def _search_public_person(name: str, location: str = "") -> dict[str, Any]:
-    """Search indexed public pages for a supplied name; do not enumerate accounts or private data."""
+    """Search only indexed public pages. Name matches are leads, never identity proof."""
     brave_key = os.environ.get("BRAVE_SEARCH_API_KEY", "").strip()
     google_key = os.environ.get("GOOGLE_CSE_API_KEY", "").strip()
     engine_id = os.environ.get("GOOGLE_CSE_CX", "").strip()
+    variants = _person_name_variants(name)
     if brave_key:
         provider, provider_key = "Brave Search", brave_key
     elif google_key and engine_id:
         provider, provider_key = "Google Custom Search", google_key
     else:
         return {"configured": False, "status": "not_configured", "provider": None,
-                "message": "Добавьте BRAVE_SEARCH_API_KEY на сервере (или GOOGLE_CSE_API_KEY и GOOGLE_CSE_CX).",
-                "services": [], "results": []}
+                "message": "Автоматический API-поиск не настроен. Используйте бесплатные поисковые ссылки Person Intelligence либо добавьте BRAVE_SEARCH_API_KEY.",
+                "services": [], "results": [], "variants": variants}
 
-    safe_name = name.replace('"', " ").strip()
     safe_location = location.replace('"', " ").strip()
-    quoted = '"' + safe_name + '"'
     place = f' "{safe_location}"' if safe_location else ""
+    quoted = lambda value: '"' + value.replace('"', " ").strip() + '"'
     queries = [
-        ("Одноклассники · имя и регион", f"site:ok.ru {quoted}{place}"),
-        ("Одноклассники · имя без региона", f"site:ok.ru {quoted}"),
-        ("VK · публичные профили", f"site:vk.com {quoted}{place}"),
-        ("Общий веб · точное имя", f"{quoted}{place}"),
-        ("Социальные сети · публичные страницы", f'{quoted}{place} (site:facebook.com OR site:instagram.com OR site:linkedin.com OR site:tiktok.com)'),
-        ("Публичные публикации и объявления", f'{quoted}{place} (объявления OR публикации OR контакты OR business)'),
-        ("Форумы и сообщества", f'{quoted}{place} (site:reddit.com OR site:github.com OR forum OR форум)'),
-        ("Варианты написания", f'"{safe_name.replace(" ", " ")}" {safe_location}'),
+        ("Общий веб · точное ФИО", f"{quoted(variants[0])}{place}"),
+        ("Общий веб · латинская транслитерация", f"{quoted(variants[1])}{place}" if len(variants) > 1 else f"{quoted(variants[0])}{place}"),
+        ("VK · публичные страницы", f"site:vk.com {quoted(variants[0])}{place}"),
+        ("Одноклассники · публичные страницы", f"site:ok.ru {quoted(variants[0])}{place}"),
+        ("LinkedIn · публичные профили", f"site:linkedin.com/in {quoted(variants[0])}{place}"),
+        ("Facebook · публичные страницы", f"site:facebook.com {quoted(variants[0])}{place}"),
+        ("Instagram · публичные страницы", f"site:instagram.com {quoted(variants[0])}{place}"),
+        ("GitHub · публичные профили", f"site:github.com {quoted(variants[0])}{place}"),
+        ("Telegram · публичные страницы", f"site:t.me {quoted(variants[0])}{place}"),
+        ("Публичные документы PDF", f"{quoted(variants[0])}{place} filetype:pdf"),
+        ("Организации и профессиональные упоминания", f"{quoted(variants[0])}{place} (организация OR компания OR director OR company OR контакты)"),
+        ("Новости и публичные публикации", f"{quoted(variants[0])}{place} (новости OR публикация OR интервью OR news OR interview)"),
     ]
+    for variant in variants[2:4]:
+        queries.append(("Дополнительное написание · публичный веб", f"{quoted(variant)}{place}"))
+
     services, results, seen = [], [], set()
     interval, last_request = 1.0, 0.0
     retrieved_at = datetime.now(timezone.utc).isoformat()
@@ -166,17 +195,15 @@ def _search_public_person(name: str, location: str = "") -> dict[str, Any]:
                 request = Request(
                     "https://api.search.brave.com/res/v1/web/search?" + urlencode({"q": query, "count": 10, "safesearch": "moderate"}),
                     headers={"Accept": "application/json", "X-Subscription-Token": provider_key,
-                             "User-Agent": "OSINT-Panel-PersonSearch/2.7"},
+                             "User-Agent": "OSINT-Panel-PersonSearch/3.0"},
                 )
                 with urlopen(request, timeout=15) as response:
                     payload = json.loads(response.read(1_000_000).decode("utf-8"))
                 items = (payload.get("web") or {}).get("results") or []
             else:
                 request = Request(
-                    "https://www.googleapis.com/customsearch/v1?" + urlencode(
-                        {"key": provider_key, "cx": engine_id, "q": query, "num": 10}
-                    ),
-                    headers={"Accept": "application/json", "User-Agent": "OSINT-Panel-PersonSearch/2.7"},
+                    "https://www.googleapis.com/customsearch/v1?" + urlencode({"key": provider_key, "cx": engine_id, "q": query, "num": 10}),
+                    headers={"Accept": "application/json", "User-Agent": "OSINT-Panel-PersonSearch/3.0"},
                 )
                 with urlopen(request, timeout=15) as response:
                     payload = json.loads(response.read(1_000_000).decode("utf-8"))
@@ -192,9 +219,9 @@ def _search_public_person(name: str, location: str = "") -> dict[str, Any]:
                     "url": link[:2000], "domain": (urlparse(link).hostname or "").lower()[:180],
                     "snippet": str(item.get("description") or item.get("snippet") or "")[:600],
                     "source": label, "query": query[:500], "retrieved_at": retrieved_at,
-                    "match_type": "поисковое совпадение, не подтверждённая личность",
+                    "match_type": "совпадение по ФИО; личность не подтверждена",
                     "confidence": "низкая",
-                    "confidence_reason": "Совпадение по имени не подтверждает, что страница принадлежит искомому человеку.",
+                    "confidence_reason": "Поисковое совпадение по имени не подтверждает принадлежность страницы искомому человеку.",
                 })
                 count += 1
             services.append({"name": label, "status": "found" if count else "no_public_results", "count": count})
@@ -206,9 +233,9 @@ def _search_public_person(name: str, location: str = "") -> dict[str, Any]:
     return {
         "configured": True, "status": "completed" if successful else "provider_error",
         "provider": provider, "provider_label": provider, "retrieved_at": retrieved_at,
-        "message": f"Поиск завершён: {len(results)} уникальных публичных страниц. Совпадения по ФИО требуют ручной проверки.",
-        "services": services, "results": results[:80],
-        "privacy_note": "Проверяются публично индексируемые страницы. Закрытые профили, аккаунт-энумерация и сырые дампы утечек не проверяются.",
+        "message": f"Поиск завершён: {len(results)} уникальных публичных страниц по {len(queries)} направлениям. Совпадения требуют ручной проверки.",
+        "variants": variants, "services": services, "results": results[:100],
+        "privacy_note": "Проверяются только публично индексируемые страницы. Закрытые профили, приватные контакты и сырые дампы утечек не проверяются.",
     }
 
 class ToolPhoneLookup(ToolBase):
