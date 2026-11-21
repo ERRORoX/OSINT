@@ -78,15 +78,10 @@ class ToolPhoneLookup(ToolBase):
         geographic_description = geocoder.description_for_number(number, "ru") or geocoder.description_for_number(number, "en") or ""
         time_zones = list(timezone.time_zones_for_number(number))
         extension = getattr(number, "extension", "") or ""
-        country_code_sources = {
-            phonenumbers.PhoneNumber.CountryCodeSource.FROM_NUMBER_WITH_PLUS_SIGN: "Международный номер с +",
-            phonenumbers.PhoneNumber.CountryCodeSource.FROM_NUMBER_WITH_IDD: "Международный префикс выхода",
-            phonenumbers.PhoneNumber.CountryCodeSource.FROM_NUMBER_WITHOUT_PLUS_SIGN: "Код страны без +",
-            phonenumbers.PhoneNumber.CountryCodeSource.FROM_DEFAULT_COUNTRY: "Регион по умолчанию",
-        }
-        country_code_source = country_code_sources.get(
-            getattr(number, "country_code_source", None), "Не определён"
-        )
+        # This tool accepts only E.164 input beginning with '+', so the source
+        # is known from the raw input. Avoid relying on non-portable enum fields
+        # that are absent from some python-phonenumbers versions.
+        country_code_source = "Международный номер с +"
         number_type_code = getattr(kind, "name", "UNKNOWN")
         metadata = {
             "e164": e164,
