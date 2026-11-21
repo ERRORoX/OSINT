@@ -29,7 +29,7 @@ class PhoneLookupSearchTests(unittest.TestCase):
         self.assertEqual(result["status"], "not_configured")
         urlopen.assert_not_called()
 
-    def test_brave_search_runs_seven_public_categories_and_deduplicates(self):
+    def test_brave_search_runs_fifteen_public_categories_and_deduplicates(self):
         payload = {
             "web": {
                 "results": [{
@@ -43,14 +43,17 @@ class PhoneLookupSearchTests(unittest.TestCase):
             with patch.object(PHONE_MODULE, "urlopen", side_effect=lambda *a, **k: self._response(payload)) as urlopen:
                 with patch.object(PHONE_MODULE.time, "sleep") as sleep:
                     result = PHONE_MODULE._search_public_web("+12025550123")
-        self.assertEqual(sleep.call_count, 6)
+        self.assertEqual(sleep.call_count, 14)
 
         self.assertEqual(result["provider"], "Brave Search")
         self.assertEqual(result["status"], "completed")
-        self.assertEqual(len(result["services"]), 7)
+        self.assertEqual(len(result["services"]), 15)
         self.assertEqual(len(result["results"]), 1)
         self.assertEqual(result["results"][0]["url"], "https://example.org/contact")
-        self.assertEqual(urlopen.call_count, 7)
+        self.assertEqual(result["results"][0]["domain"], "example.org")
+        self.assertEqual(result["results"][0]["confidence"], "низкая")
+        self.assertIn("retrieved_at", result["results"][0])
+        self.assertEqual(urlopen.call_count, 15)
         first_request = urlopen.call_args_list[0].args[0]
         self.assertEqual(first_request.get_header("X-subscription-token"), "test-token")
         query = parse_qs(urlparse(first_request.full_url).query)["q"][0]
@@ -105,11 +108,13 @@ class PhoneLookupSearchTests(unittest.TestCase):
                     result = PHONE_MODULE._search_public_person("Иван Иванов", "Душанбе")
         self.assertEqual(result["status"], "completed")
         self.assertEqual(len(result["results"]), 1)
-        self.assertEqual(urlopen.call_count, 4)
+        self.assertEqual(urlopen.call_count, 8)
         first_query = parse_qs(urlparse(urlopen.call_args_list[0].args[0].full_url).query)["q"][0]
         self.assertIn("site:ok.ru", first_query)
         self.assertIn("Иван Иванов", first_query)
         self.assertIn("Душанбе", first_query)
+        self.assertEqual(result["results"][0]["domain"], "ok.ru")
+        self.assertEqual(result["results"][0]["confidence"], "низкая")
 
     def test_person_search_validates_name(self):
         tool = PHONE_MODULE.ToolPhoneLookup()
