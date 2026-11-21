@@ -4,6 +4,7 @@
 """
 import os
 import re
+import importlib.util
 import shutil
 import subprocess
 import sys
@@ -19,41 +20,43 @@ def _strip_ansi(text: str) -> str:
     return _ANSI.sub("", text)
 
 
+def _ensure_sherlock(timeout_sec: int = 900) -> tuple[bool, str]:
+    """Install Sherlock into the active panel interpreter when it is missing."""
+    try:
+        check = subprocess.run(
+            [sys.executable, "-m", "pip", "show", "sherlock-project"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30,
+        )
+        if check.returncode == 0 and importlib.util.find_spec("sherlock_project"):
+            return True, ""
+        install = subprocess.run(
+            [sys.executable, "-m", "pip", "install", "--disable-pip-version-check", "sherlock-project"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout_sec,
+        )
+        if install.returncode != 0:
+            return False, (install.stderr or install.stdout or "pip install sherlock-project завершился с ошибкой")[-5000:]
+        return True, ""
+    except subprocess.TimeoutExpired:
+        return False, "Установка Sherlock превысила допустимое время ожидания."
+    except Exception as exc:
+        return False, str(exc)
+
+
 def _run_sherlock(username: str, timeout_sec: int = 180) -> tuple[str, str, int]:
     username = (username or "").strip()
     if not username or " " in username:
         return "", "Укажите одно имя пользователя без пробелов.", -1
 
-    # Локальная папка tools/sherlock
-    local_dir = os.path.join(_ROOT, "tools", "sherlock")
-    run_cwd = None
-    cmd = None
+    ready, install_error = _ensure_sherlock()
+    if not ready:
+        return "", "Не удалось автоматически установить Sherlock:\\n" + install_error, -1
 
-    if os.path.isdir(os.path.join(local_dir, "sherlock_project")):
-        run_cwd = local_dir
-        cmd = [sys.executable, "-m", "sherlock_project", username, "--print-all", "--timeout", "15"]
-    else:
-        # Системный sherlock
-        sh = shutil.which("sherlock")
-        if sh:
-            cmd = [sh, username, "--print-all", "--timeout", "15"]
-        else:
-            try:
-                import sherlock_project  # noqa: F401
-                cmd = [sys.executable, "-m", "sherlock_project", username, "--print-all", "--timeout", "15"]
-            except ImportError:
-                return "", "Sherlock не найден. Установите: pip install sherlock-project или клонируйте в tools/sherlock.", -1
-
+    cmd = [sys.executable, "-m", "sherlock_project", username, "--print-all", "--timeout", "15"]
     try:
         proc = subprocess.run(
-            cmd,
-            cwd=run_cwd,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=timeout_sec,
-            env={**os.environ, "PYTHONPATH": (run_cwd or "")} if run_cwd else None,
+            cmd, cwd=_ROOT, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=timeout_sec,
+            env={key: value for key, value in os.environ.items() if key != "PYTHONPATH"},
         )
         out = _strip_ansi(proc.stdout or "")
         err = _strip_ansi(proc.stderr or "")
@@ -61,9 +64,9 @@ def _run_sherlock(username: str, timeout_sec: int = 180) -> tuple[str, str, int]
     except subprocess.TimeoutExpired:
         return "", "Превышено время ожидания ({} сек).".format(timeout_sec), -1
     except FileNotFoundError:
-        return "", "Команда не найдена.", -1
-    except Exception as e:
-        return "", str(e), -1
+        return "", "Модуль Sherlock установлен, но не запускается в текущем Python.", -1
+    except Exception as exc:
+        return "", str(exc), -1
 
 
 class ToolSherlock(ToolBase):
