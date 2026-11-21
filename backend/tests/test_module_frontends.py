@@ -88,7 +88,7 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn('id="usernameGraphStatus"', page)
         self.assertIn("searchInProgress", script)
         self.assertIn('.username-graph-status[data-state="success"]', styles)
-        self.assertIn('username.js?v=4.2.9', page)
+        self.assertIn('username.js?v=4.2.10', page)
 
     def test_maigret_uses_managed_install_instead_of_broken_local_checkout(self):
         source = (ROOT / "tools" / "maigret" / "backend" / "tool.py").read_text(encoding="utf-8")
@@ -114,13 +114,13 @@ class ModuleFrontendTests(unittest.TestCase):
         styles = (ROOT / "tools" / "username-workspace" / "frontend" / "css" / "username.css").read_text(encoding="utf-8")
         self.assertIn('class="username-overview"', page)
         self.assertIn(".username-overview__steps", styles)
-        self.assertIn("username.js?v=4.2.9", page)
+        self.assertIn("username.js?v=4.2.10", page)
 
     def test_username_failed_tools_are_not_shown_as_100_percent_success(self):
         progress = (ROOT / "tools" / "username-workspace" / "frontend" / "js" / "progress.js").read_text(encoding="utf-8")
         page = (ROOT / "tools" / "username-workspace" / "frontend" / "index.html").read_text(encoding="utf-8")
         self.assertIn('pctEl.textContent = "ОШИБКА"', progress)
-        self.assertIn("username.js?v=4.2.9", page)
+        self.assertIn("username.js?v=4.2.10", page)
 
     def test_username_frontend_uses_only_canonical_asset_paths(self):
         js = (ROOT / "tools" / "username-workspace" / "frontend" / "js" / "username.js").read_text(encoding="utf-8")
@@ -317,7 +317,7 @@ class ModuleFrontendTests(unittest.TestCase):
         styles = (ROOT / "tools" / "username-workspace" / "frontend" / "css" / "username.css").read_text(encoding="utf-8")
         manager = (ROOT / "backend" / "tool_manager.py").read_text(encoding="utf-8")
         settings = (ROOT / "static" / "js" / "settings.js").read_text(encoding="utf-8")
-        self.assertIn("username.css?v=4.2.9", page)
+        self.assertIn("username.css?v=4.2.10", page)
         self.assertIn("#nav-tools.tab-nav", styles)
         self.assertIn("width: 100% !important", styles)
         self.assertIn('attempts.append(("pkexec", [pkexec, *command]))', manager)
@@ -339,6 +339,16 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn("Не подтверждено", script)
         self.assertIn("Совпадения по username", script)
         self.assertIn(".username-results-tools__controls", styles)
+        output = (ROOT / "tools" / "username-workspace" / "frontend" / "js" / "username-output.js").read_text(encoding="utf-8")
+        verify = (ROOT / "tools" / "username-workspace" / "frontend" / "js" / "verify.js").read_text(encoding="utf-8")
+        app = (ROOT / "backend" / "app.py").read_text(encoding="utf-8")
+        self.assertIn("function isRootDomainUrl(url)", output)
+        self.assertIn("data-verify-url=", output)
+        self.assertIn("HTTP 200 only proves that a page responded", app)
+        self.assertIn("soft_404_markers", app)
+        self.assertIn("reachable_unconfirmed", app)
+        self.assertIn("профиль не подтверждён", verify)
+        self.assertIn("Не найден", verify)
 
 
 if __name__ == "__main__":
