@@ -1202,3 +1202,74 @@ body {
 .username-overview__steps b{display:grid;place-items:center;flex:0 0 25px;height:25px;border:1px solid rgba(0,212,255,.3);border-radius:6px;color:var(--cyan);font:600 .68rem var(--font-mono)}
 .username-overview__steps i{height:1px;flex:1;min-width:10px;background:linear-gradient(90deg,rgba(0,212,255,.4),rgba(0,255,136,.12))}
 @media(max-width:760px){.username-overview__steps{align-items:flex-start;flex-direction:column;gap:8px}.username-overview__steps i{width:1px;height:8px;margin-left:12px;flex:none}.username-overview__steps>div{font-size:.68rem}}
+
+
+/* Layout guard: prevent shared dashboard styles from collapsing Username
+   navigation into a vertical stack or shrinking the workspace content. */
+body > header.osint-header { width: 100%; flex: 0 0 auto; }
+.osint-header .osint-tabs { display: block; width: 100%; }
+.osint-header .osint-tabs #nav-tools.tab-nav {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 4px !important;
+  width: 100% !important;
+  max-width: 1600px !important;
+  margin: 0 auto !important;
+  padding: 10px 26px !important;
+}
+.osint-header .osint-tabs #nav-tools.tab-nav > .tool-link {
+  display: inline-flex !important;
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: max-content;
+  justify-content: center !important;
+  white-space: nowrap !important;
+}
+body > .app-body.osint-body {
+  display: flex !important;
+  flex: 1 0 auto !important;
+  flex-direction: row !important;
+  align-items: stretch !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+body > .app-body.osint-body > main#main-content.osint-main {
+  display: block !important;
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  max-width: 1600px !important;
+  min-width: 0 !important;
+  margin: 0 auto !important;
+  padding: 26px 30px !important;
+  overflow-x: hidden;
+}
+#main-content > #username-app.username-v2 {
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin: 0 auto 20px !important;
+}
+#main-content > #username-app.username-v2 > .card,
+#main-content > .card,
+#main-content > #resultsSection {
+  display: block;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+#main-content .username-tool-toggles,
+#main-content .osint-tool-selector,
+#main-content .username-progress-grid {
+  width: 100%;
+  min-width: 0;
+}
+@media (max-width: 768px) {
+  .osint-header .osint-tabs #nav-tools.tab-nav { flex-wrap: nowrap !important; overflow-x: auto; }
+  body > .app-body.osint-body > main#main-content.osint-main { padding: 16px !important; }
+}
