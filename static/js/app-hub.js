@@ -314,10 +314,10 @@ function updateHubStatus(tools,backendAvailable=true){
  if(categoryCount)categoryCount.textContent=String(new Set(HUB_CARDS.map(card=>card.category)).size);
  if(railTools)railTools.textContent=String(tools.length);
  if(railModules)railModules.textContent=loadedNavigation.length?String(loadedNavigation.length):"Нет данных";
- if(backend)backend.textContent=backendAvailable?"Работает":"Недоступен";
+ if(backend)backend.textContent=backendAvailable?"Доступен":"Недоступен";
  if(state)state.textContent=backendAvailable?"OK":"OFF";
- if(stateLabel)stateLabel.textContent=backendAvailable?"Онлайн":"Нет связи";
- if(foot)foot.textContent=backendAvailable?"Сервер отвечает · каталог загружен":"Сервер недоступен · показан локальный каталог";
+ if(stateLabel)stateLabel.textContent=backendAvailable?"API доступен":"Нет связи";
+ if(foot)foot.textContent=backendAvailable?"API отвечает · каталог инструментов загружен":"API недоступен · показан локальный каталог";
 }
 function formatEta(seconds){
  const safe=Math.max(0,Math.ceil(seconds));
