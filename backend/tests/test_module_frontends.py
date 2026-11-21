@@ -78,6 +78,10 @@ class ModuleFrontendTests(unittest.TestCase):
         phone_script = (ROOT / "tools" / "phone-lookup" / "frontend" / "page.js").read_text(encoding="utf-8")
         self.assertIn("Сформировать выбранные проверки", phone_script)
         self.assertIn("manual-public-source-selection", manifest["capabilities"])
+        for capability in ("caller-reputation-directory-search", "business-directory-search", "public-reverse-directory-search", "telecom-numbering-reference-search"):
+            self.assertIn(capability, manifest["capabilities"])
+        for source in ("Tellows", "WhoCallsMe", "800notes", "Truecaller", "Sync.me", "Brave Search"):
+            self.assertIn(source, phone_script)
         app_source = (ROOT / "backend" / "app.py").read_text(encoding="utf-8")
         self.assertIn('@app.route("/modules/phone-lookup/"', app_source)
 
