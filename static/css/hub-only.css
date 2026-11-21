@@ -618,3 +618,78 @@ body.dashboard-page{margin:0!important;min-height:100vh;background:radial-gradie
 .graph-notes-empty{margin:0;padding:10px;color:#7188a5;font-size:10px}
 .graph-edge-evidence-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid rgba(91,145,220,.12)}
 .graph-edge-evidence-row button{padding:4px 7px;border:1px solid rgba(89,184,245,.25);border-radius:6px;background:rgba(31,104,160,.14);color:#bfe5ff;font-size:9px;cursor:pointer}
+
+
+/* Compact dashboard hero: keep investigation shortcuts without wasting the first screen. */
+.investigation-hero{
+  grid-template-columns:minmax(0,1.25fr) minmax(270px,.75fr);
+  gap:12px;
+  margin-bottom:12px;
+}
+.investigation-intro{
+  min-height:176px;
+  padding:20px 24px;
+  border-radius:13px;
+}
+.investigation-intro:after{
+  right:-125px;
+  bottom:-205px;
+  width:290px;
+  height:290px;
+}
+.investigation-intro h1{
+  margin:10px 0 6px;
+  font-size:clamp(23px,2.4vw,32px);
+}
+.investigation-intro>p{
+  max-width:620px;
+  font-size:12px;
+  line-height:1.5;
+}
+.investigation-actions{
+  gap:8px;
+  margin-top:13px;
+}
+.investigation-actions .primary-action,
+.investigation-actions .secondary-action{
+  min-height:32px;
+  padding:0 11px;
+  border-radius:7px;
+  font-size:10px;
+}
+.hero-meta{
+  gap:14px;
+  margin-top:12px;
+  font-size:8px;
+}
+.investigation-status{
+  min-height:176px;
+  padding:13px 14px 10px;
+  border-radius:13px;
+}
+.investigation-status .system-content{
+  gap:12px;
+  padding:10px 0 8px;
+}
+.investigation-status .system-ring{
+  width:68px;
+  height:68px;
+}
+.investigation-status .system-ring:before{inset:5px}
+.investigation-status .system-ring strong{font-size:17px}
+.investigation-status .system-facts{gap:7px}
+.investigation-status .system-facts div{font-size:9px}
+.investigation-status .system-foot{padding-top:8px;font-size:8px}
+.investigation-status .system-monitor-actions{margin-top:7px}
+.investigation-status .system-health-details{max-height:110px;overflow:auto}
+@media(max-width:900px){
+  .investigation-hero{grid-template-columns:minmax(0,1fr)}
+  .investigation-intro,.investigation-status{min-height:0}
+}
+@media(max-width:560px){
+  .investigation-intro{padding:17px}
+  .investigation-kicker{font-size:8px;letter-spacing:.1em;flex-wrap:wrap}
+  .investigation-intro h1{font-size:25px}
+  .investigation-actions{flex-wrap:wrap}
+  .investigation-status .system-content{align-items:center}
+}
