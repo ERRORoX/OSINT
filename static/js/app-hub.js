@@ -469,11 +469,13 @@ function graphValidate(value){
   if(!GRAPH_TYPES.includes(type))throw new Error("Неизвестный тип узла: "+type);
   if(!label||label.length>180)throw new Error("Название узла обязательно (до 180 символов).");
   ids.add(id);
-  return {id,type,label,details:String(node.details||"").slice(0,1200),x:Number.isFinite(Number(node.x))?Math.max(-100000,Math.min(100000,Number(node.x))):100+(index%4)*180,y:Number.isFinite(Number(node.y))?Math.max(-100000,Math.min(100000,Number(node.y))):55+Math.floor(index/8)*95};
+  const provenance=node.provenance&&typeof node.provenance==="object"?{...node.provenance}:{};
+  return {id,type,label,details:String(node.details||"").slice(0,1200),provenance,x:Number.isFinite(Number(node.x))?Math.max(-100000,Math.min(100000,Number(node.x))):100+(index%4)*180,y:Number.isFinite(Number(node.y))?Math.max(-100000,Math.min(100000,Number(node.y))):55+Math.floor(index/8)*95};
  });
  const edges=value.edges.map((edge,index)=>{
   if(!edge||!ids.has(String(edge.source))||!ids.has(String(edge.target)))throw new Error("Связь №"+(index+1)+" ссылается на неизвестный узел.");
-  return {source:String(edge.source),target:String(edge.target),label:String(edge.label||"Связь").slice(0,100)};
+  const provenance=edge.provenance&&typeof edge.provenance==="object"?{...edge.provenance}:{};
+  return {source:String(edge.source),target:String(edge.target),label:String(edge.label||"Связь").slice(0,100),provenance};
  });
  return {nodes,edges};
 }
@@ -532,6 +534,59 @@ function graphExtractEntities(output,seed){
  if(organization&&seed.type==="ip")add("organization",organization[1],"зарегистрирована для IP");
  return [...found.values()].slice(0,120);
 }
+async function graphRunChain(node){
+ if(!node||!["domain","ip"].includes(node.type))return;
+ const status=document.getElementById("graph-import-status"),menu=document.getElementById("graph-context-menu"),badge=document.getElementById("graph-data-mode");
+ if(menu)menu.hidden=true;
+ const queue=node.type==="domain"?[
+  {id:"domain-search",label:"Анализ домена",params:{domain:node.label}},
+  {id:"subfinder",label:"Поиск поддоменов",params:{domain:node.label}},
+  {id:"dnsx",label:"DNS-записи",params:{domain:node.label}}
+ ]:[{id:"ip-rdap",label:"RDAP",params:{ip:node.label}}];
+ const collected=new Map(),relations=new Map(),errors=[];
+ const addResult=(entity,sourceLabel,toolId)=>{
+  const key=entity.type+":"+entity.label.toLowerCase();
+  if(!collected.has(key))collected.set(key,{...entity,provenance:{source:sourceLabel,tool_id:toolId,observed_at:new Date().toISOString(),evidence:"Извлечено из результата "+sourceLabel}});
+  relations.set(key,entity.relation||"обнаружено");
+ };
+ for(let i=0;i<queue.length;i++){
+  const task=queue[i];
+  if(status)status.textContent="Автоцепочка: "+task.label+" ("+(i+1)+"/"+queue.length+")…";
+  try{
+   const response=await fetch(API+"/tools/"+encodeURIComponent(task.id)+"/run",{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify(task.params)});
+   const result=await response.json().catch(()=>({}));
+   if(!response.ok||!result.success)throw new Error(result.error||"инструмент вернул ошибку");
+   const output=[result.output,result.error,result.data,result.records,result.results].map(value=>typeof value==="string"?value:value?JSON.stringify(value):"").filter(Boolean).join("\n");
+   graphExtractEntities(output,node).forEach(entity=>addResult(entity,task.label,task.id));
+  }catch(error){errors.push(task.label+": "+(error.message||"ошибка"));}
+ }
+ const discovered=[...collected.values()];
+ if(node.type==="domain"){
+  const ips=discovered.filter(item=>item.type==="ip").slice(0,5);
+  for(let i=0;i<ips.length;i++){
+   const ip=ips[i];
+   if(status)status.textContent="Автоцепочка: RDAP "+ip.label+" ("+(i+1)+"/"+ips.length+")…";
+   try{
+    const response=await fetch(API+"/tools/ip-rdap/run",{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify({ip:ip.label})});
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok||!result.success)throw new Error(result.error||"RDAP завершился с ошибкой");
+    const output=[result.output,result.error,result.data,result.records,result.results].map(value=>typeof value==="string"?value:value?JSON.stringify(value):"").filter(Boolean).join("\n");
+    graphExtractEntities(output,ip).forEach(entity=>addResult(entity,"RDAP","ip-rdap"));
+   }catch(error){errors.push("RDAP "+ip.label+": "+(error.message||"ошибка"));}
+  }
+ }
+ const nodes=discovered.map((item,index)=>({id:item.id,type:item.type,label:item.label,details:item.details||"Результат автоматической OSINT-цепочки",x:node.x+150+(index%3)*125,y:node.y+100+Math.floor(index/3)*85,provenance:item.provenance}));
+ const edges=discovered.map(item=>({source:node.id,target:item.id,label:relations.get(item.type+":"+item.label.toLowerCase())||"обнаружено",provenance:{source:"Автоматическая OSINT-цепочка",tool_id:item.provenance.tool_id,observed_at:new Date().toISOString(),evidence:item.provenance.evidence}}));
+ try{
+  const response=await fetch(API+"/graph/merge",{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify({nodes,edges})});
+  const saved=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(saved.error||"Не удалось сохранить результаты.");
+  graphData=graphValidate(saved);graphSelected=node.id;graphSelectedIds=new Set([node.id,...discovered.map(item=>item.id)]);
+  graphRender();graphSelect(node.id);graphFocusNode(node.id);
+  if(badge)badge.textContent="СОХРАНЕНО";
+  if(status)status.textContent="Автоцепочка завершена: "+nodes.length+" объектов, "+edges.length+" связей."+(errors.length?" Ошибки: "+errors.join("; "):"");
+ }catch(error){if(status)status.textContent="Автоцепочка: "+(error.message||"ошибка сохранения");}
+}
 async function graphRunTransform(node,toolId){
  const transform=(GRAPH_TRANSFORMS[node.type]||[]).find(item=>item.id===toolId);
  if(!transform)return;
@@ -583,6 +638,7 @@ function graphShowContextMenu(node,event){
  const title=document.createElement("div");title.className="graph-context-title";title.textContent=node.label;
  menu.append(title);
  const transformList=GRAPH_TRANSFORMS[node.type]||[];
+ if(["domain","ip"].includes(node.type)){const chainButton=document.createElement("button");chainButton.type="button";chainButton.dataset.graphChain="true";chainButton.textContent="Запустить автоцепочку";menu.append(chainButton);}
  if(transformList.length){
   const heading=document.createElement("div");heading.className="graph-context-section";heading.textContent="TRANSFORMS · OSINT";menu.append(heading);
   transformList.forEach(item=>{const button=document.createElement("button");button.type="button";button.dataset.transform=item.id;button.textContent=item.label;menu.append(button);});
@@ -630,6 +686,8 @@ function graphContextAction(action,id){
 document.addEventListener("click",event=>{
  const menu=document.getElementById("graph-context-menu");
  if(!menu||menu.hidden)return;
+ const chainButton=event.target.closest("[data-graph-chain]");
+ if(chainButton&&menu.contains(chainButton)){const node=graphData.nodes.find(item=>item.id===graphSelected);if(node)graphRunChain(node);return;}
  const transformButton=event.target.closest("[data-transform]");
  if(transformButton&&menu.contains(transformButton)){const node=graphData.nodes.find(item=>item.id===graphSelected);if(node)graphRunTransform(node,transformButton.dataset.transform);return;}
  const button=event.target.closest("[data-action]");
