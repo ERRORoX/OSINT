@@ -43,10 +43,14 @@
     const exact='"'+number+'"';
     const reputation=exact+' (спам OR мошенничество OR нежелательный звонок OR scam OR spam OR robocall)';
     const groups=[
-      {title:"Общий поиск",items:[
-        ["Google","https://www.google.com/search?q=",exact],
-        ["Bing","https://www.bing.com/search?q=",exact],
-        ["DuckDuckGo","https://duckduckgo.com/?q=",exact]
+      {title:"Поисковые системы и публичный веб",items:[
+        ["Google · точный номер","https://www.google.com/search?q=",exact],
+        ["Bing · точный номер","https://www.bing.com/search?q=",exact],
+        ["DuckDuckGo · точный номер","https://duckduckgo.com/?q=",exact],
+        ["Brave Search · точный номер","https://search.brave.com/search?q=",exact],
+        ["Yandex · точный номер","https://yandex.com/search/?text=",exact],
+        ["Google · разные форматы номера","https://www.google.com/search?q=",number+" OR "+number.replace(/[^0-9]/g,"")],
+        ["Google · варианты написания","https://www.google.com/search?q=",number.replace(/^\+/,"")+" OR "+number.replace(/[^0-9]/g,"")]
       ]},
       {title:"Публичные упоминания в соцсетях",items:[
         ["Instagram","https://www.google.com/search?q=",exact+" site:instagram.com"],
@@ -56,13 +60,41 @@
         ["X / Twitter","https://www.google.com/search?q=",exact+" site:x.com OR site:twitter.com"],
         ["LinkedIn","https://www.google.com/search?q=",exact+" site:linkedin.com"],
         ["Telegram · публичные страницы","https://www.google.com/search?q=",exact+" site:t.me"],
-        ["YouTube","https://www.google.com/search?q=",exact+" site:youtube.com"]
+        ["YouTube","https://www.google.com/search?q=",exact+" site:youtube.com"],
+        ["Reddit","https://www.google.com/search?q=",exact+" site:reddit.com"],
+        ["GitHub · публичные страницы","https://www.google.com/search?q=",exact+" site:github.com"],
+        ["TikTok · Bing","https://www.bing.com/search?q=",exact+" site:tiktok.com"],
+        ["VK · Yandex","https://yandex.com/search/?text=",exact+" site:vk.com"]
       ]},
-      {title:"Жалобы и деловые упоминания",items:[
-        ["Google · жалобы","https://www.google.com/search?q=",reputation],
+      {title:"Базы жалоб и репутации звонков",items:[
+        ["Google · спам и мошенничество","https://www.google.com/search?q=",reputation],
+        ["Tellows · публичные отзывы","https://www.google.com/search?q=",exact+" site:tellows.com OR site:tellows.co.uk OR site:tellows.de"],
+        ["WhoCallsMe · жалобы","https://www.google.com/search?q=",exact+" site:whocallsme.com"],
+        ["800notes · жалобы","https://www.google.com/search?q=",exact+" site:800notes.com"],
+        ["Should I Answer · отзывы","https://www.google.com/search?q=",exact+" site:shouldianswer.com"],
+        ["Who Called · отзывы","https://www.google.com/search?q=",exact+" (who called OR caller reviews OR phone complaints)"],
         ["Bing · жалобы","https://www.bing.com/search?q=",reputation],
-        ["DuckDuckGo · жалобы","https://duckduckgo.com/?q=",reputation],
-        ["Публичные бизнес-упоминания","https://www.google.com/search?q=",exact+" (контакты OR телефон OR контакты компании OR contact)"]
+        ["DuckDuckGo · жалобы","https://duckduckgo.com/?q=",reputation]
+      ]},
+      {title:"Бизнес-каталоги и объявления",items:[
+        ["Google · бизнес-контакты","https://www.google.com/search?q=",exact+" (контакты OR телефон OR компания OR contact OR business)"],
+        ["Google Maps · публичные карточки","https://www.google.com/maps/search/",number],
+        ["Yandex Maps · публичные карточки","https://yandex.com/maps/?text=",number],
+        ["Публичные объявления","https://www.google.com/search?q=",exact+" (объявление OR classifieds OR marketplace OR listing)"],
+        ["Публичные сайты организаций","https://www.google.com/search?q=",exact+" (site:org OR site:com OR site:net)"]
+      ]},
+      {title:"Публичные справочники обратного поиска",items:[
+        ["Общий поиск по телефонным справочникам","https://www.google.com/search?q=",exact+" (reverse phone lookup OR phone directory OR телефонный справочник)"],
+        ["Публичные страницы Truecaller","https://www.google.com/search?q=",exact+" site:truecaller.com"],
+        ["Публичные страницы Sync.me","https://www.google.com/search?q=",exact+" site:sync.me"],
+        ["Публичные страницы NumLookup","https://www.google.com/search?q=",exact+" site:numlookup.com"],
+        ["Публичные страницы PhoneLookup","https://www.google.com/search?q=",exact+" (phone lookup OR caller ID)"]
+      ]},
+      {title:"Операторы и телеком-метаданные",items:[
+        ["Поиск оператора и диапазона","https://www.google.com/search?q=",exact+" (carrier OR operator OR оператор OR мобильный код)"],
+        ["Планы нумерации и регуляторы","https://www.google.com/search?q=",exact+" (numbering plan OR regulator OR план нумерации)"],
+        ["ITU · международные планы нумерации","https://www.google.com/search?q=","site:itu.int numbering plan "+number],
+        ["Национальные коды и диапазоны","https://www.google.com/search?q=",number+" country calling code numbering range"]
       ]}
     ];
     const controls=document.createElement("div");
