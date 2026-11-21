@@ -108,7 +108,7 @@ class PhoneLookupSearchTests(unittest.TestCase):
                     result = PHONE_MODULE._search_public_person("Иван Иванов", "Душанбе")
         self.assertEqual(result["status"], "completed")
         self.assertEqual(len(result["results"]), 1)
-        self.assertEqual(urlopen.call_count, 8)
+        self.assertEqual(urlopen.call_count, 14)
         first_query = parse_qs(urlparse(urlopen.call_args_list[0].args[0].full_url).query)["q"][0]
         self.assertIn("site:ok.ru", first_query)
         self.assertIn("Иван Иванов", first_query)
