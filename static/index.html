@@ -49,31 +49,20 @@
             <div class="system-content">
               <div class="system-ring"><div><strong id="system-state">—</strong><small id="system-state-label">Проверка</small></div></div>
               <div class="system-facts">
-                <div><span>Backend</span><strong id="backend-state">Проверка…</strong></div>
-                <div><span>Инструментов</span><strong id="rail-tools">—</strong></div>
-                <div><span>Разделов</span><strong id="rail-modules">—</strong></div>
+                <div><span>API сервера</span><strong id="backend-state">Проверка…</strong></div>
+                <div><span>Инструментов в реестре</span><strong id="rail-tools">—</strong></div>
+                <div><span>Модулей навигации</span><strong id="rail-modules">—</strong></div>
               </div>
             </div>
-            <div class="system-foot"><span class="pulse-line"></span><span id="system-foot-label">Статус обновляется при загрузке</span></div>
+            <div class="system-foot"><span class="pulse-line"></span><span id="system-foot-label">Проверяется доступность API и каталога</span></div>
           </aside>
         </section>
 
         <section class="metric-row investigation-metrics" aria-label="Сводка системы">
-          <article class="metric-card"><span class="metric-icon">◈</span><div><strong id="metric-tools">—</strong><small>Инструментов</small></div><span class="metric-note">каталог</span></article>
-          <article class="metric-card"><span class="metric-icon">⌁</span><div><strong id="metric-sections">—</strong><small>Разделов</small></div><span class="metric-note">структура</span></article>
+          <article class="metric-card"><span class="metric-icon">◈</span><div><strong id="metric-tools">—</strong><small>Инструментов в реестре</small></div><span class="metric-note">каталог</span></article>
+          <article class="metric-card"><span class="metric-icon">⌁</span><div><strong id="metric-sections">—</strong><small>Карточек хаба</small></div><span class="metric-note">интерфейс</span></article>
           <article class="metric-card"><span class="metric-icon">◎</span><div><strong id="metric-categories">—</strong><small>Категорий</small></div><span class="metric-note">анализ</span></article>
           <article class="metric-card"><span class="metric-icon">◷</span><div><strong>LOCAL</strong><small>Среда выполнения</small></div><span class="metric-note">устройство</span></article>
-        </section>
-
-        <section class="investigation-strip" aria-label="Этапы исследования">
-          <div class="strip-heading"><span class="eyebrow">INVESTIGATION FLOW</span><strong>Рабочий процесс</strong></div>
-          <div class="flow-step"><span>01</span><div><b>Сбор данных</b><small>Открытые источники</small></div></div>
-          <span class="flow-arrow">→</span>
-          <div class="flow-step"><span>02</span><div><b>Проверка</b><small>Валидация сигналов</small></div></div>
-          <span class="flow-arrow">→</span>
-          <div class="flow-step"><span>03</span><div><b>Анализ связей</b><small>Сопоставление данных</small></div></div>
-          <span class="flow-arrow">→</span>
-          <div class="flow-step"><span>04</span><div><b>Результат</b><small>История и заметки</small></div></div>
         </section>
 
         <section class="investigation-visual graph-workspace" id="investigation-graph-panel" aria-label="Интерактивная карта связей">
@@ -91,7 +80,6 @@
              <div class="graph-detail" id="graph-node-details"><span class="graph-detail-type">ОБЪЕКТ НЕ ВЫБРАН</span><strong>Выберите узел на карте</strong><p>Здесь появятся тип сущности, описание и связанные объекты.</p></div>
             <details class="graph-import"><summary>Импортировать собственный граф (JSON)</summary><p>Формат JSON: массивы <code>nodes</code> и <code>edges</code>. Импортированные и найденные связи сохраняются в SQLite на сервере панели.</p><textarea id="graph-json-input" rows="5" spellcheck="false" placeholder='{"nodes":[{"id":"n1","type":"domain","label":"example.org"}],"edges":[]}'></textarea><div><button type="button" id="graph-import-button">Загрузить граф</button><button type="button" id="graph-export-button">Экспортировать JSON</button><button type="button" id="graph-clear-button">Очистить постоянный граф</button></div><span id="graph-import-status" role="status"></span></details>
           </section>
-
 
         <div class="content-columns">
           <div class="primary-column">
@@ -114,10 +102,6 @@
               <p id="hub-empty" class="hub-empty" hidden>Инструменты не найдены. Измените запрос или фильтр.</p>
               <div class="tools-footnote"><span>●</span> Список разделов загружается из локального сервера.</div>
             </section>
-
-
-
-
 
           </div>
 
