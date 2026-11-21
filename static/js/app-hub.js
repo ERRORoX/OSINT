@@ -637,6 +637,18 @@ function graphSelect(id){
   button.addEventListener("click",()=>{graphSelectedIds.clear();graphSelectedIds.add(other.id);graphSelect(other.id);graphFocusNode(other.id);});
   neighbors.append(button);
  });
+ const profileMatch=String(node.details||"").match(/(?:URL профиля|Profile URL):\\s*(https?:\\/\\/[^\\s]+)/i);
+ if(profileMatch){
+  try{
+   const profileUrl=new URL(profileMatch[1]);
+   if(profileUrl.protocol==="https:"||profileUrl.protocol==="http:"){
+    const openProfile=document.createElement("button");openProfile.type="button";openProfile.textContent="Открыть профиль";
+    openProfile.addEventListener("click",()=>window.open(profileUrl.href,"_blank","noopener,noreferrer"));
+    const urlText=document.createElement("small");urlText.className="graph-profile-url";urlText.textContent=profileUrl.href;
+    panel.append(urlText,openProfile);
+   }
+  }catch(_){}
+ }
  const actions=document.createElement("div");actions.className="graph-detail-actions";
  const copy=document.createElement("button");copy.type="button";copy.textContent="Копировать";copy.addEventListener("click",()=>navigator.clipboard?.writeText(node.label));
  const remove=document.createElement("button");remove.type="button";remove.className="graph-delete-node";remove.textContent="Удалить объект";
