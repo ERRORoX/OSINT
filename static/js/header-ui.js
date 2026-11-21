@@ -11,16 +11,26 @@
     if (btnUser.dataset.menuInited === "1") return;
     btnUser.dataset.menuInited = "1";
 
-    btnUser.addEventListener("click", () => {
-      const open = btnUser.getAttribute("aria-expanded") === "true";
-      btnUser.setAttribute("aria-expanded", String(!open));
-      userMenu.hidden = open;
+    const closeMenu = () => {
+      btnUser.setAttribute("aria-expanded", "false");
+      userMenu.hidden = true;
+    };
+
+    btnUser.addEventListener("click", (event) => {
+      event.preventDefault();
+      const shouldOpen = btnUser.getAttribute("aria-expanded") !== "true";
+      btnUser.setAttribute("aria-expanded", String(shouldOpen));
+      userMenu.hidden = !shouldOpen;
     });
 
-    document.addEventListener("click", (e) => {
-      if (!btnUser.contains(e.target) && !userMenu.contains(e.target)) {
-        btnUser.setAttribute("aria-expanded", "false");
-        userMenu.hidden = true;
+    document.addEventListener("click", (event) => {
+      if (!btnUser.contains(event.target) && !userMenu.contains(event.target)) closeMenu();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && btnUser.getAttribute("aria-expanded") === "true") {
+        closeMenu();
+        btnUser.focus();
       }
     });
   }
