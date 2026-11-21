@@ -107,7 +107,7 @@ function platformFromHost(host) {
 function isRootDomainUrl(url) {
   try {
     const parsed = new URL(url);
-    return !parsed.pathname.replace(/\\/+$/, "") && !parsed.search && !parsed.hash;
+    return !parsed.pathname.replace(/\/+$/, "") && !parsed.search && !parsed.hash;
   } catch {
     return false;
   }
