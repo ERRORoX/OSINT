@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 
 from .database import get_db
 
-_ALLOWED_TYPES = {"person", "domain", "ip", "email", "organization"}
+_ALLOWED_TYPES = {"person", "domain", "ip", "email", "organization", "phone"}
 _ID_RE = re.compile(r"^[a-zA-Z0-9:_-]{1,80}$")
 _MAX_NODES = 1000
 _MAX_EDGES = 3000
