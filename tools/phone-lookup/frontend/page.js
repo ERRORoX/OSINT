@@ -40,21 +40,49 @@
     host.replaceChildren();
     const number=String(metadata.e164||metadata.international||"").trim();
     if(!number){const note=document.createElement("span");note.textContent="Нет нормализованного номера для поиска.";host.append(note);return;}
-    const query='"'+number+'" (спам OR мошенничество OR нежелательный звонок OR scam OR spam OR robocall)';
-    const sources=[
-      ["Google","https://www.google.com/search?q="],
-      ["Bing","https://www.bing.com/search?q="],
-      ["DuckDuckGo","https://duckduckgo.com/?q="]
-    ];
-    sources.forEach(([label,base])=>{
-      const link=document.createElement("a");
-      link.href=base+encodeURIComponent(query);
-      link.target="_blank";
-      link.rel="noopener noreferrer";
-      link.textContent=label+" · жалобы";
-      link.setAttribute("aria-label",label+" — поиск публичных жалоб на спам и мошенничество по номеру");
-      host.append(link);
-    });
+    const makeGroup=(title,items)=>{
+      const section=document.createElement("section");
+      section.className="ph-link-group";
+      const heading=document.createElement("strong");
+      heading.className="ph-link-heading";
+      heading.textContent=title;
+      const links=document.createElement("div");
+      links.className="ph-link-items";
+      items.forEach(([label,base,query])=>{
+        const link=document.createElement("a");
+        link.href=base+encodeURIComponent(query||('"'+number+'"'));
+        link.target="_blank";
+        link.rel="noopener noreferrer";
+        link.textContent=label;
+        link.setAttribute("aria-label",label+" — поиск публичных упоминаний номера");
+        links.append(link);
+      });
+      section.append(heading,links);
+      host.append(section);
+    };
+    const exact='"'+number+'"';
+    const reputation=exact+' (спам OR мошенничество OR нежелательный звонок OR scam OR spam OR robocall)';
+    makeGroup("Общий поиск",[
+      ["Google","https://www.google.com/search?q=",exact],
+      ["Bing","https://www.bing.com/search?q=",exact],
+      ["DuckDuckGo","https://duckduckgo.com/?q=",exact]
+    ]);
+    makeGroup("Публичные упоминания в соцсетях",[
+      ["Instagram","https://www.google.com/search?q=",exact+" site:instagram.com"],
+      ["Facebook","https://www.google.com/search?q=",exact+" site:facebook.com"],
+      ["VK","https://www.google.com/search?q=",exact+" site:vk.com"],
+      ["TikTok","https://www.google.com/search?q=",exact+" site:tiktok.com"],
+      ["X / Twitter","https://www.google.com/search?q=",exact+" site:x.com OR site:twitter.com"],
+      ["LinkedIn","https://www.google.com/search?q=",exact+" site:linkedin.com"],
+      ["Telegram · публичные страницы","https://www.google.com/search?q=",exact+" site:t.me"],
+      ["YouTube","https://www.google.com/search?q=",exact+" site:youtube.com"]
+    ]);
+    makeGroup("Жалобы и репутация номера",[
+      ["Google · жалобы","https://www.google.com/search?q=",reputation],
+      ["Bing · жалобы","https://www.bing.com/search?q=",reputation],
+      ["DuckDuckGo · жалобы","https://duckduckgo.com/?q=",reputation],
+      ["Публичные бизнес-упоминания","https://www.google.com/search?q=",exact+" (контакты OR телефон OR контакты компании OR contact)"]
+    ]);
   };
   const persistGraph=async metadata=>{
     const phone=metadata.e164||metadata.international||"";
