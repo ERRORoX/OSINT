@@ -36,7 +36,7 @@ class ToolPhoneLookup(ToolBase):
             return {"success": False, "error": "Не установлена зависимость phonenumbers. Откройте Настройки → Проверить инструменты и установите её."}
 
         try:
-            number = phonenumbers.parse(raw, None)
+            number = phonenumbers.parse(raw, None, keep_raw_input=True)
         except phonenumbers.NumberParseException:
             return {"success": False, "error": "Не удалось разобрать номер. Проверьте код страны и формат."}
 
