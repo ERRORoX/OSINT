@@ -156,12 +156,17 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn('class="investigation-hero"', page)
         self.assertIn('class="relationship-graph interactive-relationship-graph"', page)
         self.assertIn('id="investigation-graph"', page)
-        self.assertIn('id="metric-tools"', page)
-        self.assertIn('id="metric-sections"', page)
-        self.assertIn('id="metric-categories"', page)
-        self.assertIn('document.getElementById("metric-tools")', hub_script)
+        self.assertNotIn('class="metric-row investigation-metrics"', page)
+        self.assertIn('id="system-health-refresh"', page)
+        self.assertIn('id="system-health-details"', page)
+        self.assertIn('fetch(API+"/system/health"', hub_script)
+        self.assertIn('window.setInterval(loadSystemHealth,60000)', hub_script)
         self.assertIn('document.getElementById("backend-state")', hub_script)
         self.assertIn('Promise.allSettled', hub_script)
+        backend = (ROOT / "backend" / "app.py").read_text(encoding="utf-8")
+        self.assertIn('@app.route("/api/system/health", methods=["GET"])', backend)
+        self.assertIn('get_runtime_module_issues()', backend)
+        self.assertIn('shutil.disk_usage(_PROJECT_ROOT)', backend)
 
 
 
