@@ -18,6 +18,37 @@ def _strip_ansi(text: str) -> str:
     return _ANSI.sub("", text)
 
 
+def _ensure_blackbird_dependencies(timeout_sec: int = 900) -> tuple[bool, str]:
+    """Install Blackbird's pinned Python dependencies on first use."""
+    requirements = os.path.join(_ROOT, "tools", "blackbird", "requirements.txt")
+    if not os.path.isfile(requirements):
+        return False, "Не найден tools/blackbird/requirements.txt."
+    try:
+        check = subprocess.run(
+            [sys.executable, "-m", "pip", "check"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=45,
+        )
+        # A clean environment may still lack Blackbird-specific modules.
+        import importlib.util
+        missing = [name for name in ("aiohttp", "dotenv", "rich", "reportlab") if importlib.util.find_spec(name) is None]
+        if not missing and check.returncode == 0:
+            return True, ""
+        install = subprocess.run(
+            [sys.executable, "-m", "pip", "install", "--disable-pip-version-check", "-r", requirements],
+            cwd=os.path.join(_ROOT, "tools", "blackbird"),
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=timeout_sec,
+        )
+        if install.returncode != 0:
+            return False, (install.stderr or install.stdout or "Установка зависимостей Blackbird завершилась с ошибкой")[-5000:]
+        return True, ""
+    except subprocess.TimeoutExpired:
+        return False, "Установка зависимостей Blackbird превысила допустимое время ожидания."
+    except Exception as exc:
+        return False, str(exc)
+
+
 def _run_blackbird(username: str, timeout_sec: int = 300) -> tuple[str, str, int]:
     username = (username or "").strip()
     if not username or " " in username:
@@ -28,32 +59,17 @@ def _run_blackbird(username: str, timeout_sec: int = 300) -> tuple[str, str, int
     if not os.path.isfile(script):
         return "", "Blackbird не найден. Ожидается tools/blackbird/blackbird.py", -1
 
-    # Без --no-update: при отсутствии data/wmn-data.json Blackbird скачает список сайтов (checkUpdates).
-    cmd = [
-        sys.executable,
-        script,
-        "--username", username,
-    ]
+    ready, install_error = _ensure_blackbird_dependencies()
+    if not ready:
+        return "", "Не удалось автоматически установить зависимости Blackbird:\n" + install_error, -1
 
+    cmd = [sys.executable, script, "--username", username]
     try:
-        # Blackbird (вендор) использует смешанные импорты:
-        # - sys.path.append(<tool_dir>/src) в самом blackbird.py (модули.*)
-        # - некоторые файлы импортируют utils.* (лежит в src/modules/utils)
-        # Поэтому добавляем обе директории в PYTHONPATH.
-        py_path_parts = [
-            tool_dir,
-            os.path.join(tool_dir, "src"),
-            os.path.join(tool_dir, "src", "modules"),
-        ]
-        py_path = os.pathsep.join([p for p in py_path_parts if p])
+        py_path_parts = [tool_dir, os.path.join(tool_dir, "src"), os.path.join(tool_dir, "src", "modules")]
+        py_path = os.pathsep.join(py_path_parts)
         proc = subprocess.run(
-            cmd,
-            cwd=tool_dir,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=timeout_sec,
+            cmd, cwd=tool_dir, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=timeout_sec,
             env={**os.environ, "PYTHONPATH": py_path},
         )
         out = _strip_ansi(proc.stdout or "").strip()
@@ -61,8 +77,8 @@ def _run_blackbird(username: str, timeout_sec: int = 300) -> tuple[str, str, int
         return out, err, proc.returncode
     except subprocess.TimeoutExpired:
         return "", "Превышено время ожидания ({} сек).".format(timeout_sec), -1
-    except Exception as e:
-        return "", str(e), -1
+    except Exception as exc:
+        return "", str(exc), -1
 
 
 class ToolBlackbird(ToolBase):
