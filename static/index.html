@@ -27,7 +27,13 @@
           <button class="user-button" type="button" id="btn-user-menu" aria-expanded="false" aria-haspopup="true">
             <span class="user-avatar">A</span><span class="user-meta"><strong>Admin</strong><small>Локальный профиль</small></span><span class="user-chevron">⌄</span>
           </button>
-          <div class="user-menu" id="user-menu" hidden><a href="/p/settings/" class="app-header-user-menu-item" data-tool-id="settings">Настройки и API</a></div>
+          <div class="user-menu" id="user-menu" hidden>
+            <a href="/p/settings/" class="app-header-user-menu-item admin-settings-link" data-tool-id="settings" aria-label="Открыть настройки и API">
+              <span class="admin-settings-icon" aria-hidden="true">⚙</span>
+              <span><strong>Настройки</strong><small>API-ключи и параметры панели</small></span>
+              <span class="admin-settings-arrow" aria-hidden="true">→</span>
+            </a>
+          </div>
         </div>
       </header>
 
