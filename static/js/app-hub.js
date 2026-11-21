@@ -500,7 +500,8 @@ const GRAPH_TRANSFORMS={
   {id:"social-analyzer",label:"Поиск через Social Analyzer",params:value=>({username:value})},
   {id:"blackbird",label:"Поиск через Blackbird",params:value=>({username:value})}
  ],
- organization:[]
+ organization:[],
+ phone:[{id:"phone-lookup",label:"Проверить номер и метаданные",params:value=>({phone:value})}]
 };
 function graphStableId(value){
  let hash=2166136261;
@@ -542,6 +543,14 @@ async function graphRunTransform(node,toolId){
   const result=await response.json().catch(()=>({}));
   if(!response.ok||!result.success)throw new Error(result.error||result.output||"Инструмент завершился с ошибкой.");
   const extracted=graphExtractEntities(result.output||"",node);
+  if(node.type==="phone"&&result.metadata){
+   const meta=result.metadata;
+   extracted.push({
+    id:node.id,type:"phone",label:node.label,
+    details:["Источник: Phone Number Intelligence / libphonenumber","Регион: "+(meta.region||"—"),"Тип: "+(meta.number_type||"—"),"Оператор исходного диапазона: "+(meta.carrier||"—"),"Владелец и местоположение абонента не определяются."].join("\\n"),
+    relation:"метаданные номера"
+   });
+  }
   const additions=extracted.map(item=>({id:item.id,type:item.type,label:item.label,details:item.details||("Получено: "+transform.label)}));
   const edges=extracted.map(item=>({source:node.id,target:item.id,label:item.relation}));
   const merged=await fetch(API+"/graph/merge",{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify({nodes:additions,edges})});
@@ -558,7 +567,8 @@ const GRAPH_TOOL_LINKS={
  ip:{label:"IP Registry",href:"/modules/ip-rdap/"},
  email:{label:"TheHarvester",href:"/modules/theharvester/"},
  person:{label:"Sherlock",href:"/modules/sherlock/"},
- organization:{label:"Google OSINT",href:"/modules/google-osint/"}
+ organization:{label:"Google OSINT",href:"/modules/google-osint/"},
+ phone:{label:"Phone Intelligence",href:"/modules/phone-lookup/"}
 };
 function graphHideContextMenu(){
  const menu=document.getElementById("graph-context-menu");
