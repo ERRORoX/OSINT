@@ -28,6 +28,9 @@ def inspect_tools():
             continue
         if manifest.get("enabled") is False or manifest.get("status") not in {"integrated", "legacy"}:
             continue
+        entrypoints = manifest.get("entrypoints") or {}
+        if not entrypoints.get("backend_adapter"):
+            continue
         tool_id = path.parent.name
         deps = manifest.get("dependencies") or {}
         packages = list(dict.fromkeys([str(x) for x in (deps.get("python") or []) + EXTRA.get(tool_id, [])]))
