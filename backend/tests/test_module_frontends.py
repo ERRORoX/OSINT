@@ -205,6 +205,16 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn("Карта связей обновлена", domain_script)
         self.assertIn("if (!successfulTools.length) return { nodes, edges };", domain_script)
 
+    def test_graph_merge_deduplicates_entities_and_edges_across_scans(self):
+        store = (ROOT / "backend" / "db" / "graph_store.py").read_text(encoding="utf-8")
+        self.assertIn("def _node_identity(node)", store)
+        self.assertIn("identity_to_id.get(identity)", store)
+        self.assertIn("id_map[node[\"id\"]] = canonical_id", store)
+        self.assertIn("_merge_node_details(canonical.get(\"details\"), node.get(\"details\"))", store)
+        self.assertIn("key = (source, target, label.casefold())", store)
+        self.assertIn("if source == target:", store)
+        self.assertIn("www.", store)
+
     def test_relationship_graph_uses_server_sqlite_api(self):
         app_source = (ROOT / "backend" / "app.py").read_text(encoding="utf-8")
         store_source = (ROOT / "backend" / "db" / "graph_store.py").read_text(encoding="utf-8")
