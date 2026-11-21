@@ -65,6 +65,29 @@ def _ensure_table(conn):
             (investigation_id,),
         )
     else:
+        # Recover legacy graph data if an earlier interrupted migration created
+        # an empty investigation before copying the original graph.
+        legacy = conn.execute(
+            "SELECT graph_json, updated_at FROM relationship_graph WHERE id = 1"
+        ).fetchone()
+        if legacy:
+            try:
+                legacy_graph = json.loads(legacy["graph_json"])
+            except (TypeError, ValueError):
+                legacy_graph = {}
+            legacy_has_data = bool(legacy_graph.get("nodes") or legacy_graph.get("edges")) if isinstance(legacy_graph, dict) else False
+            existing_count = conn.execute(
+                "SELECT COUNT(*) AS total FROM investigation_graphs"
+            ).fetchone()["total"]
+            if legacy_has_data and not existing_count:
+                target = conn.execute(
+                    "SELECT id FROM investigations ORDER BY created_at, id LIMIT 1"
+                ).fetchone()
+                if target:
+                    conn.execute(
+                        "INSERT INTO investigation_graphs (investigation_id, graph_json, updated_at) VALUES (?, ?, ?)",
+                        (target["id"], legacy["graph_json"], legacy["updated_at"]),
+                    )
         active = conn.execute(
             "SELECT active_investigation_id FROM investigation_settings WHERE id = 1"
         ).fetchone()
@@ -260,24 +283,6 @@ def validate_graph_payload(payload):
             edge_seen.add(key)
             edges.append({"source": source, "target": target, "label": label or "Связь"})
     return {"nodes": nodes, "edges": edges}
-
-
-def _read_graph(conn):
-    _ensure_table(conn)
-    row = conn.execute(
-        "SELECT graph_json, updated_at FROM relationship_graph WHERE id = 1"
-    ).fetchone()
-    if not row:
-        return {"nodes": [], "edges": [], "updated_at": None}
-    try:
-        graph = json.loads(row["graph_json"])
-    except (TypeError, ValueError):
-        graph = {"nodes": [], "edges": []}
-    return {
-        "nodes": graph.get("nodes", []) if isinstance(graph, dict) else [],
-        "edges": graph.get("edges", []) if isinstance(graph, dict) else [],
-        "updated_at": row["updated_at"],
-    }
 
 
 def get_graph_data(investigation_id=None):
