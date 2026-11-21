@@ -449,9 +449,24 @@ function wireUpdater(){
 }
 
 function wireHeader(){
- const menuSettings=document.querySelector("#user-menu .app-header-user-menu-item[data-tool-id]");if(menuSettings)menuSettings.setAttribute("href","/p/settings/");
- const btn=document.getElementById("btn-user-menu"),menu=document.getElementById("user-menu");
- if(btn&&menu){btn.addEventListener("click",()=>{const open=btn.getAttribute("aria-expanded")==="true";btn.setAttribute("aria-expanded",String(!open));menu.hidden=open;});document.addEventListener("click",event=>{if(!btn.contains(event.target)&&!menu.contains(event.target)){btn.setAttribute("aria-expanded","false");menu.hidden=true;}});}
+  const btn=document.getElementById("btn-user-menu");
+  const menu=document.getElementById("user-menu");
+  if(!btn||!menu)return;
+  const close=()=>{menu.hidden=true;btn.setAttribute("aria-expanded","false");};
+  const open=()=>{menu.hidden=false;btn.setAttribute("aria-expanded","true");};
+  btn.addEventListener("click",event=>{
+    event.preventDefault();
+    event.stopPropagation();
+    if(menu.hidden)open();else close();
+  });
+  menu.addEventListener("click",event=>event.stopPropagation());
+  document.addEventListener("click",event=>{
+    if(!btn.contains(event.target)&&!menu.contains(event.target))close();
+  });
+  document.addEventListener("keydown",event=>{if(event.key==="Escape"){close();btn.focus();}});
+  const settings=menu.querySelector('a[data-tool-id="settings"]');
+  if(settings)settings.href="/p/settings/";
+  close();
 }
 function showInitNotice(message){
  const main=document.getElementById("main-content");
