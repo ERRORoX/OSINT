@@ -199,7 +199,39 @@ function getUsernameResultCards() {
   }).filter((row) => row.url);
 }
 
+function openUsernameProfileDetails(card) {
+  const platform = card.querySelector('.result-platform')?.textContent?.trim() || 'Профиль';
+  const url = card.querySelector('a.result-url[href]')?.href || '';
+  const category = card.querySelector('.result-category, .u-sub')?.textContent?.trim() || 'Категория не указана';
+  const tab = card.closest('.tab-content');
+  const fields = [...card.querySelectorAll('.u-field')].map((row) => [row.querySelector('.u-key')?.textContent?.trim() || '', row.querySelector('.u-val')?.textContent?.trim() || '']).filter((pair) => pair[0] || pair[1]);
+  document.getElementById('usernameProfileDialog')?.remove();
+  const dialog = document.createElement('div'); dialog.id = 'usernameProfileDialog'; dialog.className = 'username-profile-dialog'; dialog.setAttribute('role', 'dialog'); dialog.setAttribute('aria-modal', 'true'); dialog.setAttribute('aria-label', 'Подробности найденного профиля');
+  const panel = document.createElement('section'); panel.className = 'username-profile-dialog__panel';
+  const head = document.createElement('header'); head.className = 'username-profile-dialog__head';
+  const title = document.createElement('h3'); title.textContent = platform;
+  const close = document.createElement('button'); close.type = 'button'; close.className = 'username-profile-dialog__close'; close.textContent = 'Закрыть'; close.addEventListener('click', () => dialog.remove());
+  head.append(title, close); panel.append(head);
+  const source = document.createElement('p'); source.className = 'username-profile-dialog__source'; source.textContent = 'Источник: ' + ((tab?.id || '').replace(/^tab-/, '') || 'неизвестно') + ' · ' + category; panel.append(source);
+  const status = document.createElement('p'); status.className = 'username-profile-dialog__warning'; status.textContent = 'Статус: совпадение по username. Личность владельца не подтверждена.'; panel.append(status);
+  if (url) { const link = document.createElement('a'); link.href = url; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = url; link.className = 'username-profile-dialog__url'; panel.append(link); }
+  if (fields.length) { const list = document.createElement('dl'); list.className = 'username-profile-dialog__fields'; fields.forEach(([key, value]) => { const dt = document.createElement('dt'); dt.textContent = key; const dd = document.createElement('dd'); dd.textContent = value; list.append(dt, dd); }); panel.append(list); }
+  dialog.append(panel); dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.remove(); });
+  dialog.addEventListener('keydown', (event) => { if (event.key === 'Escape') dialog.remove(); });
+  document.body.append(dialog); close.focus();
+}
+
+function enhanceUsernameProfileCards() {
+  document.querySelectorAll('.tab-content .result-card').forEach((card) => {
+    if (card.querySelector('.username-profile-details')) return;
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'username-profile-details'; button.textContent = 'Подробнее';
+    button.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); openUsernameProfileDetails(card); });
+    card.append(button);
+  });
+}
+
 function refreshUsernameResultControls() {
+  enhanceUsernameProfileCards();
   const active = document.querySelector('.tab-content.visible');
   const cards = [...(active?.querySelectorAll('.result-card') || [])];
   const query = (document.getElementById('usernameResultSearch')?.value || '').trim().toLowerCase();
