@@ -82,6 +82,7 @@
             <div class="graph-bottomline"><span id="graph-summary" role="status">Загрузка графа…</span><span>Shift + щелчок — выбрать группу · перетаскивание — переместить узел или группу · колесо — масштаб</span></div>
             <div class="graph-context-menu" id="graph-context-menu" role="menu" aria-label="Действия с объектом" hidden></div>
              <div class="graph-detail" id="graph-node-details"><span class="graph-detail-type">ОБЪЕКТ НЕ ВЫБРАН</span><strong>Выберите узел на карте</strong><p>Здесь появятся тип сущности, описание и связанные объекты.</p></div>
+            <div class="graph-workspace-bottom">
             <section class="graph-notes-panel" aria-labelledby="graph-notes-title">
               <div class="graph-notes-heading"><div><span class="graph-eyebrow">CASE NOTES</span><h3 id="graph-notes-title">Заметки расследования</h3></div><span id="graph-notes-count">0 заметок</span></div>
               <label class="graph-notes-label" for="graph-note-input">Зафиксировать наблюдение, гипотезу или следующий шаг</label>
@@ -196,7 +197,22 @@
       window.setInterval(updateClock, 30000);
       document.addEventListener("keydown", function (event) {
         var target = event.target;
-        var typing = target && (target.isContentEditable || /INPUT|TEXTAREA|SELECT/.test(target.tagName));
+        var typing = target && (target.isContentEditable || /INPUT|
+            <aside class="graph-composition-panel" aria-labelledby="graph-composition-title">
+              <div class="graph-notes-heading"><div><span class="graph-eyebrow">GRAPH INTELLIGENCE</span><h3 id="graph-composition-title">Состав графа</h3></div><span class="graph-composition-live">LIVE</span></div>
+              <div class="graph-composition-total"><strong id="graph-stat-total">0</strong><span>сущностей в расследовании</span></div>
+              <div class="graph-composition-grid">
+                <div><span class="graph-stat-dot person"></span><span>Люди</span><strong id="graph-stat-person">0</strong></div>
+                <div><span class="graph-stat-dot domain"></span><span>Домены</span><strong id="graph-stat-domain">0</strong></div>
+                <div><span class="graph-stat-dot ip"></span><span>IP-адреса</span><strong id="graph-stat-ip">0</strong></div>
+                <div><span class="graph-stat-dot email"></span><span>Email</span><strong id="graph-stat-email">0</strong></div>
+                <div><span class="graph-stat-dot organization"></span><span>Организации</span><strong id="graph-stat-organization">0</strong></div>
+                <div><span class="graph-stat-dot phone"></span><span>Телефоны</span><strong id="graph-stat-phone">0</strong></div>
+              </div>
+              <div class="graph-composition-footer"><span>Связей между объектами</span><strong id="graph-stat-edges">0</strong></div>
+              <p class="graph-composition-hint" id="graph-composition-hint">Добавляйте результаты анализа — состав графа обновится автоматически.</p>
+            </aside>
+          </div>TEXTAREA|SELECT/.test(target.tagName));
         if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
           event.preventDefault(); if (input) input.focus(); return;
         }
