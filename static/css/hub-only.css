@@ -539,3 +539,33 @@ body.dashboard-page{margin:0!important;min-height:100vh;background:radial-gradie
  .graph-investigation-controls select{flex:1;min-width:0;max-width:none}
  .graph-investigation-controls button{flex:1}
 }
+
+
+/* Maltego-inspired graph interactions */
+.graph-context-menu{
+ position:fixed;z-index:10020;display:grid;gap:3px;min-width:210px;max-width:min(280px,calc(100vw - 16px));
+ padding:8px;border:1px solid rgba(83,164,235,.42);border-radius:10px;
+ background:rgba(5,17,31,.98);box-shadow:0 18px 48px rgba(0,0,0,.58),0 0 24px rgba(24,126,220,.12);
+ backdrop-filter:blur(14px);
+}
+.graph-context-menu[hidden]{display:none}
+.graph-context-title{padding:5px 8px 8px;color:#d9efff;font-size:11px;font-weight:800;overflow-wrap:anywhere;border-bottom:1px solid rgba(90,143,196,.18);margin-bottom:3px}
+.graph-context-menu button,.graph-context-menu a{
+ display:block;width:100%;padding:8px 9px;border:0;border-radius:6px;background:transparent;
+ color:#a9c8e8;text-align:left;text-decoration:none;font:inherit;font-size:10px;cursor:pointer;
+}
+.graph-context-menu button:hover,.graph-context-menu a:hover,.graph-context-menu button:focus-visible,.graph-context-menu a:focus-visible{
+ outline:none;background:rgba(36,112,180,.24);color:#e2f5ff;
+}
+.graph-detail-id{font:8px ui-monospace,monospace;color:#607f9f;overflow-wrap:anywhere}
+.graph-neighbor-list{display:flex;flex-wrap:wrap;gap:5px;padding-top:6px}
+.graph-neighbor-list>small{width:100%;font-size:7px;letter-spacing:.1em;color:#6f98c1;font-weight:800}
+.graph-neighbor-list button{
+ max-width:100%;padding:5px 7px;border:1px solid rgba(77,146,207,.22);border-radius:6px;
+ background:rgba(14,47,77,.5);color:#9fc9ee;font-size:8px;cursor:pointer;overflow-wrap:anywhere;
+}
+.graph-neighbor-list button:hover{border-color:rgba(87,190,235,.6);color:#e2f7ff}
+.graph-detail-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px}
+.graph-detail-actions button{padding:6px 9px;border:1px solid rgba(76,148,208,.28);border-radius:6px;background:rgba(15,52,83,.6);color:#a9d8f8;font-size:8px;cursor:pointer}
+.graph-detail-actions .graph-delete-node{border-color:rgba(224,101,115,.3);color:#e7a2aa}
+.graph-node.is-group-selected .graph-node-halo{stroke:#7ee5ff;stroke-width:2.4;fill:rgba(45,179,224,.18)}
