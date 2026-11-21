@@ -430,6 +430,73 @@ function graphSvg(tag,attrs,parent){const el=document.createElementNS("http://ww
 function graphPointerPosition(svg,event){const point=svg.createSVGPoint();point.x=event.clientX;point.y=event.clientY;const matrix=svg.getScreenCTM();if(!matrix)return{x:event.clientX,y:event.clientY};const local=point.matrixTransform(matrix.inverse());return{x:local.x,y:local.y};}
 function graphApplyTransform(){const viewport=document.getElementById("graph-viewport");if(viewport)viewport.setAttribute("transform","translate("+graphPan.x+" "+graphPan.y+") scale("+graphScale+")");const reset=document.getElementById("graph-zoom-reset");if(reset)reset.textContent=Math.round(graphScale*100)+"%";}
 function graphVisibleNodes(){const enabled=new Set([...document.querySelectorAll("[data-graph-filter]:checked")].map(input=>input.dataset.graphFilter));return graphData.nodes.filter(node=>enabled.has(node.type));}
+const GRAPH_TOOL_LINKS={
+ domain:{label:"Domain Search",href:"/modules/domain-search/"},
+ ip:{label:"IP Registry",href:"/modules/ip-rdap/"},
+ email:{label:"TheHarvester",href:"/modules/theharvester/"},
+ person:{label:"Sherlock",href:"/modules/sherlock/"},
+ organization:{label:"Google OSINT",href:"/modules/google-osint/"}
+};
+function graphHideContextMenu(){
+ const menu=document.getElementById("graph-context-menu");
+ if(menu){menu.hidden=true;menu.replaceChildren();}
+}
+function graphShowContextMenu(node,event){
+ const menu=document.getElementById("graph-context-menu");
+ if(!menu)return;
+ event.preventDefault();event.stopPropagation();
+ graphSelected=node.id;graphSelectedIds.add(node.id);graphRender();graphSelect(node.id);
+ menu.replaceChildren();
+ const title=document.createElement("div");title.className="graph-context-title";title.textContent=node.label;
+ menu.append(title);
+ const actions=[
+  ["focus","Центрировать объект"],
+  ["neighbors","Выбрать соседние объекты"],
+  ["copy","Копировать значение"],
+  ["delete","Удалить объект"]
+ ];
+ actions.forEach(([action,label])=>{
+  const button=document.createElement("button");button.type="button";button.dataset.action=action;button.textContent=label;menu.append(button);
+ });
+ const tool=GRAPH_TOOL_LINKS[node.type];
+ if(tool){
+  const link=document.createElement("a");link.href=tool.href;link.textContent="Открыть "+tool.label;menu.append(link);
+ }
+ menu.hidden=false;
+ const width=menu.offsetWidth||220,height=menu.offsetHeight||180;
+ menu.style.left=Math.max(8,Math.min(window.innerWidth-width-8,event.clientX))+"px";
+ menu.style.top=Math.max(8,Math.min(window.innerHeight-height-8,event.clientY))+"px";
+ menu.querySelector("button")?.focus({preventScroll:true});
+}
+function graphFocusNode(id){
+ const node=graphData.nodes.find(item=>item.id===id),svg=document.getElementById("investigation-graph");
+ if(!node||!svg)return;
+ const rect=svg.getBoundingClientRect(),width=Math.max(320,rect.width),height=Math.max(220,rect.height);
+ graphPan={x:width/2-node.x*graphScale,y:height/2-node.y*graphScale};
+ graphApplyTransform();
+}
+function graphContextAction(action,id){
+ const node=graphData.nodes.find(item=>item.id===id);if(!node)return;
+ if(action==="focus"){graphFocusNode(id);graphHideContextMenu();return;}
+ if(action==="neighbors"){
+  const related=graphData.edges.filter(edge=>edge.source===id||edge.target===id);
+  graphSelectedIds=new Set([id,...related.map(edge=>edge.source===id?edge.target:edge.source)]);
+  graphSelected=id;graphRender();graphSelect(id);graphHideContextMenu();return;
+ }
+ if(action==="copy"){
+  if(navigator.clipboard?.writeText){navigator.clipboard.writeText(node.label).then(()=>{const status=document.getElementById("graph-import-status");if(status)status.textContent="Значение скопировано.";}).catch(()=>{});}
+  graphHideContextMenu();return;
+ }
+ if(action==="delete"){graphHideContextMenu();document.dispatchEvent(new CustomEvent("graph:delete-node",{detail:{id}}));}
+}
+document.addEventListener("click",event=>{
+ const menu=document.getElementById("graph-context-menu");
+ if(!menu||menu.hidden)return;
+ const button=event.target.closest("[data-action]");
+ if(button&&menu.contains(button)){graphContextAction(button.dataset.action,graphSelected);return;}
+ if(!menu.contains(event.target))graphHideContextMenu();
+});
+document.addEventListener("keydown",event=>{if(event.key==="Escape")graphHideContextMenu();});
 function graphRender(){
  const svg=document.getElementById("investigation-graph"),nodesLayer=document.getElementById("graph-nodes"),edgesLayer=document.getElementById("graph-edges");if(!svg||!nodesLayer||!edgesLayer)return;
  nodesLayer.replaceChildren();edgesLayer.replaceChildren();
@@ -454,6 +521,7 @@ function graphRender(){
    }
   });
   group.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();graphSelectedIds.clear();graphSelectedIds.add(node.id);graphSelect(node.id);}});
+  group.addEventListener("contextmenu",event=>graphShowContextMenu(node,event));
   group.addEventListener("pointerdown",event=>{
    if(event.button!==0)return;
    event.preventDefault();event.stopPropagation();
@@ -475,12 +543,28 @@ function graphSelect(id){
  panel.replaceChildren();
  const type=document.createElement("span");type.className="graph-detail-type";type.textContent=GRAPH_TYPE_LABELS[node.type].toUpperCase();
  const title=document.createElement("strong");title.textContent=node.label;
+ const identity=document.createElement("small");identity.className="graph-detail-id";identity.textContent="ID: "+node.id;
  const description=document.createElement("p");description.textContent=node.details||"Дополнительное описание не указано.";
- const related=document.createElement("small");const edges=graphData.edges.filter(edge=>edge.source===id||edge.target===id);related.textContent="Связей: "+edges.length;
- const remove=document.createElement("button");remove.type="button";remove.className="graph-delete-node";remove.textContent="Удалить выбранный объект";
+ const edges=graphData.edges.filter(edge=>edge.source===id||edge.target===id);
+ const related=document.createElement("small");related.textContent="Связей: "+edges.length;
+ const neighbors=document.createElement("div");neighbors.className="graph-neighbor-list";
+ const neighborTitle=document.createElement("small");neighborTitle.textContent="СВЯЗАННЫЕ ОБЪЕКТЫ";
+ neighbors.append(neighborTitle);
+ const neighborIds=[...new Set(edges.map(edge=>edge.source===id?edge.target:edge.source))];
+ if(!neighborIds.length){const empty=document.createElement("small");empty.textContent="Связанных объектов пока нет.";neighbors.append(empty);}
+ neighborIds.slice(0,24).forEach(otherId=>{
+  const other=graphData.nodes.find(item=>item.id===otherId);if(!other)return;
+  const button=document.createElement("button");button.type="button";button.textContent=GRAPH_TYPE_LABELS[other.type]+" · "+other.label;
+  button.addEventListener("click",()=>{graphSelectedIds.clear();graphSelectedIds.add(other.id);graphSelect(other.id);graphFocusNode(other.id);});
+  neighbors.append(button);
+ });
+ const actions=document.createElement("div");actions.className="graph-detail-actions";
+ const copy=document.createElement("button");copy.type="button";copy.textContent="Копировать";copy.addEventListener("click",()=>navigator.clipboard?.writeText(node.label));
+ const remove=document.createElement("button");remove.type="button";remove.className="graph-delete-node";remove.textContent="Удалить объект";
  remove.addEventListener("click",()=>document.dispatchEvent(new CustomEvent("graph:delete-node",{detail:{id}})));
- const groupInfo=document.createElement("small");groupInfo.className="graph-group-hint";groupInfo.textContent="Shift + щелчок — добавить или убрать объект из группы. Перетаскивайте выбранные объекты вместе.";
- panel.append(type,title,description,related,remove,groupInfo);
+ actions.append(copy,remove);
+ const groupInfo=document.createElement("small");groupInfo.className="graph-group-hint";groupInfo.textContent="Shift + щелчок — выбрать несколько узлов. Перетаскивайте выбранные узлы вместе. Правый клик — действия.";
+ panel.append(type,title,identity,description,related,neighbors,actions,groupInfo);
  graphRender();
 }
 function graphResetView(){graphScale=1;graphPan={x:0,y:0};graphApplyTransform();}
