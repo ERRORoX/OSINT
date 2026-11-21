@@ -323,6 +323,21 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn('attempts.append(("pkexec", [pkexec, *command]))', manager)
         self.assertIn("системное окно подтверждения (Polkit)", settings)
 
+    def test_username_result_review_filters_and_exports(self):
+        page = (ROOT / "tools" / "username-workspace" / "frontend" / "index.html").read_text(encoding="utf-8")
+        script = (ROOT / "tools" / "username-workspace" / "frontend" / "js" / "username.js").read_text(encoding="utf-8")
+        styles = (ROOT / "tools" / "username-workspace" / "frontend" / "css" / "username.css").read_text(encoding="utf-8")
+        self.assertIn('id="usernameResultSearch"', page)
+        self.assertIn('id="usernameResultCategory"', page)
+        self.assertIn('id="usernameResultSort"', page)
+        self.assertIn('id="usernameExportJson"', page)
+        self.assertIn('id="usernameExportCsv"', page)
+        self.assertIn("function refreshUsernameResultControls()", script)
+        self.assertIn("function downloadUsernameExport(format)", script)
+        self.assertIn("Не подтверждено", script)
+        self.assertIn("Совпадения по username", page)
+        self.assertIn(".username-results-tools__controls", styles)
+
 
 if __name__ == "__main__":
     unittest.main()
