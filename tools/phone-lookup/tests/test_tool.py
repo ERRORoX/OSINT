@@ -41,7 +41,9 @@ class PhoneLookupSearchTests(unittest.TestCase):
         }
         with patch.dict(os.environ, {"BRAVE_SEARCH_API_KEY": "test-token"}, clear=True):
             with patch.object(PHONE_MODULE, "urlopen", side_effect=lambda *a, **k: self._response(payload)) as urlopen:
-                result = PHONE_MODULE._search_public_web("+12025550123")
+                with patch.object(PHONE_MODULE.time, "sleep") as sleep:
+                    result = PHONE_MODULE._search_public_web("+12025550123")
+        self.assertEqual(sleep.call_count, 6)
 
         self.assertEqual(result["provider"], "Brave Search")
         self.assertEqual(result["status"], "completed")
@@ -84,7 +86,8 @@ class PhoneLookupSearchTests(unittest.TestCase):
             "GOOGLE_CSE_CX": "engine-id",
         }, clear=True):
             with patch.object(PHONE_MODULE, "urlopen", side_effect=OSError("offline")) as urlopen:
-                result = PHONE_MODULE._search_public_web("+12025550123")
+                with patch.object(PHONE_MODULE.time, "sleep"):
+                    result = PHONE_MODULE._search_public_web("+12025550123")
         self.assertEqual(result["provider"], "Brave Search")
         self.assertEqual(result["status"], "provider_error")
         self.assertEqual(urlopen.call_count, 7)
