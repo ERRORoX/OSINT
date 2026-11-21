@@ -881,3 +881,40 @@ body.dashboard-page{margin:0!important;min-height:100vh;background:radial-gradie
 #user-menu:not([hidden]){display:block!important;position:absolute;top:calc(100% + 8px);right:0;z-index:9999;visibility:visible;opacity:1;pointer-events:auto}
 #btn-user-menu{position:relative;z-index:10000;cursor:pointer;pointer-events:auto}
 .topbar-actions{isolation:isolate}
+
+/* Keep the investigation notes panel fixed; scroll only inside the notes history. */
+.graph-notes-panel{
+ box-sizing:border-box;
+ height:286px;
+ min-height:286px;
+ max-height:286px;
+ display:flex;
+ flex-direction:column;
+ overflow:hidden;
+}
+.graph-notes-panel textarea{
+ box-sizing:border-box;
+ flex:0 0 54px;
+ height:54px;
+ min-height:54px;
+ max-height:54px;
+ resize:none;
+}
+.graph-notes-actions{flex:0 0 auto}
+.graph-notes-list{
+ flex:1 1 auto;
+ min-height:0;
+ max-height:none;
+ overflow-y:auto;
+ overflow-x:hidden;
+ overscroll-behavior:contain;
+ scrollbar-gutter:stable;
+ padding-right:4px;
+}
+.graph-notes-list::-webkit-scrollbar{width:6px}
+.graph-notes-list::-webkit-scrollbar-thumb{background:rgba(91,153,215,.35);border-radius:8px}
+.graph-notes-list{scrollbar-width:thin;scrollbar-color:rgba(91,153,215,.35) transparent}
+@media(max-width:760px){
+ .graph-notes-panel{height:286px;min-height:286px;max-height:286px;width:100%}
+}
+
