@@ -335,7 +335,7 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn("function refreshUsernameResultControls()", script)
         self.assertIn("function downloadUsernameExport(format)", script)
         self.assertIn("Не подтверждено", script)
-        self.assertIn("Совпадения по username", page)
+        self.assertIn("Совпадения по username", script)
         self.assertIn(".username-results-tools__controls", styles)
 
 
