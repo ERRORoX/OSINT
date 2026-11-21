@@ -22,13 +22,13 @@ export function initPanel(container) {
     <div id="settings-message" class="settings-message" role="status"></div>
     <section class="settings-key-row" id="tool-dependencies-panel" style="margin-top:24px">
       <h3>Инструменты и зависимости</h3>
-      <p class="description">Проверяет подключённые инструменты и устанавливает отсутствующие Python-зависимости в то же окружение, где запущена OSINT Panel.</p>
+      <p class="description">Проверяет инструменты, устанавливает Python-пакеты в окружение панели, а системные программы — через пакетный менеджер вашей ОС (Kali/Debian, Fedora, Arch и другие). Для системной установки может потребоваться подтверждение прав администратора.</p>
       <div class="key-input-wrap" style="gap:10px;flex-wrap:wrap">
         <button type="button" class="btn btn-primary" id="btn-check-tools">⌁ Проверить инструменты</button>
       </div>
       <div id="tool-dependencies-status" class="settings-message" role="status" aria-live="polite"></div>
       <div id="tool-dependencies-results" style="display:grid;gap:8px;margin-top:12px"></div>
-      <p class="description" style="margin-top:10px">Для системных программ (например, whois, subfinder и dnsx) панель покажет отсутствие, но не будет запускать sudo или менять системные пакеты автоматически.</p>
+      <p class="description" style="margin-top:10px">Системные пакеты устанавливаются автоматически через sudo -n или системное окно подтверждения pkexec. Если ОС не поддерживается или нет прав администратора, панель покажет точную причину.</p>
     </section>
     <section class="settings-key-row" id="system-update-panel" style="margin-top:24px">
       <h3>Обновление системы</h3>
@@ -78,7 +78,7 @@ export function initPanel(container) {
     toolCheckBtn.disabled = true;
     toolCheckBtn.textContent = "Проверяем и устанавливаем…";
     toolCheckStatus.style.display = "block";
-    toolCheckStatus.textContent = "Проверяем наличие инструментов. Установка отсутствующих Python-пакетов может занять несколько минут.";
+    toolCheckStatus.textContent = "Проверяем Python-зависимости и системные программы. Установка может занять несколько минут; системный пакетный менеджер может запросить подтверждение администратора.";
     toolCheckStatus.className = "settings-message";
     toolCheckResults.innerHTML = "";
     try {
@@ -93,7 +93,7 @@ export function initPanel(container) {
       renderToolChecks(data.tools || []);
       const ready = (data.tools || []).filter(x => x.status === "ready").length;
       const total = (data.tools || []).length;
-      const failed = (data.tools || []).filter(x => x.action === "failed").length;
+      const failed = (data.tools || []).filter(x => x.action === "failed" || x.status !== "ready").length;
       toolCheckStatus.textContent = `Проверка завершена: ${ready} из ${total} инструментов готовы.` + (failed ? ` Не удалось установить зависимости для ${failed} инструментов.` : "");
       toolCheckStatus.className = "settings-message " + (failed ? "error" : "success");
     } catch (err) {
