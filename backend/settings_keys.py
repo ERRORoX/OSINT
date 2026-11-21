@@ -25,6 +25,17 @@ KEYS_CONFIG = [
         "helpUrl": "https://textbelt.com/create-key",
     },
     {
+        "id": "BRAVE_SEARCH_API_KEY",
+        "label": "Phone Intelligence: Brave Search API",
+        "helpText": (
+            "Ключ Brave Search API для автоматического поиска публичных упоминаний телефонного номера. "
+            "Получение ключа: откройте Brave Search API Dashboard по ссылке ниже, создайте Search API subscription token "
+            "и вставьте его сюда. Один анализ номера выполняет до 7 поисковых запросов; проверьте актуальные лимиты и тарифы "
+            "в личном кабинете. Ключ сохраняется локально в .env и не передаётся браузеру."
+        ),
+        "helpUrl": "https://api-dashboard.search.brave.com/app/documentation/web-search",
+    },
+    {
         "id": "SHODAN_API_KEY",
         "label": "Shodan API",
         "helpText": (
