@@ -595,3 +595,5 @@ body.dashboard-page{margin:0!important;min-height:100vh;background:radial-gradie
 
 /* Phone entity type in the investigation graph */
 .graph-node-core.type-phone{fill:#123d55;stroke:#59c7e8;stroke-width:2.5}
+
+.graph-create-link{width:100%;margin:10px 0;padding:9px 11px;border:1px solid rgba(89,184,245,.3);border-radius:8px;background:rgba(31,104,160,.16);color:#bfe5ff;font-size:11px;font-weight:700;cursor:pointer}.graph-create-link:hover{background:rgba(31,125,190,.28)}
