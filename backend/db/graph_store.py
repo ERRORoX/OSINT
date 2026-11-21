@@ -36,6 +36,15 @@ def _ensure_table(conn):
         )
     """)
     conn.execute("""
+        CREATE TABLE IF NOT EXISTS investigation_notes (
+            id TEXT PRIMARY KEY,
+            investigation_id TEXT NOT NULL REFERENCES investigations(id) ON DELETE CASCADE,
+            content TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+    """)
+    conn.execute("""
         CREATE TABLE IF NOT EXISTS investigation_settings (
             id INTEGER PRIMARY KEY CHECK (id = 1),
             active_investigation_id TEXT
@@ -447,3 +456,57 @@ def clear_graph_data(investigation_id=None):
     with get_db() as conn:
         current = _read_graph(conn, investigation_id)
         return _write_graph(conn, {"nodes": [], "edges": []}, current["investigation_id"])
+
+def list_investigation_notes(investigation_id=None):
+    """Return notes for the selected or active investigation."""
+    with get_db() as conn:
+        target = investigation_id or _active_investigation_id(conn)
+        if not target:
+            return {"items": [], "investigation_id": None}
+        exists = conn.execute("SELECT 1 FROM investigations WHERE id = ?", (target,)).fetchone()
+        if not exists:
+            raise ValueError("Расследование не найдено.")
+        rows = conn.execute(
+            """SELECT id, content, created_at, updated_at
+               FROM investigation_notes WHERE investigation_id = ?
+               ORDER BY updated_at DESC, created_at DESC""",
+            (target,),
+        ).fetchall()
+        return {"investigation_id": target, "items": [dict(row) for row in rows]}
+
+
+def create_investigation_note(content, investigation_id=None):
+    """Create a plain-text note attached to an investigation."""
+    import uuid
+    clean = str(content or "").strip()
+    if not clean:
+        raise ValueError("Заметка не может быть пустой.")
+    if len(clean) > 5000:
+        raise ValueError("Заметка не должна превышать 5000 символов.")
+    with get_db() as conn:
+        target = investigation_id or _active_investigation_id(conn)
+        if not target or not conn.execute("SELECT 1 FROM investigations WHERE id = ?", (target,)).fetchone():
+            raise ValueError("Расследование не найдено.")
+        now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        note_id = uuid.uuid4().hex
+        conn.execute(
+            """INSERT INTO investigation_notes (id, investigation_id, content, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?)""",
+            (note_id, target, clean, now, now),
+        )
+        _touch_investigation(conn, target, now)
+        return {"id": note_id, "investigation_id": target, "content": clean, "created_at": now, "updated_at": now}
+
+
+def delete_investigation_note(note_id, investigation_id=None):
+    with get_db() as conn:
+        target = investigation_id or _active_investigation_id(conn)
+        cursor = conn.execute(
+            "DELETE FROM investigation_notes WHERE id = ? AND investigation_id = ?",
+            (str(note_id or ""), target),
+        )
+        if cursor.rowcount != 1:
+            raise ValueError("Заметка не найдена в текущем расследовании.")
+        now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        _touch_investigation(conn, target, now)
+        return {"deleted_id": note_id, "investigation_id": target}
