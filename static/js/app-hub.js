@@ -745,6 +745,50 @@ function graphSelect(id){
   });
   panel.append(createLink);
  }
+ const evidenceEdit=document.createElement("button");evidenceEdit.type="button";evidenceEdit.className="graph-create-link";evidenceEdit.textContent="Добавить / изменить источник";
+ evidenceEdit.addEventListener("click",async()=>{
+  const source=window.prompt("Источник (например, DNS lookup, публичный профиль):",provenance.source||"");
+  if(source===null)return;
+  const sourceUrl=window.prompt("URL источника (необязательно):",provenance.source_url||"");
+  if(sourceUrl===null)return;
+  const evidenceText=window.prompt("Что именно подтверждает результат?",provenance.evidence||"");
+  if(evidenceText===null)return;
+  const confidenceText=window.prompt("Уверенность от 0 до 100 (необязательно):",typeof provenance.confidence==="number"?String(Math.round(provenance.confidence*100)):"");
+  if(confidenceText===null)return;
+  const confidence=confidenceText.trim()===""?undefined:Number(confidenceText);
+  if(confidence!==undefined&&(!Number.isFinite(confidence)||confidence<0||confidence>100)){window.alert("Уверенность должна быть числом от 0 до 100.");return;}
+  const next={...graphData,nodes:graphData.nodes.map(item=>item.id===id?{...item,provenance:{...provenance,source:source.trim(),source_url:sourceUrl.trim(),evidence:evidenceText.trim(),confidence:confidence===undefined?undefined:confidence/100,observed_at:new Date().toISOString()}}:item)};
+  try{
+   const response=await fetch(API+"/graph",{method:"PUT",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify({nodes:next.nodes,edges:next.edges})});
+   const saved=await response.json().catch(()=>({}));
+   if(!response.ok)throw new Error(saved.error||"Не удалось сохранить источник.");
+   graphData=graphValidate(saved);graphRender();graphSelect(id);
+  }catch(error){window.alert(error.message||"Ошибка сохранения источника.");}
+ });
+ panel.append(evidenceEdit);
+ const edgeEvidence=document.createElement("div");edgeEvidence.className="graph-neighbor-list";
+ const edgeEvidenceTitle=document.createElement("small");edgeEvidenceTitle.textContent="СВЯЗИ И ИХ ДОКАЗАТЕЛЬСТВА";edgeEvidence.append(edgeEvidenceTitle);
+ edges.forEach((edge,index)=>{
+  const row=document.createElement("div");row.className="graph-edge-evidence-row";
+  const label=document.createElement("small");label.textContent=edge.label+" · "+(edge.provenance?.source||"источник не указан");
+  const edit=document.createElement("button");edit.type="button";edit.textContent="Изменить";
+  edit.addEventListener("click",async()=>{
+   const nextLabel=window.prompt("Тип связи:",edge.label||"Связь");if(nextLabel===null)return;
+   if(!nextLabel.trim()){window.alert("Название связи не может быть пустым.");return;}
+   const nextSource=window.prompt("Источник связи:",edge.provenance?.source||"");if(nextSource===null)return;
+   const nextUrl=window.prompt("URL источника (необязательно):",edge.provenance?.source_url||"");if(nextUrl===null)return;
+   const nextEvidence=window.prompt("Основание связи:",edge.provenance?.evidence||"");if(nextEvidence===null)return;
+   const updatedEdges=graphData.edges.map(item=>item===edge?{...item,label:nextLabel.trim(),provenance:{...(item.provenance||{}),source:nextSource.trim(),source_url:nextUrl.trim(),evidence:nextEvidence.trim(),observed_at:new Date().toISOString()}}:item);
+   try{
+    const response=await fetch(API+"/graph",{method:"PUT",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify({nodes:graphData.nodes,edges:updatedEdges})});
+    const saved=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(saved.error||"Не удалось сохранить связь.");
+    graphData=graphValidate(saved);graphRender();graphSelect(id);
+   }catch(error){window.alert(error.message||"Ошибка сохранения связи.");}
+  });
+  row.append(label,edit);edgeEvidence.append(row);
+ });
+ if(edges.length)panel.append(edgeEvidence);
  const actions=document.createElement("div");actions.className="graph-detail-actions";
  const copy=document.createElement("button");copy.type="button";copy.textContent="Копировать";copy.addEventListener("click",()=>navigator.clipboard?.writeText(node.label));
  const remove=document.createElement("button");remove.type="button";remove.className="graph-delete-node";remove.textContent="Удалить объект";
