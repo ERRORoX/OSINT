@@ -101,6 +101,8 @@
     ["settings", "Настройки", "/p/settings/"]
   ];
   function ensureUnifiedNav() {
+    // Domain workspace intentionally has no secondary section strip.
+    if (document.body && document.body.classList.contains("domain-standalone")) return;
     var header = document.querySelector(".app-header");
     if (!header) return;
     var nav = document.getElementById("nav-tools");
@@ -194,7 +196,7 @@
   function mount() {
     ensureUnifiedNav();
     // Keep the compact top navigation. Do not create a sidebar on module pages.
-    var header = document.querySelector(".app-header-right") || document.querySelector(".osint-header-inner");
+    var header = document.querySelector(".domain-topbar-actions") || document.querySelector(".app-header-right") || document.querySelector(".osint-header-inner");
     if (header && !document.getElementById("osint-workspace-actions")) {
       var actions = document.createElement("div"); actions.id = "osint-workspace-actions";
       actions.innerHTML = '<button class="osint-ws-action" id="osint-ws-back" type="button">← Назад</button><a class="osint-ws-action" href="/" title="Вернуться на главную">Главная</a><button class="osint-ws-action" id="osint-ws-toggle" type="button">Рабочая область <span id="osint-ws-count">0</span></button>';
