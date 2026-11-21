@@ -13,7 +13,7 @@
   form.addEventListener("submit", async event => {
     event.preventDefault();
     const phone = input.value.trim();
-    if (!/^\\+[0-9().\\s-]{6,30}$/.test(phone)) {
+    if (!/^\+[0-9().\s-]{6,30}$/.test(phone)) {
       setStatus("Введите номер в международном формате, начиная с +.", "error");
       input.focus();
       return;
