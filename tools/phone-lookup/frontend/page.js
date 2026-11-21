@@ -45,7 +45,7 @@
           id: "phone:" + idHash.toString(16),
           type: "phone",
           label: String(metadata.e164 || source).slice(0, 180),
-          details: ["Источник: Phone Number Intelligence / libphonenumber", "Регион: " + (metadata.region || "—"), "Тип: " + (metadata.number_type || "—"), "Оператор исходного диапазона: " + (metadata.carrier || "—"), "Владелец и местоположение абонента не определяются."].join("\\n")
+          details: ["Источник: Phone Number Intelligence / libphonenumber", "Регион: " + (metadata.region || "—"), "Тип: " + (metadata.number_type || "—"), "Оператор исходного диапазона: " + (metadata.carrier || "—"), "Владелец и местоположение абонента не определяются."].join("\n")
         };
         const saved = await fetch("/api/graph/merge", {
           method: "POST",
