@@ -17,28 +17,42 @@ class ToolPhoneLookup(ToolBase):
 
     @property
     def description(self) -> str:
-        return "Проверка формата и публичных метаданных международного номера."
+        return "Проверка формата и публичных технических метаданных международного номера."
 
     def run(self, params: dict[str, Any]) -> dict[str, Any]:
         raw = str(params.get("phone") or "").strip()
         if not raw or not raw.startswith("+"):
-            return {"success": False, "error": "Введите номер в международном формате, начиная с + (например, +12025550123)."}
+            return {"success": False, "error": "Введите номер в международном формате, начиная с + (например, +992...)."}
+        if len(raw) > 40:
+            return {"success": False, "error": "Слишком длинный ввод. Проверьте номер."}
 
         try:
             import phonenumbers
-            from phonenumbers import carrier, number_type, PhoneNumberFormat, PhoneNumberType
+            from phonenumbers import (
+                PhoneNumberFormat, PhoneNumberType, carrier, geocoder,
+                number_type, timezone,
+            )
         except ImportError:
             return {"success": False, "error": "Не установлена зависимость phonenumbers. Откройте Настройки → Проверить инструменты и установите её."}
 
         try:
             number = phonenumbers.parse(raw, None)
-        except phonenumbers.NumberParseException as exc:
-            return {"success": False, "error": f"Не удалось разобрать номер: {exc}."}
+        except phonenumbers.NumberParseException:
+            return {"success": False, "error": "Не удалось разобрать номер. Проверьте код страны и формат."}
 
-        if not phonenumbers.is_possible_number(number):
-            return {"success": False, "error": "Номер невозможен для указанного плана нумерации."}
+        possible_reason = phonenumbers.is_possible_number_with_reason(number)
+        reason_names = {
+            phonenumbers.ValidationResult.IS_POSSIBLE: "Возможная длина",
+            phonenumbers.ValidationResult.IS_POSSIBLE_LOCAL_ONLY: "Возможен только локальный формат",
+            phonenumbers.ValidationResult.INVALID_COUNTRY_CODE: "Недопустимый код страны",
+            phonenumbers.ValidationResult.TOO_SHORT: "Слишком короткий номер",
+            phonenumbers.ValidationResult.TOO_LONG: "Слишком длинный номер",
+            phonenumbers.ValidationResult.INVALID_LENGTH: "Недопустимая длина",
+        }
+        if possible_reason != phonenumbers.ValidationResult.IS_POSSIBLE:
+            return {"success": False, "error": "Номер не соответствует ожидаемой длине: " + reason_names.get(possible_reason, "неизвестная причина") + "."}
         if not phonenumbers.is_valid_number(number):
-            return {"success": False, "error": "Формат распознан, но номер не соответствует известному диапазону действительных номеров."}
+            return {"success": False, "error": "Формат распознан, но номер не входит в известный действительный диапазон плана нумерации."}
 
         kind = number_type(number)
         type_names = {
@@ -60,30 +74,44 @@ class ToolPhoneLookup(ToolBase):
         e164 = phonenumbers.format_number(number, PhoneNumberFormat.E164)
         international = phonenumbers.format_number(number, PhoneNumberFormat.INTERNATIONAL)
         national = phonenumbers.format_number(number, PhoneNumberFormat.NATIONAL)
+        country_name = geocoder.country_name_for_number(number, "ru") or geocoder.country_name_for_number(number, "en") or region
+        geographic_description = geocoder.description_for_number(number, "ru") or geocoder.description_for_number(number, "en") or ""
+        time_zones = list(timezone.time_zones_for_number(number))
+        extension = getattr(number, "extension", "") or ""
+        metadata = {
+            "e164": e164,
+            "international": international,
+            "national": national,
+            "country_calling_code": number.country_code,
+            "country_name": country_name,
+            "region": region,
+            "region_name": region,
+            "geographic_description": geographic_description,
+            "number_type": type_names.get(kind, "Не определён"),
+            "carrier": carrier_name,
+            "time_zones": time_zones,
+            "extension": extension,
+            "possible_reason": reason_names.get(possible_reason, "Возможная длина"),
+            "valid": True,
+            "source": "libphonenumber",
+        }
         lines = [
             f"Номер: {international}",
             f"Формат E.164: {e164}",
             f"Национальный формат: {national}",
+            f"Страна: {country_name}",
             f"Код страны: +{number.country_code}",
             f"Регион плана нумерации: {region}",
-            f"Тип номера: {type_names.get(kind, 'Не определён')}",
-            f"Оператор по исходному диапазону: {carrier_name}",
-            "Валидность: номер соответствует метаданным плана нумерации",
+            f"Географическое описание: {geographic_description or 'Нет справочных данных'}",
+            f"Тип номера: {metadata['number_type']}",
+            f"Оператор исходного диапазона: {carrier_name}",
+            f"Часовые пояса: {', '.join(time_zones) or 'Нет сведений'}",
+            "Валидность: соответствует известному плану нумерации",
             "",
-            "Важно: оператор может быть указан по исходному диапазону и не учитывать перенос номера. Проверка не устанавливает владельца, адрес или текущее местоположение абонента.",
+            "Важно: это не проверка активности SIM-карты и не подтверждение владельца. Оператор может не учитывать перенос номера. Географическое описание — справочное, не текущее местоположение.",
             "Источник: локальная база метаданных libphonenumber.",
         ]
-        return {
-            "success": True,
-            "output": "\n".join(lines),
-            "metadata": {
-                "e164": e164,
-                "country_calling_code": number.country_code,
-                "region": region,
-                "number_type": type_names.get(kind, "Не определён"),
-                "carrier": carrier_name,
-            },
-        }
+        return {"success": True, "output": "\n".join(lines), "metadata": metadata}
 
 
 __all__ = ["ToolPhoneLookup"]
