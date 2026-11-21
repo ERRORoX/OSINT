@@ -139,6 +139,77 @@ def _search_public_web(e164: str) -> dict[str, Any]:
         "results": results[:30],
     }
 
+
+def _search_public_person(name: str, location: str = "") -> dict[str, Any]:
+    """Search public, indexed pages for a supplied name; never probes private accounts."""
+    brave_key = os.environ.get("BRAVE_SEARCH_API_KEY", "").strip()
+    google_key = os.environ.get("GOOGLE_CSE_API_KEY", "").strip()
+    engine_id = os.environ.get("GOOGLE_CSE_CX", "").strip()
+    if brave_key:
+        provider, provider_key = "Brave Search", brave_key
+    elif google_key and engine_id:
+        provider, provider_key = "Google Custom Search", google_key
+    else:
+        return {"configured": False, "status": "not_configured", "provider": None,
+                "message": "Добавьте BRAVE_SEARCH_API_KEY на сервере (или GOOGLE_CSE_API_KEY и GOOGLE_CSE_CX).",
+                "services": [], "results": []}
+
+    quoted = '"' + name.replace('"', ' ').strip() + '"'
+    place = (' "' + location.replace('"', ' ').strip() + '"') if location else ""
+    queries = [
+        ("Одноклассники · публичные профили", f'site:ok.ru {quoted}{place}'),
+        ("Одноклассники · варианты имени", f'site:ok.ru "{name.replace(" ", " ")}"'),
+        ("Публичный веб · точное имя", f'{quoted}{place}'),
+        ("Другие публичные соцсети", f'{quoted}{place} (site:vk.com OR site:facebook.com OR site:instagram.com OR site:linkedin.com)'),
+    ]
+    services, results, seen = [], [], set()
+    interval, last_request = 1.0, 0.0
+    for label, query in queries:
+        try:
+            if provider == "Brave Search":
+                now = time.monotonic()
+                if last_request:
+                    time.sleep(max(0.0, interval - (now - last_request)))
+                last_request = time.monotonic()
+                request = Request(
+                    "https://api.search.brave.com/res/v1/web/search?" + urlencode({"q": query, "count": 8, "safesearch": "moderate"}),
+                    headers={"Accept": "application/json", "X-Subscription-Token": provider_key,
+                             "User-Agent": "OSINT-Panel-PersonSearch/1.0"},
+                )
+                with urlopen(request, timeout=12) as response:
+                    payload = json.loads(response.read(1_000_000).decode("utf-8"))
+            else:
+                request = Request(
+                    "https://www.googleapis.com/customsearch/v1?" + urlencode({"key": provider_key, "cx": engine_id, "q": query, "num": 8}),
+                    headers={"Accept": "application/json", "User-Agent": "OSINT-Panel-PersonSearch/1.0"},
+                )
+                with urlopen(request, timeout=12) as response:
+                    payload = json.loads(response.read(1_000_000).decode("utf-8"))
+            items = (payload.get("web") or {}).get("results") or [] if provider == "Brave Search" else payload.get("items") or []
+            count = 0
+            for item in items[:8]:
+                url = str(item.get("url") or item.get("link") or "").strip()
+                if not url.startswith(("https://", "http://")) or url in seen:
+                    continue
+                seen.add(url)
+                results.append({"title": str(item.get("title") or "Публичная страница")[:240],
+                                "url": url[:2000],
+                                "snippet": str(item.get("description") or item.get("snippet") or "")[:600],
+                                "source": label,
+                                "match_type": "поисковое совпадение, не подтверждённая личность"})
+                count += 1
+            services.append({"name": label, "status": "found" if count else "no_public_results", "count": count})
+        except Exception as exc:
+            code = getattr(exc, "code", None)
+            services.append({"name": label, "status": "error", "count": 0,
+                             "message": f"HTTP {code}" if isinstance(code, int) else type(exc).__name__})
+    return {"configured": True, "status": "completed" if any(x["status"] != "error" for x in services) else "provider_error",
+            "provider": provider, "provider_label": provider,
+            "message": f"Поиск завершён: {len(results)} уникальных публичных страниц. Совпадения по ФИО требуют ручной проверки.",
+            "services": services, "results": results[:32],
+            "privacy_note": "Ищутся только публично индексируемые страницы. Закрытые профили, базы утечек и телефонные привязки не проверяются."}
+
+
 class ToolPhoneLookup(ToolBase):
     @property
     def tool_id(self) -> str:
@@ -151,6 +222,16 @@ class ToolPhoneLookup(ToolBase):
     @property
     def description(self) -> str:
         return "Проверка формата и публичных технических метаданных международного номера."
+
+
+    def search_person(self, name: str, location: str = "") -> dict[str, Any]:
+        clean_name = " ".join(str(name or "").split())
+        clean_location = " ".join(str(location or "").split())
+        if len(clean_name) < 3 or len(clean_name) > 120:
+            return {"success": False, "error": "Введите имя и фамилию (от 3 до 120 символов)."}
+        if len(clean_location) > 100:
+            return {"success": False, "error": "Слишком длинное название города или страны."}
+        return {"success": True, "person_search": _search_public_person(clean_name, clean_location)}
 
     def run(self, params: dict[str, Any]) -> dict[str, Any]:
         raw = str(params.get("phone") or "").strip()
