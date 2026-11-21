@@ -116,6 +116,12 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn(".username-overview__steps", styles)
         self.assertIn("username.js?v=4.2.5", page)
 
+    def test_username_failed_tools_are_not_shown_as_100_percent_success(self):
+        progress = (ROOT / "tools" / "username-workspace" / "frontend" / "js" / "progress.js").read_text(encoding="utf-8")
+        page = (ROOT / "tools" / "username-workspace" / "frontend" / "index.html").read_text(encoding="utf-8")
+        self.assertIn('pctEl.textContent = "ОШИБКА"', progress)
+        self.assertIn("username.js?v=4.2.7", page)
+
     def test_username_frontend_uses_only_canonical_asset_paths(self):
         js = (ROOT / "tools" / "username-workspace" / "frontend" / "js" / "username.js").read_text(encoding="utf-8")
         self.assertNotIn("/username/js/", js)
