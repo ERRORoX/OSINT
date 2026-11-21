@@ -1074,6 +1074,18 @@ def api_relationship_graph_merge():
         return jsonify({"error": str(exc)}), 400
 
 
+
+@app.route("/api/public-person-search", methods=["POST"])
+def api_public_person_search():
+    """Transient public-web lookup. Deliberately excluded from run history."""
+    data = request.get_json(silent=True) or {}
+    tool = get_tool("phone-lookup")
+    if tool is None or not hasattr(tool, "search_person"):
+        return jsonify({"error": "Инструмент поиска человека недоступен."}), 503
+    result = tool.search_person(data.get("name", ""), data.get("location", ""))
+    return jsonify(result), 200 if result.get("success") else 400
+
+
 @app.route("/api/tools/<tool_id>/run", methods=["POST"])
 def api_tool_run(tool_id):
     """Запуск инструмента. Body: JSON с параметрами. При неизвестном tool_id — 404 с error."""
