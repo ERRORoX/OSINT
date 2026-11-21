@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "phone-lookup",
   "name": "Phone Number Intelligence",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "category": "identity",
   "description": "Пассивный анализ номера, технические метаданные и поиск публичных упоминаний в соцсетях, бизнес-страницах и жалобах.",
   "status": "integrated",
@@ -51,7 +51,11 @@
     "google-custom-search-provider",
     "whatsapp-public-mention-search",
     "telegram-public-mention-search",
-    "imo-public-mention-search"
+    "imo-public-mention-search",
+    "persistent-source-checkbox-selection",
+    "direct-whatsapp-number-link",
+    "telegram-phone-deep-link",
+    "imo-public-search-link"
   ],
   "notes": [
     "Локальные технические данные получаются из libphonenumber; при настроенных GOOGLE_CSE_API_KEY и GOOGLE_CSE_CX модуль автоматически ищет публично индексируемые упоминания в Google, WhatsApp, Telegram и imo.",
