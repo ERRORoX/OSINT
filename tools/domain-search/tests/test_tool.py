@@ -28,10 +28,23 @@ class DomainSearchModuleTests(unittest.TestCase):
         self.assertTrue(run_domain_search)
 
     def test_normalizes_domain(self):
-        self.assertEqual(
-            _MODULE.DOMAIN_MODULE._normalize_domain("https://www.example.com/path"),
-            "example.com",
-        )
+        normalize = _MODULE.DOMAIN_MODULE._normalize_domain
+        self.assertEqual(normalize("https://www.example.com/path"), "example.com")
+        self.assertEqual(normalize("example.com:8443/path?x=1"), "example.com")
+        self.assertEqual(normalize("example.com?ref=campaign"), "example.com")
+        self.assertEqual(normalize("https://пример.рф/"), "xn--e1afmkfd.xn--p1ai")
+        self.assertEqual(normalize("not a valid host"), "")
+
+    def test_rejects_ip_and_malformed_hostnames(self):
+        validate = _MODULE.DOMAIN_MODULE._validate_domain
+        for value in ("127.0.0.1", "example..com", "-bad.example", "bad-.example", "example.c"):
+            with self.subTest(value=value):
+                self.assertFalse(validate(value)[0])
+
+    def test_accepts_normalized_url_and_idn_domain(self):
+        validate = _MODULE.DOMAIN_MODULE._validate_domain
+        self.assertTrue(validate("https://www.example.com:443/path")[0])
+        self.assertTrue(validate("пример.рф")[0])
 
 
 if __name__ == "__main__":
