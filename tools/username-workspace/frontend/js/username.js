@@ -233,7 +233,7 @@ function downloadUsernameExport(format) {
     mime = 'application/json;charset=utf-8'; extension = 'json';
   } else {
     const columns = ['tool', 'platform', 'url', 'category', 'verification'];
-    const safe = (value) => { let v = String(value ?? ''); if (/^[=+\\-@\\t\\r]/.test(v)) v = "'" + v; return '"' + v.replace(/"/g, '""') + '"'; };
+    const safe = (value) => { let v = String(value ?? ''); if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; return '"' + v.replace(/"/g, '""') + '"'; };
     content = [columns, ...rows.map((row) => columns.map((key) => row[key]))].map((line) => line.map(safe).join(',')).join('\\r\\n');
     mime = 'text/csv;charset=utf-8'; extension = 'csv';
   }
