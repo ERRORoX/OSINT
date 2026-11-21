@@ -2,146 +2,132 @@
 from __future__ import annotations
 
 from typing import Any
+from datetime import datetime, timezone
+from urllib.parse import urlencode, urlparse
 import json
 import os
 import time
-from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 from tools.base import ToolBase
 
 
 def _search_public_web(e164: str) -> dict[str, Any]:
-    """Search public indexed pages through Brave Search or legacy Google CSE."""
+    """Search a broad set of public, indexed web sources; never query private accounts or leaked dumps."""
     brave_key = os.environ.get("BRAVE_SEARCH_API_KEY", "").strip()
     google_key = os.environ.get("GOOGLE_CSE_API_KEY", "").strip()
     engine_id = os.environ.get("GOOGLE_CSE_CX", "").strip()
-
     if brave_key:
-        provider = "Brave Search"
-        provider_key = brave_key
+        provider, provider_key = "Brave Search", brave_key
     elif google_key and engine_id:
-        provider = "Google Custom Search"
-        provider_key = google_key
+        provider, provider_key = "Google Custom Search", google_key
     else:
         return {
-            "configured": False,
-            "status": "not_configured",
-            "provider": None,
+            "configured": False, "status": "not_configured", "provider": None,
             "provider_label": "Публичный веб-поиск",
-            "message": (
-                "Автопоиск не настроен. Добавьте BRAVE_SEARCH_API_KEY на сервере "
-                "(рекомендуется) либо GOOGLE_CSE_API_KEY и GOOGLE_CSE_CX для старой интеграции."
-            ),
-            "services": [],
-            "results": [],
+            "message": "Добавьте BRAVE_SEARCH_API_KEY на сервере либо GOOGLE_CSE_API_KEY и GOOGLE_CSE_CX.",
+            "services": [], "results": [],
         }
 
     digits = "".join(ch for ch in e164 if ch.isdigit())
+    national = digits.lstrip("0123456789") if False else digits
+    spaced = " ".join([digits[:3], digits[3:6], digits[6:]])
+    exact = f'"{e164}" OR "{digits}" OR "{spaced}"'
     queries = [
-        ("Общий публичный поиск", f'"{e164}" OR "{digits}"'),
-        ("WhatsApp · публичные упоминания", f'"{e164}" OR "{digits}" (site:wa.me OR site:whatsapp.com)'),
-        ("Telegram · публичные страницы", f'"{e164}" OR "{digits}" site:t.me'),
-        ("imo · публичные упоминания", f'"{e164}" OR "{digits}" (site:imo.im OR site:imoapp.com)'),
-        ("Социальные сети · публичные страницы", f'"{e164}" OR "{digits}" (site:instagram.com OR site:facebook.com OR site:vk.com OR site:tiktok.com OR site:x.com OR site:linkedin.com)'),
-        ("Спам · публичные жалобы", f'"{e164}" OR "{digits}" (spam OR scam OR мошенничество OR спам OR нежелательный звонок)'),
-        ("Бизнес · публичные контакты", f'"{e164}" OR "{digits}" (company OR business OR контакты OR компания OR телефон)'),
+        ("Общий поиск · точный номер", exact),
+        ("Общий поиск · альтернативная запись", f'"{digits}" OR "{digits[1:]}"'),
+        ("Одноклассники · публичные упоминания", f'{exact} site:ok.ru'),
+        ("VK · публичные упоминания", f'{exact} site:vk.com'),
+        ("Telegram · публичные страницы", f'{exact} site:t.me'),
+        ("WhatsApp · публичные ссылки", f'{exact} (site:wa.me OR site:whatsapp.com)'),
+        ("imo · публичные упоминания", f'{exact} (site:imo.im OR site:imoapp.com)'),
+        ("Социальные сети · публичные страницы", f'{exact} (site:instagram.com OR site:facebook.com OR site:tiktok.com OR site:x.com OR site:linkedin.com)'),
+        ("Объявления · публичные публикации", f'{exact} (объявление OR продажа OR аренда OR classifieds OR marketplace)'),
+        ("Бизнес · публичные контакты", f'{exact} (контакты OR телефон OR компания OR business OR contact)'),
+        ("Карты и каталоги · публичные карточки", f'{exact} (карта OR каталог OR directory OR maps OR справочник)'),
+        ("Антиспам · жалобы и отзывы", f'{exact} (спам OR мошенничество OR нежелательный звонок OR scam OR spam OR robocall)'),
+        ("Форумы · публичные обсуждения", f'{exact} (форум OR обсуждение OR отзывы OR forum OR discussion)'),
+        ("Публичные документы и публикации", f'{exact} (filetype:pdf OR filetype:doc OR filetype:xls)'),
+        ("Видео и сообщества", f'{exact} (site:youtube.com OR site:reddit.com OR site:github.com)'),
     ]
     services: list[dict[str, Any]] = []
     results: list[dict[str, str]] = []
     seen_urls: set[str] = set()
-    brave_min_interval = 1.0  # Conservative default until the API exposes the account limit.
-    last_brave_request = 0.0
-
+    min_interval, last_request = 1.0, 0.0
+    retrieved_at = datetime.now(timezone.utc).isoformat()
     for label, query in queries:
         try:
             if provider == "Brave Search":
                 now = time.monotonic()
-                if last_brave_request:
-                    wait = brave_min_interval - (now - last_brave_request)
-                    if wait > 0:
-                        time.sleep(wait)
-                last_brave_request = time.monotonic()
-                params = urlencode({"q": query, "count": 5, "safesearch": "moderate"})
+                if last_request:
+                    time.sleep(max(0.0, min_interval - (now - last_request)))
+                last_request = time.monotonic()
                 request = Request(
-                    "https://api.search.brave.com/res/v1/web/search?" + params,
-                    headers={
-                        "Accept": "application/json",
-                        "X-Subscription-Token": provider_key,
-                        "User-Agent": "OSINT-Panel-PhoneLookup/2.6",
-                    },
+                    "https://api.search.brave.com/res/v1/web/search?" + urlencode({"q": query, "count": 10, "safesearch": "moderate"}),
+                    headers={"Accept": "application/json", "X-Subscription-Token": provider_key,
+                             "User-Agent": "OSINT-Panel-PhoneLookup/2.7"},
                 )
-                with urlopen(request, timeout=12) as response:
+                with urlopen(request, timeout=15) as response:
                     payload = json.loads(response.read(1_000_000).decode("utf-8"))
                     headers = getattr(response, "headers", {})
                     limit = headers.get("X-RateLimit-Limit") if hasattr(headers, "get") else None
                     if limit:
                         try:
-                            requests_per_second = max(0.1, float(str(limit).split(",")[0].strip()))
-                            brave_min_interval = 1.0 / requests_per_second
+                            min_interval = 1.0 / max(0.1, float(str(limit).split(",")[0].strip()))
                         except (TypeError, ValueError):
                             pass
                 items = (payload.get("web") or {}).get("results") or []
-                title_key, snippet_key = "title", "description"
             else:
-                params = urlencode({
-                    "key": provider_key, "cx": engine_id, "q": query, "num": 5,
-                })
                 request = Request(
-                    "https://www.googleapis.com/customsearch/v1?" + params,
-                    headers={"Accept": "application/json", "User-Agent": "OSINT-Panel-PhoneLookup/2.6"},
+                    "https://www.googleapis.com/customsearch/v1?" + urlencode(
+                        {"key": provider_key, "cx": engine_id, "q": query, "num": 10}
+                    ),
+                    headers={"Accept": "application/json", "User-Agent": "OSINT-Panel-PhoneLookup/2.7"},
                 )
-                with urlopen(request, timeout=12) as response:
+                with urlopen(request, timeout=15) as response:
                     payload = json.loads(response.read(1_000_000).decode("utf-8"))
                 items = payload.get("items") or []
-                title_key, snippet_key = "title", "snippet"
 
             found = 0
-            for item in items[:5]:
+            for item in items[:10]:
                 link = str(item.get("url") or item.get("link") or "").strip()
                 if not link.startswith(("https://", "http://")) or link in seen_urls:
                     continue
                 seen_urls.add(link)
                 results.append({
-                    "title": str(item.get(title_key) or "Без заголовка")[:240],
+                    "title": str(item.get("title") or "Без заголовка")[:240],
                     "url": link[:2000],
-                    "snippet": str(item.get(snippet_key) or "")[:600],
+                    "domain": (urlparse(link).hostname or "").lower()[:180],
+                    "snippet": str(item.get("description") or item.get("snippet") or "")[:600],
                     "source": label,
+                    "query": query[:500],
+                    "retrieved_at": retrieved_at,
+                    "confidence": "низкая",
+                    "confidence_reason": "Совпадение найдено поисковым индексом; принадлежность номера и актуальность сведений не подтверждены.",
                 })
                 found += 1
-            services.append({
-                "name": label,
-                "status": "found" if found else "no_public_results",
-                "count": found,
-            })
+            services.append({"name": label, "status": "found" if found else "no_public_results", "count": found})
         except Exception as exc:
-            # Keep credentials and provider response bodies out of user-facing errors.
             code = getattr(exc, "code", None)
-            services.append({
-                "name": label,
-                "status": "error",
-                "count": 0,
-                "message": f"HTTP {code}" if isinstance(code, int) else type(exc).__name__,
-            })
+            services.append({"name": label, "status": "error", "count": 0,
+                             "message": f"HTTP {code}" if isinstance(code, int) else type(exc).__name__})
 
-    found_total = len(results)
+    successful = sum(s["status"] != "error" for s in services)
     return {
         "configured": True,
-        "status": "completed" if any(s["status"] != "error" for s in services) else "provider_error",
-        "provider": provider,
-        "provider_label": provider,
+        "status": "completed" if successful else "provider_error",
+        "provider": provider, "provider_label": provider,
+        "retrieved_at": retrieved_at,
         "message": (
             f"Провайдер: {provider}. Выполнено {len(queries)} поисковых направлений; "
-            f"найдено {found_total} уникальных публичных страниц. "
-            "Результаты не подтверждают принадлежность номера человеку или наличие частного аккаунта."
+            f"найдено {len(results)} уникальных публичных страниц. Совпадения требуют проверки."
         ),
-        "services": services,
-        "results": results[:30],
+        "methodology": "Публичный поисковый индекс; результаты не доказывают владельца номера, регистрацию аккаунта или актуальность данных.",
+        "services": services, "results": results[:100],
     }
 
-
 def _search_public_person(name: str, location: str = "") -> dict[str, Any]:
-    """Search public, indexed pages for a supplied name; never probes private accounts."""
+    """Search indexed public pages for a supplied name; do not enumerate accounts or private data."""
     brave_key = os.environ.get("BRAVE_SEARCH_API_KEY", "").strip()
     google_key = os.environ.get("GOOGLE_CSE_API_KEY", "").strip()
     engine_id = os.environ.get("GOOGLE_CSE_CX", "").strip()
@@ -154,16 +140,23 @@ def _search_public_person(name: str, location: str = "") -> dict[str, Any]:
                 "message": "Добавьте BRAVE_SEARCH_API_KEY на сервере (или GOOGLE_CSE_API_KEY и GOOGLE_CSE_CX).",
                 "services": [], "results": []}
 
-    quoted = '"' + name.replace('"', ' ').strip() + '"'
-    place = (' "' + location.replace('"', ' ').strip() + '"') if location else ""
+    safe_name = name.replace('"', " ").strip()
+    safe_location = location.replace('"', " ").strip()
+    quoted = '"' + safe_name + '"'
+    place = f' "{safe_location}"' if safe_location else ""
     queries = [
-        ("Одноклассники · публичные профили", f'site:ok.ru {quoted}{place}'),
-        ("Одноклассники · варианты имени", f'site:ok.ru "{name.replace(" ", " ")}"'),
-        ("Публичный веб · точное имя", f'{quoted}{place}'),
-        ("Другие публичные соцсети", f'{quoted}{place} (site:vk.com OR site:facebook.com OR site:instagram.com OR site:linkedin.com)'),
+        ("Одноклассники · имя и регион", f"site:ok.ru {quoted}{place}"),
+        ("Одноклассники · имя без региона", f"site:ok.ru {quoted}"),
+        ("VK · публичные профили", f"site:vk.com {quoted}{place}"),
+        ("Общий веб · точное имя", f"{quoted}{place}"),
+        ("Социальные сети · публичные страницы", f'{quoted}{place} (site:facebook.com OR site:instagram.com OR site:linkedin.com OR site:tiktok.com)'),
+        ("Публичные публикации и объявления", f'{quoted}{place} (объявления OR публикации OR контакты OR business)'),
+        ("Форумы и сообщества", f'{quoted}{place} (site:reddit.com OR site:github.com OR forum OR форум)'),
+        ("Варианты написания", f'"{safe_name.replace(" ", " ")}" {safe_location}'),
     ]
     services, results, seen = [], [], set()
     interval, last_request = 1.0, 0.0
+    retrieved_at = datetime.now(timezone.utc).isoformat()
     for label, query in queries:
         try:
             if provider == "Brave Search":
@@ -172,43 +165,52 @@ def _search_public_person(name: str, location: str = "") -> dict[str, Any]:
                     time.sleep(max(0.0, interval - (now - last_request)))
                 last_request = time.monotonic()
                 request = Request(
-                    "https://api.search.brave.com/res/v1/web/search?" + urlencode({"q": query, "count": 8, "safesearch": "moderate"}),
+                    "https://api.search.brave.com/res/v1/web/search?" + urlencode({"q": query, "count": 10, "safesearch": "moderate"}),
                     headers={"Accept": "application/json", "X-Subscription-Token": provider_key,
-                             "User-Agent": "OSINT-Panel-PersonSearch/1.0"},
+                             "User-Agent": "OSINT-Panel-PersonSearch/2.7"},
                 )
-                with urlopen(request, timeout=12) as response:
+                with urlopen(request, timeout=15) as response:
                     payload = json.loads(response.read(1_000_000).decode("utf-8"))
+                items = (payload.get("web") or {}).get("results") or []
             else:
                 request = Request(
-                    "https://www.googleapis.com/customsearch/v1?" + urlencode({"key": provider_key, "cx": engine_id, "q": query, "num": 8}),
-                    headers={"Accept": "application/json", "User-Agent": "OSINT-Panel-PersonSearch/1.0"},
+                    "https://www.googleapis.com/customsearch/v1?" + urlencode(
+                        {"key": provider_key, "cx": engine_id, "q": query, "num": 10}
+                    ),
+                    headers={"Accept": "application/json", "User-Agent": "OSINT-Panel-PersonSearch/2.7"},
                 )
-                with urlopen(request, timeout=12) as response:
+                with urlopen(request, timeout=15) as response:
                     payload = json.loads(response.read(1_000_000).decode("utf-8"))
-            items = (payload.get("web") or {}).get("results") or [] if provider == "Brave Search" else payload.get("items") or []
+                items = payload.get("items") or []
             count = 0
-            for item in items[:8]:
-                url = str(item.get("url") or item.get("link") or "").strip()
-                if not url.startswith(("https://", "http://")) or url in seen:
+            for item in items[:10]:
+                link = str(item.get("url") or item.get("link") or "").strip()
+                if not link.startswith(("https://", "http://")) or link in seen:
                     continue
-                seen.add(url)
-                results.append({"title": str(item.get("title") or "Публичная страница")[:240],
-                                "url": url[:2000],
-                                "snippet": str(item.get("description") or item.get("snippet") or "")[:600],
-                                "source": label,
-                                "match_type": "поисковое совпадение, не подтверждённая личность"})
+                seen.add(link)
+                results.append({
+                    "title": str(item.get("title") or "Публичная страница")[:240],
+                    "url": link[:2000], "domain": (urlparse(link).hostname or "").lower()[:180],
+                    "snippet": str(item.get("description") or item.get("snippet") or "")[:600],
+                    "source": label, "query": query[:500], "retrieved_at": retrieved_at,
+                    "match_type": "поисковое совпадение, не подтверждённая личность",
+                    "confidence": "низкая",
+                    "confidence_reason": "Совпадение по имени не подтверждает, что страница принадлежит искомому человеку.",
+                })
                 count += 1
             services.append({"name": label, "status": "found" if count else "no_public_results", "count": count})
         except Exception as exc:
             code = getattr(exc, "code", None)
             services.append({"name": label, "status": "error", "count": 0,
                              "message": f"HTTP {code}" if isinstance(code, int) else type(exc).__name__})
-    return {"configured": True, "status": "completed" if any(x["status"] != "error" for x in services) else "provider_error",
-            "provider": provider, "provider_label": provider,
-            "message": f"Поиск завершён: {len(results)} уникальных публичных страниц. Совпадения по ФИО требуют ручной проверки.",
-            "services": services, "results": results[:32],
-            "privacy_note": "Ищутся только публично индексируемые страницы. Закрытые профили, базы утечек и телефонные привязки не проверяются."}
-
+    successful = sum(item["status"] != "error" for item in services)
+    return {
+        "configured": True, "status": "completed" if successful else "provider_error",
+        "provider": provider, "provider_label": provider, "retrieved_at": retrieved_at,
+        "message": f"Поиск завершён: {len(results)} уникальных публичных страниц. Совпадения по ФИО требуют ручной проверки.",
+        "services": services, "results": results[:80],
+        "privacy_note": "Проверяются публично индексируемые страницы. Закрытые профили, аккаунт-энумерация и сырые дампы утечек не проверяются.",
+    }
 
 class ToolPhoneLookup(ToolBase):
     @property
