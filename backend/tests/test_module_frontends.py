@@ -431,6 +431,12 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn("country_name_for_number", backend)
         self.assertIn("time_zones_for_number", backend)
         self.assertIn("is_possible_number_with_reason", backend)
+        self.assertIn("national_significant_number", backend)
+        self.assertIn("country_code_source", backend)
+        self.assertIn("public-spam-reputation-search-links", manifest["capabilities"])
+        self.assertIn('id="ph-public-links"', page)
+        self.assertIn("renderPublicChecks", script)
+        self.assertIn("duckduckgo.com/?q=", script)
         self.assertIn("json-report-export", manifest["capabilities"])
         self.assertIn("Не устанавливает личность владельца", (ROOT / "tools" / "phone-lookup" / "README.md").read_text(encoding="utf-8"))
 
