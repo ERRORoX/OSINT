@@ -535,14 +535,17 @@ function graphExtractEntities(output,seed){
  return [...found.values()].slice(0,120);
 }
 async function graphRunChain(node){
- if(!node||!["domain","ip"].includes(node.type))return;
+ if(!node||!["domain","ip","email","person"].includes(node.type))return;
  const status=document.getElementById("graph-import-status"),menu=document.getElementById("graph-context-menu"),badge=document.getElementById("graph-data-mode");
  if(menu)menu.hidden=true;
  const queue=node.type==="domain"?[
   {id:"domain-search",label:"Анализ домена",params:{domain:node.label}},
   {id:"subfinder",label:"Поиск поддоменов",params:{domain:node.label}},
-  {id:"dnsx",label:"DNS-записи",params:{domain:node.label}}
- ]:[{id:"ip-rdap",label:"RDAP",params:{ip:node.label}}];
+  {id:"dnsx",label:"DNS-записи",params:{domain:node.label}},
+  {id:"theharvester",label:"Поиск публичных email",params:{domain:node.label}}
+ ]:node.type==="ip"?[
+  {id:"ip-rdap",label:"RDAP",params:{ip:node.label}}
+ ]:(GRAPH_TRANSFORMS[node.type]||[]).slice(0,4).map(item=>({id:item.id,label:item.label,params:item.params(node.label)}));
  const collected=new Map(),relations=new Map(),errors=[];
  const addResult=(entity,sourceLabel,toolId)=>{
   const key=entity.type+":"+entity.label.toLowerCase();
@@ -597,7 +600,8 @@ async function graphRunTransform(node,toolId){
   const response=await fetch(API+"/tools/"+encodeURIComponent(toolId)+"/run",{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify(transform.params(node.label))});
   const result=await response.json().catch(()=>({}));
   if(!response.ok||!result.success)throw new Error(result.error||result.output||"Инструмент завершился с ошибкой.");
-  const extracted=graphExtractEntities(result.output||"",node);
+  const rawOutput=[result.output,result.data,result.records,result.results].map(value=>typeof value==="string"?value:value?JSON.stringify(value):"").filter(Boolean).join("\n");
+  const extracted=graphExtractEntities(rawOutput,node).map(item=>({...item,provenance:{source:transform.label,tool_id:toolId,observed_at:new Date().toISOString(),evidence:"Извлечено из результата "+transform.label}}));
   if(node.type==="phone"&&result.metadata){
    const meta=result.metadata;
    extracted.push({
@@ -606,8 +610,8 @@ async function graphRunTransform(node,toolId){
     relation:"метаданные номера"
    });
   }
-  const additions=extracted.map(item=>({id:item.id,type:item.type,label:item.label,details:item.details||("Получено: "+transform.label)}));
-  const edges=extracted.map(item=>({source:node.id,target:item.id,label:item.relation}));
+  const additions=extracted.map(item=>({id:item.id,type:item.type,label:item.label,details:item.details||("Получено: "+transform.label),provenance:item.provenance}));
+  const edges=extracted.map(item=>({source:node.id,target:item.id,label:item.relation,provenance:{source:transform.label,tool_id:toolId,observed_at:new Date().toISOString(),evidence:item.provenance?.evidence||"Результат инструмента"}}));
   const merged=await fetch(API+"/graph/merge",{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify({nodes:additions,edges})});
   const saved=await merged.json().catch(()=>({}));
   if(!merged.ok)throw new Error(saved.error||"Не удалось сохранить результаты в граф.");
@@ -638,7 +642,7 @@ function graphShowContextMenu(node,event){
  const title=document.createElement("div");title.className="graph-context-title";title.textContent=node.label;
  menu.append(title);
  const transformList=GRAPH_TRANSFORMS[node.type]||[];
- if(["domain","ip"].includes(node.type)){const chainButton=document.createElement("button");chainButton.type="button";chainButton.dataset.graphChain="true";chainButton.textContent="Запустить автоцепочку";menu.append(chainButton);}
+ if(["domain","ip","email","person"].includes(node.type)){const chainButton=document.createElement("button");chainButton.type="button";chainButton.dataset.graphChain="true";chainButton.textContent="Запустить автоцепочку";menu.append(chainButton);}
  if(transformList.length){
   const heading=document.createElement("div");heading.className="graph-context-section";heading.textContent="TRANSFORMS · OSINT";menu.append(heading);
   transformList.forEach(item=>{const button=document.createElement("button");button.type="button";button.dataset.transform=item.id;button.textContent=item.label;menu.append(button);});
