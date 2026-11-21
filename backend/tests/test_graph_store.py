@@ -91,6 +91,38 @@ class RelationshipGraphStoreTests(unittest.TestCase):
                 loaded_positions = {node["id"]: (node["x"], node["y"]) for node in loaded["nodes"]}
                 self.assertEqual(loaded_positions, positions)
 
+    def test_recovers_legacy_graph_when_investigation_record_exists_without_graph(self):
+        with tempfile.TemporaryDirectory() as directory:
+            db_path = str(Path(directory) / "graph.sqlite3")
+            with patch.object(graph_store, "get_db", lambda: _temporary_connection(db_path)):
+                with sqlite3.connect(db_path) as connection:
+                    connection.row_factory = sqlite3.Row
+                    connection.execute("""
+                        CREATE TABLE relationship_graph (
+                            id INTEGER PRIMARY KEY CHECK (id = 1),
+                            graph_json TEXT NOT NULL,
+                            updated_at TEXT NOT NULL
+                        )
+                    """)
+                    connection.execute(
+                        "INSERT INTO relationship_graph (id, graph_json, updated_at) VALUES (1, ?, ?)",
+                        ('{"nodes":[{"id":"domain:legacy","type":"domain","label":"legacy.example"}],"edges":[]}', "2026-11-20T00:00:00+00:00"),
+                    )
+                    connection.execute("""
+                        CREATE TABLE investigations (
+                            id TEXT PRIMARY KEY, name TEXT NOT NULL,
+                            created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+                        )
+                    """)
+                    connection.execute(
+                        "INSERT INTO investigations (id, name, created_at, updated_at) VALUES (?, ?, ?, ?)",
+                        ("existing-investigation", "Старое расследование", "2026-11-19", "2026-11-19"),
+                    )
+                    connection.commit()
+                graph = graph_store.get_graph_data()
+                self.assertEqual([node["id"] for node in graph["nodes"]], ["domain:legacy"])
+                self.assertEqual(graph["investigation_id"], "existing-investigation")
+
     def test_named_investigations_keep_graphs_isolated(self):
         with tempfile.TemporaryDirectory() as directory:
             db_path = str(Path(directory) / "graph.sqlite3")
