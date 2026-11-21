@@ -78,6 +78,18 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn('fetch("/api/modules"', script)
         self.assertIn("runtime_errors", script)
 
+    def test_username_search_saves_findings_to_active_relationship_graph(self):
+        script = (ROOT / "tools" / "username-workspace" / "frontend" / "js" / "username.js").read_text(encoding="utf-8")
+        page = (ROOT / "tools" / "username-workspace" / "frontend" / "index.html").read_text(encoding="utf-8")
+        styles = (ROOT / "tools" / "username-workspace" / "frontend" / "css" / "username.css").read_text(encoding="utf-8")
+        self.assertIn("function buildUsernameGraphPayload(username, rows)", script)
+        self.assertIn("async function persistUsernameGraph(username, rows)", script)
+        self.assertIn('fetch("/api/graph/merge"', script)
+        self.assertIn('id="usernameGraphStatus"', page)
+        self.assertIn("searchInProgress", script)
+        self.assertIn('.username-graph-status[data-state="success"]', styles)
+        self.assertIn('username.js?v=4.2.3', page)
+
     def test_username_frontend_uses_only_canonical_asset_paths(self):
         js = (ROOT / "tools" / "username-workspace" / "frontend" / "js" / "username.js").read_text(encoding="utf-8")
         self.assertNotIn("/username/js/", js)
