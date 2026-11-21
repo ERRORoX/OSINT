@@ -44,7 +44,7 @@
     }
     const message=document.createElement("p");message.className="ph-auto-message";message.textContent=data.message||"Проверка завершена.";host.append(message);
     if(!data.configured){
-      const note=document.createElement("span");note.className="ph-auto-note";note.textContent="Google Search API не настроен на сервере.";host.append(note);return;
+      const note=document.createElement("span");note.className="ph-auto-note";note.textContent="Поисковый API не настроен на сервере. Добавьте BRAVE_SEARCH_API_KEY или старые ключи Google CSE.";host.append(note);return;
     }
     const statuses=document.createElement("div");statuses.className="ph-auto-statuses";
     (data.services||[]).forEach(service=>{
@@ -61,11 +61,11 @@
       const card=document.createElement("article");card.className="ph-auto-result";
       const title=document.createElement("strong");title.textContent=entry.title||"Публичная страница";
       const snippet=document.createElement("p");snippet.textContent=entry.snippet||"";
-      const source=document.createElement("small");source.textContent=entry.source||"Google";
+      const source=document.createElement("small");source.textContent=entry.source||data.provider_label||"Публичный веб-поиск";
       const link=document.createElement("a");link.href=entry.url;link.target="_blank";link.rel="noopener noreferrer";link.textContent="Открыть источник ↗";
       card.append(source,title,snippet,link);results.append(card);
     });
-    if(!results.children.length){const note=document.createElement("span");note.className="ph-auto-note";note.textContent="Google не вернул публичных совпадений по этим запросам.";results.append(note);}
+    if(!results.children.length){const note=document.createElement("span");note.className="ph-auto-note";note.textContent=(data.provider_label||"Поисковый провайдер")+" не вернул публичных совпадений по этим запросам.";results.append(note);}
     host.append(results);
   };
   const SOURCE_SELECTION_KEY="phone-lookup-selected-sources-v1";
