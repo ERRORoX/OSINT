@@ -476,20 +476,17 @@ function graphSelect(id){
 }
 function graphResetView(){graphScale=1;graphPan={x:0,y:0};graphApplyTransform();}
 function graphFitView(){
- const nodes=graphVisibleNodes();
+ const nodes=graphVisibleNodes(),svg=document.getElementById("investigation-graph");
+ if(!svg)return;
+ const rect=svg.getBoundingClientRect(),width=Math.max(320,rect.width||760),height=Math.max(220,rect.height||320);
+ svg.setAttribute("viewBox","0 0 "+width+" "+height);
  if(!nodes.length){graphResetView();return;}
  const xs=nodes.map(node=>Number(node.x)||0),ys=nodes.map(node=>Number(node.y)||0);
  const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
- const box=svgViewSize(),rect=document.getElementById("investigation-graph")?.getBoundingClientRect();
- const width=Math.max(320,rect?.width||box.width),height=Math.max(220,rect?.height||box.height);
  const pad=90,spanX=Math.max(120,maxX-minX+pad*2),spanY=Math.max(120,maxY-minY+pad*2);
  graphScale=Math.max(.025,Math.min(2.5,(width-36)/spanX,(height-36)/spanY));
- graphPan={x:box.width/2-((minX+maxX)/2)*graphScale,y:box.height/2-((minY+maxY)/2)*graphScale};
+ graphPan={x:width/2-((minX+maxX)/2)*graphScale,y:height/2-((minY+maxY)/2)*graphScale};
  graphApplyTransform();
-}
-function svgViewSize(){
- const view= document.getElementById("investigation-graph")?.viewBox?.baseVal;
- return {width:view?.width||760,height:view?.height||420};
 }
 async function graphWire(){
  const svg=document.getElementById("investigation-graph");if(!svg)return;
