@@ -157,22 +157,6 @@ class RelationshipGraphStoreTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             db_path = str(Path(directory) / "graph.sqlite3")
             with patch.object(graph_store, "get_db", lambda: _temporary_connection(db_path)):
-                saved = graph_store.merge_graph_data({
-                    "nodes": [{
-                        "id": "domain:evidence", "type": "domain", "label": "evidence.example",
-                        "provenance": {
-                            "source": "Passive DNS", "tool_id": "dnsx",
-                            "source_url": "https://example.org/report",
-                            "observed_at": "2026-11-21T10:00:00Z",
-                            "confidence": 0.875, "evidence": "A record observed",
-                        },
-                    }],
-                    "edges": [{
-                        "source": "domain:evidence", "target": "ip:evidence",
-                        "label": "DNS A",
-                        "provenance": {"source": "DNS response", "source_url": "javascript:alert(1)", "confidence": 5},
-                    }],
-                }) if False else None
                 # Add both endpoints before creating a relationship.
                 saved = graph_store.merge_graph_data({
                     "nodes": [
