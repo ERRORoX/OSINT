@@ -260,7 +260,8 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn('id="graph-investigation-select"', page)
         self.assertIn('id="graph-save-investigation"', page)
         self.assertIn('id="graph-investigation-new"', page)
-        self.assertIn('id="graph-import-button"', page)
+        self.assertNotIn('id="graph-import-button"', page)
+        self.assertNotIn('class="graph-import"', page)
         self.assertIn('function graphValidate(value)', script)
         self.assertIn('function graphWire()', script)
         self.assertIn('GRAPH_STORAGE_KEY="osint-panel-graph-data-v1"', script)
@@ -295,7 +296,28 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertIn('<link rel="stylesheet" href="/css/unified-workstation.css?v=4.5.0">', page)
         self.assertIn('<link rel="stylesheet" href="/css/panel-42-dashboard.css?v=4.2.1">', page)
         self.assertNotIn('unified-workstation.css?v=4.5.0\\n', page)
-        self.assertIn('src="./js/domain.js?v=4.2.21"', page)
+        self.assertIn('href="./css/domain.css?v=4.2.22"', page)
+        self.assertIn('src="./js/domain.js?v=4.2.22"', page)
+
+    def test_domain_workspace_uses_dashboard_header_without_duplicate_tabs(self):
+        page = (ROOT / "tools" / "domain-workspace" / "frontend" / "index.html").read_text(encoding="utf-8")
+        workspace = (ROOT / "static" / "js" / "workspace.js").read_text(encoding="utf-8")
+        header = (ROOT / "static" / "js" / "header-ui.js").read_text(encoding="utf-8")
+        styles = (ROOT / "tools" / "domain-workspace" / "frontend" / "css" / "domain.css").read_text(encoding="utf-8")
+        self.assertIn('class="topbar domain-topbar"', page)
+        self.assertIn('id="btn-user-menu"', page)
+        self.assertIn('id="user-menu"', page)
+        self.assertNotIn('class="osint-tabs"', page)
+        self.assertIn('classList.contains("domain-standalone")', workspace)
+        self.assertIn('event.key === "Escape"', header)
+        self.assertIn('.domain-standalone .app-body.osint-body{', styles)
+        self.assertIn('display:block!important', styles)
+
+    def test_domain_workspace_limits_large_output_rendering(self):
+        script = (ROOT / "tools" / "domain-workspace" / "frontend" / "js" / "domain.js").read_text(encoding="utf-8")
+        self.assertIn("const maxOutputChars = 120000;", script)
+        self.assertIn('.slice(0, 1200)', script)
+        self.assertIn('Полный вывод сохранён для экспорта отчёта', script)
 
     def test_domain_workspace_validates_and_normalizes_domain_input(self):
         script = (ROOT / "tools" / "domain-workspace" / "frontend" / "js" / "domain.js").read_text(encoding="utf-8")
