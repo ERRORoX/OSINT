@@ -597,3 +597,24 @@ body.dashboard-page{margin:0!important;min-height:100vh;background:radial-gradie
 .graph-node-core.type-phone{fill:#123d55;stroke:#59c7e8;stroke-width:2.5}
 
 .graph-create-link{width:100%;margin:10px 0;padding:9px 11px;border:1px solid rgba(89,184,245,.3);border-radius:8px;background:rgba(31,104,160,.16);color:#bfe5ff;font-size:11px;font-weight:700;cursor:pointer}.graph-create-link:hover{background:rgba(31,125,190,.28)}
+
+/* Investigation case notes */
+.graph-notes-panel{margin-top:14px;padding:15px;border:1px solid rgba(81,143,205,.19);border-radius:12px;background:linear-gradient(145deg,rgba(10,26,45,.88),rgba(5,15,29,.92))}
+.graph-notes-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.graph-notes-heading h3{margin:3px 0 0;color:#dcecff;font-size:14px;font-weight:750}
+.graph-notes-heading>span{color:#7894b4;font-size:10px}
+.graph-notes-label{display:block;margin-bottom:7px;color:#9bb2ce;font-size:10px}
+.graph-notes-panel textarea{display:block;width:100%;min-height:76px;resize:vertical;padding:10px 11px;border:1px solid rgba(91,153,215,.2);border-radius:8px;background:#071426;color:#d8eaff;font:inherit;font-size:11px;line-height:1.5}
+.graph-notes-panel textarea:focus{outline:1px solid #43aeea;border-color:#43aeea}
+.graph-notes-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;flex-wrap:wrap}
+.graph-notes-actions span{color:#7890ad;font-size:10px}
+.graph-notes-actions button,.graph-note-item button{padding:7px 11px;border:1px solid rgba(69,155,225,.32);border-radius:7px;background:rgba(24,101,165,.2);color:#c6e6ff;font-size:10px;font-weight:700;cursor:pointer}
+.graph-notes-actions button:hover,.graph-note-item button:hover{background:rgba(24,125,196,.32)}
+.graph-notes-list{display:grid;gap:7px;margin-top:11px}
+.graph-note-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 12px;padding:10px;border:1px solid rgba(90,145,205,.13);border-radius:8px;background:rgba(3,12,24,.38)}
+.graph-note-item p{grid-column:1/-1;margin:0;color:#c2d5eb;font-size:11px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
+.graph-note-item small{align-self:center;color:#6f89a8;font-size:9px}
+.graph-note-item button{grid-column:2;grid-row:2;padding:4px 8px}
+.graph-notes-empty{margin:0;padding:10px;color:#7188a5;font-size:10px}
+.graph-edge-evidence-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid rgba(91,145,220,.12)}
+.graph-edge-evidence-row button{padding:4px 7px;border:1px solid rgba(89,184,245,.25);border-radius:6px;background:rgba(31,104,160,.14);color:#bfe5ff;font-size:9px;cursor:pointer}
