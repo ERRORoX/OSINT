@@ -289,15 +289,15 @@ export function initPanel(container) {
 
   async function loadKeys() {
     const res = await fetch(`${API}/settings/keys`);
-    if (!res.ok) throw new Error("Не удалось загрузить настройки");
     const data = await res.json();
+    if (!res.ok || !Array.isArray(data.keys)) throw new Error(data.error || "Не удалось загрузить настройки");
     listEl.innerHTML = data.keys
       .map(
         (k) => `
       <div class="settings-key-row" data-key-id="${escapeHtml(k.id)}">
         <label>${escapeHtml(k.label)}</label>
         <div class="key-input-wrap">
-          <input type="password" name="${escapeHtml(k.id)}" placeholder="${k.isSet ? "Ключ сохранён (введите новый, чтобы заменить)" : "Введите ключ"}" autocomplete="off">
+          <input type="password" name="${escapeHtml(k.id)}" placeholder="${k.isSet ? "Ключ сохранён · пустое поле оставит его без изменений" : "Введите ключ"}" autocomplete="new-password" spellcheck="false">
           <button type="button" class="btn-help" aria-expanded="false" data-key-id="${escapeHtml(k.id)}">Помощь</button>
         </div>
         <div class="help-block" id="help-${escapeHtml(k.id)}" role="region">
@@ -325,7 +325,8 @@ export function initPanel(container) {
     const payload = {};
     listEl.querySelectorAll('input[name]').forEach((input) => {
       const v = (fd.get(input.name) || "").trim();
-      payload[input.name] = v;
+      // Пустое поле не должно стирать ранее сохранённый ключ.
+      if (v) payload[input.name] = v;
     });
     showMessage("");
     try {
@@ -334,8 +335,10 @@ export function initPanel(container) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error(res.statusText);
-      showMessage("Ключи сохранены в .env");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.success === false) throw new Error(data.error || res.statusText || "Не удалось сохранить ключи");
+      showMessage(Object.keys(payload).length ? "Изменения сохранены в .env. Пустые поля оставлены без изменений." : "Изменений нет: сохранённые ключи не затронуты.");
+      await loadKeys();
     } catch (err) {
       showMessage("Ошибка: " + err.message, true);
     }
