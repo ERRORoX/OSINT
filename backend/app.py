@@ -564,7 +564,8 @@ def api_photo_exif_exiftool_txt():
             except Exception:
                 vv = v
             lines.append(f"{k}: {vv}")
-        txt = "\n".join(lines) or "Метаданные не найдены."
+        txt = "
+".join(lines) or "Метаданные не найдены."
 
     fname = "exiftool.txt"
     if safe_filename:
@@ -631,7 +632,8 @@ def api_photo_export_report():
             lines += [f"### {k}", "", "```json", preview, "```", ""]
     if isinstance(search_results, list) and search_results:
         lines += ["## Web search", "", "```json", json.dumps(search_results, ensure_ascii=False, indent=2)[:4000], "```", ""]
-    return jsonify({"success": True, "report": "\n".join(lines)})
+    return jsonify({"success": True, "report": "
+".join(lines)})
 
 
 # AI/VLM endpoints в текущем проекте не реализованы — отдаём JSON, чтобы фронт не падал на HTML.
@@ -880,7 +882,8 @@ def api_host_os():
 def tool_css_bundle(tool_id: str):
     """Один CSS на вкладку: общая база + стили инструмента (без цепочки link в HTML)."""
     if tool_id not in BUNDLE_TOOL_IDS:
-        return Response("/* unknown tool bundle */\n", status=404, mimetype="text/css; charset=utf-8")
+        return Response("/* unknown tool bundle */
+", status=404, mimetype="text/css; charset=utf-8")
     try:
         body = build_tool_css_bundle(
             static_root=app.static_folder,
@@ -888,7 +891,8 @@ def tool_css_bundle(tool_id: str):
             tool_id=tool_id,
         )
     except OSError as e:
-        return Response(f"/* bundle error: {e} */\n", status=500, mimetype="text/css; charset=utf-8")
+        return Response(f"/* bundle error: {e} */
+", status=500, mimetype="text/css; charset=utf-8")
     return Response(
         body,
         mimetype="text/css; charset=utf-8",
@@ -943,7 +947,21 @@ def ip_rdap_module_assets(filename):
     return response
 
 
-@app.route("/modules/person-intelligence/", methods=["GET"])\ndef person_intelligence_module_page():\n    response = send_from_directory(_PERSON_INTELLIGENCE_FRONTEND_DIR, "index.html")\n    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"\n    return response\n\n\n@app.route("/modules/person-intelligence/<path:filename>", methods=["GET"])\ndef person_intelligence_module_assets(filename):\n    response = send_from_directory(_PERSON_INTELLIGENCE_FRONTEND_DIR, filename)\n    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"\n    return response\n\n\n@app.route("/modules/phone-lookup/", methods=["GET"])
+@app.route("/modules/person-intelligence/", methods=["GET"])
+def person_intelligence_module_page():
+    response = send_from_directory(_PERSON_INTELLIGENCE_FRONTEND_DIR, "index.html")
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return response
+
+
+@app.route("/modules/person-intelligence/<path:filename>", methods=["GET"])
+def person_intelligence_module_assets(filename):
+    response = send_from_directory(_PERSON_INTELLIGENCE_FRONTEND_DIR, filename)
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return response
+
+
+@app.route("/modules/phone-lookup/", methods=["GET"])
 def phone_lookup_module_page():
     response = send_from_directory(_PHONE_LOOKUP_FRONTEND_DIR, "index.html")
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
