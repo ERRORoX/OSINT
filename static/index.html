@@ -90,7 +90,21 @@
               <div class="graph-notes-actions"><span id="graph-notes-status" role="status">Заметки сохраняются отдельно от графа.</span><button type="button" id="graph-note-save">Сохранить заметку</button></div>
               <div id="graph-notes-list" class="graph-notes-list"><p class="graph-notes-empty">Заметок пока нет.</p></div>
             </section>
-            <details class="graph-import"><summary>Импортировать собственный граф (JSON)</summary><p>Формат JSON: массивы <code>nodes</code> и <code>edges</code>. Импортированные и найденные связи сохраняются в SQLite на сервере панели.</p><textarea id="graph-json-input" rows="5" spellcheck="false" placeholder='{"nodes":[{"id":"n1","type":"domain","label":"example.org"}],"edges":[]}'></textarea><div><button type="button" id="graph-import-button">Загрузить граф</button><button type="button" id="graph-export-button">Экспортировать JSON</button><button type="button" id="graph-clear-button">Очистить постоянный граф</button></div><span id="graph-import-status" role="status"></span></details>
+            <aside class="graph-composition-panel" aria-labelledby="graph-composition-title">
+              <div class="graph-notes-heading"><div><span class="graph-eyebrow">GRAPH INTELLIGENCE</span><h3 id="graph-composition-title">Состав графа</h3></div><span class="graph-composition-live">LIVE</span></div>
+              <div class="graph-composition-total"><strong id="graph-stat-total">0</strong><span>сущностей в расследовании</span></div>
+              <div class="graph-composition-grid">
+                <div><span class="graph-stat-dot person"></span><span>Люди</span><strong id="graph-stat-person">0</strong></div>
+                <div><span class="graph-stat-dot domain"></span><span>Домены</span><strong id="graph-stat-domain">0</strong></div>
+                <div><span class="graph-stat-dot ip"></span><span>IP-адреса</span><strong id="graph-stat-ip">0</strong></div>
+                <div><span class="graph-stat-dot email"></span><span>Email</span><strong id="graph-stat-email">0</strong></div>
+                <div><span class="graph-stat-dot organization"></span><span>Организации</span><strong id="graph-stat-organization">0</strong></div>
+                <div><span class="graph-stat-dot phone"></span><span>Телефоны</span><strong id="graph-stat-phone">0</strong></div>
+              </div>
+              <div class="graph-composition-footer"><span>Связей между объектами</span><strong id="graph-stat-edges">0</strong></div>
+              <p class="graph-composition-hint" id="graph-composition-hint">Добавляйте результаты анализа — состав графа обновится автоматически.</p>
+            </aside>
+            </div>
           </section>
 
         <div class="content-columns">
