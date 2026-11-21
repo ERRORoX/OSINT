@@ -75,6 +75,9 @@ class ModuleFrontendTests(unittest.TestCase):
         self.assertNotIn("owner_lookup", tool.lower())
         page = (ROOT / "tools" / "phone-lookup" / "frontend" / "index.html").read_text(encoding="utf-8")
         self.assertIn('id="phone-form"', page)
+        phone_script = (ROOT / "tools" / "phone-lookup" / "frontend" / "page.js").read_text(encoding="utf-8")
+        self.assertIn("Сформировать выбранные проверки", phone_script)
+        self.assertIn("manual-public-source-selection", manifest["capabilities"])
         app_source = (ROOT / "backend" / "app.py").read_text(encoding="utf-8")
         self.assertIn('@app.route("/modules/phone-lookup/"', app_source)
 
